@@ -40,7 +40,7 @@ export default function StudentAnalogiesTest() {
   }, [sessionId])
 
   const handleAnswer = (answer: string) => {
-    let newAnswers = { ...answers }
+    const newAnswers = { ...answers }
     newAnswers[currentQuestion] = {
       answer: answer,
       isComplete: true
@@ -59,7 +59,7 @@ export default function StudentAnalogiesTest() {
   }
 
   const clearAnswer = () => {
-    let newAnswers = { ...answers }
+    const newAnswers = { ...answers }
     delete newAnswers[currentQuestion]
     setAnswers(newAnswers)
     
