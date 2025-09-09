@@ -99,7 +99,7 @@ export default function StudentPatternReasoning() {
   }, [testState, sessionId, router])
 
   const handleAnswer = (answer: string) => {
-    let newAnswers = { ...answers }
+    const newAnswers = { ...answers }
     newAnswers[currentQuestion] = {
       answer: answer,
       isComplete: true
