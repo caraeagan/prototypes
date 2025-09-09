@@ -322,7 +322,7 @@ export default function StudentTest() {
   }
 
   const handleAnswer = (answer: string | number) => {
-    let newAnswers = { ...answers }
+    const newAnswers = { ...answers }
     
     // Simple answer storage - each question gets one answer
     newAnswers[currentQuestion] = {
@@ -568,7 +568,7 @@ export default function StudentTest() {
   }
 
   // Render geometric figures for area estimation
-  const renderFigure = (figureData: any, isSelected = false) => {
+  const renderFigure = (figureData: { id: number; shape: string }, isSelected = false) => {
     const { id, shape } = figureData
     const size = 80 // SVG size
     
