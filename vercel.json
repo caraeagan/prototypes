@@ -1,0 +1,8 @@
+{
+  "build": {
+    "env": {
+      "SKIP_ESLINT": "true"
+    }
+  },
+  "buildCommand": "npm run build"
+}
