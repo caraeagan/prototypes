@@ -1,5 +1,8 @@
 "use client"
 
+// Force dynamic rendering to prevent static generation
+export const dynamic = 'force-dynamic'
+
 import { useSession } from "next-auth/react"
 import { useState, useEffect, Suspense } from "react"
 import { useSearchParams } from "next/navigation"

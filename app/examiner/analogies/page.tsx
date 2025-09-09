@@ -5,6 +5,9 @@ import { useState, useEffect, Suspense } from "react"
 import { AuthButton } from "@/components/auth-button"
 import Image from "next/image"
 
+// Force dynamic rendering to prevent static generation
+export const dynamic = 'force-dynamic'
+
 const QUESTIONS = [
   {
     id: 1,
