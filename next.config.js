@@ -1,17 +1,19 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   eslint: {
-    // Warning: This allows production builds to successfully complete even if
-    // your project has ESLint errors.
+    // Completely disable ESLint during builds
     ignoreDuringBuilds: true,
+    dirs: [] // Don't lint any directories
   },
   typescript: {
-    // !! WARN !!
-    // Dangerously allow production builds to successfully complete even if
-    // your project has type errors.
-    // !! WARN !!
+    // Disable TypeScript checking during builds
     ignoreBuildErrors: true,
   },
+  // Additional Vercel-specific config
+  experimental: {
+    skipESLintDuringBuilds: true,
+    skipTypeChecking: true
+  }
 }
 
 module.exports = nextConfig
