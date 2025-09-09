@@ -5,6 +5,9 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { AuthButton } from "@/components/auth-button"
 
+// Force dynamic rendering to prevent static generation
+export const dynamic = 'force-dynamic'
+
 const SUBTESTS = [
   {
     id: "value-estimation",
