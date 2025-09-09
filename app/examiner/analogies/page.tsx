@@ -1,7 +1,7 @@
 "use client"
 
 import { useSearchParams } from "next/navigation"
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { AuthButton } from "@/components/auth-button"
 import Image from "next/image"
 
@@ -24,7 +24,7 @@ const QUESTIONS = [
   }
 ]
 
-export default function ExaminerAnalogiesTest() {
+function ExaminerAnalogiesContent() {
   const searchParams = useSearchParams()
   const sessionId = searchParams.get("session") || ""
   const [studentInfo, setStudentInfo] = useState<any>(null)
@@ -287,5 +287,13 @@ export default function ExaminerAnalogiesTest() {
         </div>
       </main>
     </div>
+  )
+}
+
+export default function ExaminerAnalogiesTest() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <ExaminerAnalogiesContent />
+    </Suspense>
   )
 }

@@ -1,11 +1,11 @@
 "use client"
 
 import { useSession } from "next-auth/react"
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import { AuthButton } from "@/components/auth-button"
 
-export default function ExaminerInterface() {
+function ExaminerInterfaceContent() {
   const { data: session, status } = useSession()
   const searchParams = useSearchParams()
   const [sessionId, setSessionId] = useState<string>("")
@@ -206,5 +206,13 @@ export default function ExaminerInterface() {
         </div>
       </main>
     </div>
+  )
+}
+
+export default function ExaminerInterface() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <ExaminerInterfaceContent />
+    </Suspense>
   )
 }
