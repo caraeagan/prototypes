@@ -2,7 +2,6 @@
 
 import { useSearchParams } from "next/navigation"
 import { useState, useEffect, Suspense } from "react"
-import { AuthButton } from "@/components/auth-button"
 import Image from "next/image"
 
 // Force dynamic rendering to prevent static generation
@@ -83,7 +82,7 @@ function ExaminerAnalogiesContent() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <h1 className="text-2xl font-bold text-gray-900">Examiner Monitor - Analogies</h1>
-            <AuthButton />
+            <div className="text-sm text-gray-600">Analogies</div>
           </div>
         </div>
       </header>

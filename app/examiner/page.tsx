@@ -3,13 +3,10 @@
 // Force dynamic rendering to prevent static generation
 export const dynamic = 'force-dynamic'
 
-import { useSession } from "next-auth/react"
 import { useState, useEffect, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
-import { AuthButton } from "@/components/auth-button"
 
 function ExaminerInterfaceContent() {
-  const { data: session, status } = useSession()
   const searchParams = useSearchParams()
   const [sessionId, setSessionId] = useState<string>("")
   const [studentConnected, setStudentConnected] = useState(false)
@@ -52,20 +49,6 @@ function ExaminerInterfaceContent() {
     return () => clearInterval(interval)
   }, [sessionId])
 
-  if (status === "loading") {
-    return <div className="min-h-screen flex items-center justify-center">Loading...</div>
-  }
-
-  if (!session) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl mb-4">Please sign in to access the examiner interface</h1>
-          <AuthButton />
-        </div>
-      </div>
-    )
-  }
 
 
   const copyStudentLink = async () => {
@@ -98,7 +81,7 @@ function ExaminerInterfaceContent() {
                 </span>
               </div>
             </div>
-            <AuthButton />
+            <div className="text-sm text-gray-600">Examiner</div>
           </div>
         </div>
       </header>

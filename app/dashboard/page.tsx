@@ -1,12 +1,6 @@
 "use client"
 
-import { useSession } from "next-auth/react"
 import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { AuthButton } from "@/components/auth-button"
-
-// Force dynamic rendering to prevent static generation
-export const dynamic = 'force-dynamic'
 
 const SUBTESTS = [
   {
@@ -27,8 +21,6 @@ const SUBTESTS = [
 ]
 
 export default function Dashboard() {
-  const { data: session, status } = useSession()
-  const router = useRouter()
   const [selectedSubtests, setSelectedSubtests] = useState<string[]>([])
   
   // Student information state
@@ -37,20 +29,6 @@ export default function Dashboard() {
   const [grade, setGrade] = useState("")
   const [age, setAge] = useState("")
 
-  if (status === "loading") {
-    return <div className="min-h-screen flex items-center justify-center">Loading...</div>
-  }
-
-  if (!session) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl mb-4">Please sign in to access the dashboard</h1>
-          <AuthButton />
-        </div>
-      </div>
-    )
-  }
 
   const handleSubtestToggle = (subtestId: string) => {
     setSelectedSubtests(prev => 
@@ -108,7 +86,7 @@ export default function Dashboard() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <h1 className="text-2xl font-bold text-gray-900">Marker Method</h1>
-            <AuthButton />
+            <div className="text-sm text-gray-600">Dashboard</div>
           </div>
         </div>
       </header>

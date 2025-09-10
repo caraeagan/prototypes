@@ -1,45 +1,6 @@
-"use client"
-
-import { useSession } from "next-auth/react"
-import { useEffect } from "react"
-import { useRouter } from "next/navigation"
-import { AuthButton } from "@/components/auth-button"
-
-// Force dynamic rendering to prevent static generation
-export const dynamic = 'force-dynamic'
+import Link from "next/link"
 
 export default function Home() {
-  const { data: session, status } = useSession()
-  const router = useRouter()
-
-  useEffect(() => {
-    if (session) {
-      router.push("/dashboard")
-    }
-  }, [session, router])
-
-  if (status === "loading") {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
-        </div>
-      </div>
-    )
-  }
-
-  if (session) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Redirecting to dashboard...</p>
-        </div>
-      </div>
-    )
-  }
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center p-4">
       <div className="max-w-md w-full">
@@ -50,21 +11,22 @@ export default function Home() {
             </svg>
           </div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Marker Method</h1>
-          <p className="text-gray-600">Sign in to access the examiner dashboard</p>
+          <p className="text-gray-600">Math assessment administration platform</p>
         </div>
 
         <div className="bg-stone-100 rounded-xl shadow-lg p-8">
           <div className="text-center">
-            <h2 className="text-xl font-semibold text-gray-900 mb-6">Welcome Back</h2>
-            <AuthButton />
+            <h2 className="text-xl font-semibold text-gray-900 mb-6">Welcome</h2>
+            <Link 
+              href="/dashboard" 
+              className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-blue-700 transition-colors inline-block"
+            >
+              Enter Dashboard
+            </Link>
             <p className="text-sm text-gray-500 mt-4">
-              Secure access for authorized examiners only
+              Access the platform features
             </p>
           </div>
-        </div>
-
-        <div className="text-center mt-6 text-sm text-gray-500">
-          <p>Powered by secure Google authentication</p>
         </div>
       </div>
     </div>

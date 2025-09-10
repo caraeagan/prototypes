@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Lexend } from "next/font/google";
 import "./globals.css";
-import { AuthProvider } from "@/lib/session-provider";
 
 const lexend = Lexend({
   subsets: ["latin"],
@@ -23,9 +22,7 @@ export default function RootLayout({
       <body
         className={`${lexend.variable} font-lexend antialiased`}
       >
-        <AuthProvider>
-          {children}
-        </AuthProvider>
+        {children}
       </body>
     </html>
   );
