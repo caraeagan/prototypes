@@ -3,6 +3,9 @@
 import { useParams, useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
 
+// Force dynamic rendering to prevent static generation
+export const dynamic = 'force-dynamic'
+
 const QUESTIONS = [
   {
     id: 1,
