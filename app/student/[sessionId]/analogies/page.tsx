@@ -4,6 +4,9 @@ import { useParams } from "next/navigation"
 import { useState, useEffect } from "react"
 import Image from "next/image"
 
+// Force dynamic rendering to prevent static generation
+export const dynamic = 'force-dynamic'
+
 const QUESTIONS = [
   {
     id: 1,

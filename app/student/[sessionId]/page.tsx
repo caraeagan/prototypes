@@ -3,6 +3,9 @@
 import { useParams } from "next/navigation"
 import { useState, useEffect } from "react"
 
+// Force dynamic rendering to prevent static generation
+export const dynamic = 'force-dynamic'
+
 export default function StudentInterface() {
   const params = useParams()
   const sessionId = params.sessionId as string
