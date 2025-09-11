@@ -1,6 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'standalone',
   eslint: {
     // Completely disable ESLint during builds
     ignoreDuringBuilds: true,
@@ -9,11 +8,6 @@ const nextConfig = {
   typescript: {
     // Disable TypeScript checking during builds
     ignoreBuildErrors: true,
-  },
-  // Additional Vercel-specific config
-  experimental: {
-    skipESLintDuringBuilds: true,
-    skipTypeChecking: true
   }
 }
 

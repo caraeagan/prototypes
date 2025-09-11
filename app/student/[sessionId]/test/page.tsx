@@ -425,6 +425,13 @@ export default function StudentTest() {
         studentName: studentInfo?.firstName || 'Student'
       }
       localStorage.setItem(`waitingState_${sessionId}`, JSON.stringify(waitingState))
+      
+      // Notify examiner that test is completed
+      localStorage.setItem(`test_completed_${sessionId}`, JSON.stringify({
+        completed: true,
+        subtest: "value-estimation",
+        timestamp: new Date().toISOString()
+      }))
     }
     
     setTestState("waiting")

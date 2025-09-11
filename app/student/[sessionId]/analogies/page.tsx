@@ -102,6 +102,14 @@ export default function StudentAnalogiesTest() {
     })
     
     localStorage.setItem(`analogies_test_${sessionId}`, JSON.stringify(testResults))
+    
+    // Notify examiner that test is completed
+    localStorage.setItem(`test_completed_${sessionId}`, JSON.stringify({
+      completed: true,
+      subtest: "analogies",
+      timestamp: new Date().toISOString()
+    }))
+    
     setTestState("completed")
   }
 

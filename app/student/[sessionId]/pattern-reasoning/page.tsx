@@ -165,6 +165,13 @@ export default function StudentPatternReasoning() {
         studentName: studentInfo?.firstName || 'Student'
       }
       localStorage.setItem(`waitingState_${sessionId}`, JSON.stringify(waitingState))
+      
+      // Notify examiner that test is completed
+      localStorage.setItem(`test_completed_${sessionId}`, JSON.stringify({
+        completed: true,
+        subtest: "pattern-reasoning",
+        timestamp: new Date().toISOString()
+      }))
     }
     
     setTestState("waiting")

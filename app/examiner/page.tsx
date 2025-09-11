@@ -13,12 +13,15 @@ function ExaminerInterfaceContent() {
   const [copiedLink, setCopiedLink] = useState(false)
   const [studentLink, setStudentLink] = useState<string>("")
   const [studentInfo, setStudentInfo] = useState<any>(null)
+  const [testCompleted, setTestCompleted] = useState(false)
+  const [showCompletionModal, setShowCompletionModal] = useState(false)
 
   const selectedTests = searchParams.get("tests")?.split(",") || []
 
   useEffect(() => {
-    // Generate a unique session ID when the component mounts
-    const id = Math.random().toString(36).substring(2, 15)
+    // Use existing session ID from URL if available, otherwise generate new one
+    const existingSessionId = searchParams.get("session")
+    const id = existingSessionId || Math.random().toString(36).substring(2, 15)
     setSessionId(id)
     setStudentLink(`${window.location.origin}/student/${id}`)
     
@@ -31,23 +34,38 @@ function ExaminerInterfaceContent() {
       // Store the student info with the session ID for the student interface to access
       localStorage.setItem(`session_${id}_studentInfo`, JSON.stringify(info))
     }
-  }, [])
+  }, [searchParams])
 
-  // Simulate student connection check (in real implementation, this would use WebSocket or polling)
+  // Check student connection and test completion status
   useEffect(() => {
     if (!sessionId) return
     
-    // Check localStorage for student connection (mock implementation)
-    const checkConnection = () => {
+    const checkStatus = () => {
       const studentData = localStorage.getItem(`student_${sessionId}`)
       setStudentConnected(!!studentData)
+      
+      // Check for test completion
+      const completionStatus = localStorage.getItem(`test_completed_${sessionId}`)
+      if (completionStatus && !testCompleted) {
+        setTestCompleted(true)
+        setShowCompletionModal(true)
+        
+        // Update student status in students list
+        const students = JSON.parse(localStorage.getItem('students') || '[]')
+        const updatedStudents = students.map((student: any) => 
+          student.sessionId === sessionId 
+            ? { ...student, testStatus: 'completed' }
+            : student
+        )
+        localStorage.setItem('students', JSON.stringify(updatedStudents))
+      }
     }
 
-    checkConnection()
-    const interval = setInterval(checkConnection, 1000)
+    checkStatus()
+    const interval = setInterval(checkStatus, 1000)
 
     return () => clearInterval(interval)
-  }, [sessionId])
+  }, [sessionId, testCompleted])
 
 
 
@@ -81,7 +99,15 @@ function ExaminerInterfaceContent() {
                 </span>
               </div>
             </div>
-            <div className="text-sm text-gray-600">Examiner</div>
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={() => window.location.href = '/dashboard'}
+                className="px-3 py-1 bg-gray-100 text-gray-700 rounded text-sm hover:bg-gray-200"
+              >
+                Dashboard
+              </button>
+              <div className="text-sm text-gray-600">Examiner</div>
+            </div>
           </div>
         </div>
       </header>
@@ -191,6 +217,50 @@ function ExaminerInterfaceContent() {
           )}
         </div>
       </main>
+
+      {/* Test Completion Modal */}
+      {showCompletionModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h2 className="text-lg font-semibold text-gray-900 flex items-center">
+                <svg className="w-6 h-6 text-green-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Test Completed!
+              </h2>
+            </div>
+            
+            <div className="px-6 py-4">
+              <p className="text-gray-600 mb-4">
+                {studentInfo ? `${studentInfo.firstName} ${studentInfo.lastName}` : 'The student'} has completed all assigned subtests.
+              </p>
+              <p className="text-sm text-gray-500">
+                What would you like to do next?
+              </p>
+            </div>
+
+            <div className="px-6 py-4 border-t border-gray-200 flex flex-col space-y-3">
+              <button
+                onClick={() => {
+                  window.location.href = '/dashboard'
+                }}
+                className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700"
+              >
+                Return to Dashboard
+              </button>
+              <button
+                onClick={() => {
+                  setShowCompletionModal(false)
+                }}
+                className="w-full px-4 py-2 bg-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-400"
+              >
+                Stay on Current Page
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
