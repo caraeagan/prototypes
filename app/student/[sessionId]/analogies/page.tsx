@@ -10,8 +10,8 @@ export const dynamic = 'force-dynamic'
 const QUESTIONS = [
   {
     id: 1,
-    type: "analogy",
-    question: "Look at the picture below. Pick the missing picture.",
+    type: "visual_analogy",
+    question: "",
     analogy: {
       imageA: "/images/bottle.png", // Bottle
       imageB: "/images/baby-drinking.png", // Baby drinking
@@ -23,6 +23,18 @@ const QUESTIONS = [
       { id: "C", image: "/images/baby-eating.png" }  // Baby eating with spoon
     ],
     correctAnswer: "C" // Baby eating with spoon
+  },
+  {
+    id: 2,
+    type: "verbal_analogy",
+    question: "",
+    analogy: {
+      wordA: "thermometer",
+      wordB: "temperature", 
+      wordC: "compass"
+    },
+    correctAnswer: "direction", // Expected answer: compass measures direction, like thermometer measures temperature
+    instructions: "The examiner will type what you say."
   }
 ]
 
@@ -41,6 +53,7 @@ export default function StudentAnalogiesTest() {
       setStudentInfo(JSON.parse(studentData))
     }
   }, [sessionId])
+
 
   const handleAnswer = (answer: string) => {
     const newAnswers = { ...answers }
@@ -78,13 +91,54 @@ export default function StudentAnalogiesTest() {
 
   const handleNext = () => {
     if (currentQuestion < QUESTIONS.length - 1) {
-      setCurrentQuestion(currentQuestion + 1)
+      const nextQuestion = currentQuestion + 1
+      
+      // For verbal questions, mark as complete automatically
+      if (QUESTIONS[currentQuestion].type === "verbal_analogy" && !answers[currentQuestion]) {
+        const newAnswers = { ...answers }
+        newAnswers[currentQuestion] = {
+          answer: "verbal_response_given",
+          isComplete: true
+        }
+        setAnswers(newAnswers)
+        
+        // Update test state for examiner with NEW question number
+        const currentTestState = {
+          currentQuestion: nextQuestion, // Use the next question number
+          answers: newAnswers,
+          studentName: studentInfo?.firstName || 'Student',
+          testType: 'analogies'
+        }
+        localStorage.setItem(`analogiesTestState_${sessionId}`, JSON.stringify(currentTestState))
+      } else {
+        // For non-verbal questions, also update with new question number
+        const currentTestState = {
+          currentQuestion: nextQuestion,
+          answers,
+          studentName: studentInfo?.firstName || 'Student',
+          testType: 'analogies'
+        }
+        localStorage.setItem(`analogiesTestState_${sessionId}`, JSON.stringify(currentTestState))
+      }
+      
+      setCurrentQuestion(nextQuestion)
     }
   }
 
   const handlePrevious = () => {
     if (currentQuestion > 0) {
-      setCurrentQuestion(currentQuestion - 1)
+      const prevQuestion = currentQuestion - 1
+      
+      // Update test state for examiner with previous question number
+      const currentTestState = {
+        currentQuestion: prevQuestion,
+        answers,
+        studentName: studentInfo?.firstName || 'Student',
+        testType: 'analogies'
+      }
+      localStorage.setItem(`analogiesTestState_${sessionId}`, JSON.stringify(currentTestState))
+      
+      setCurrentQuestion(prevQuestion)
     }
   }
 
@@ -144,19 +198,6 @@ export default function StudentAnalogiesTest() {
 
   return (
     <div className="min-h-screen bg-blue-50">
-      <header className="bg-white shadow-sm border-b">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <div className="flex items-center space-x-3">
-              <h1 className="text-xl font-bold text-gray-900">Analogies Test</h1>
-              <span className="text-sm text-gray-500">Welcome {studentInfo.firstName}</span>
-            </div>
-            <div className="text-sm text-gray-500">
-              Question {currentQuestion + 1} of {QUESTIONS.length}
-            </div>
-          </div>
-        </div>
-      </header>
 
       <main className="max-w-6xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
         <div className="bg-stone-100 rounded-xl shadow-lg p-8">
@@ -166,101 +207,150 @@ export default function StudentAnalogiesTest() {
 
           {/* Analogy Display */}
           <div className="space-y-8">
-            {/* Top row: A relates to B */}
-            <div className="flex items-center justify-center space-x-8">
-              <div className="text-center">
-                <div className="w-32 h-32 bg-white rounded-lg border-2 border-gray-300 flex items-center justify-center">
-                  <Image
-                    src={question.analogy.imageA}
-                    alt="Image A"
-                    width={100}
-                    height={100}
-                    className="rounded"
-                  />
-                </div>
-              </div>
-              
-              <div className="text-4xl text-gray-400">:</div>
-              
-              <div className="text-center">
-                <div className="w-32 h-32 bg-white rounded-lg border-2 border-gray-300 flex items-center justify-center">
-                  <Image
-                    src={question.analogy.imageB}
-                    alt="Image B"
-                    width={100}
-                    height={100}
-                    className="rounded"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Bottom row: C relates to ? */}
-            <div className="flex items-center justify-center space-x-8">
-              <div className="text-center">
-                <div className="w-32 h-32 bg-white rounded-lg border-2 border-gray-300 flex items-center justify-center">
-                  <Image
-                    src={question.analogy.imageC}
-                    alt="Image C"
-                    width={100}
-                    height={100}
-                    className="rounded"
-                  />
-                </div>
-              </div>
-              
-              <div className="text-4xl text-gray-400">:</div>
-              
-              <div className="text-center">
-                <div className="w-32 h-32 bg-gray-100 rounded-lg border-2 border-dashed border-gray-400 flex items-center justify-center relative">
-                  {answers[currentQuestion]?.answer ? (
-                    <>
+            {question.type === "visual_analogy" ? (
+              // Visual analogy with images
+              <>
+                {/* Top row: A relates to B */}
+                <div className="flex items-center justify-center space-x-8">
+                  <div className="text-center">
+                    <div className="w-32 h-32 bg-white rounded-lg border-2 border-gray-300 flex items-center justify-center">
                       <Image
-                        src={question.options.find(opt => opt.id === answers[currentQuestion].answer)?.image || ""}
-                        alt="Selected answer"
+                        src={question.analogy.imageA}
+                        alt="Image A"
                         width={100}
                         height={100}
                         className="rounded"
                       />
-                      <button
-                        onClick={clearAnswer}
-                        className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full hover:bg-red-600 flex items-center justify-center text-sm font-bold"
-                      >
-                        ×
-                      </button>
-                    </>
-                  ) : (
-                    <span className="text-6xl text-gray-400">?</span>
-                  )}
+                    </div>
+                  </div>
+                  
+                  <div className="text-4xl text-gray-400">:</div>
+                  
+                  <div className="text-center">
+                    <div className="w-32 h-32 bg-white rounded-lg border-2 border-gray-300 flex items-center justify-center">
+                      <Image
+                        src={question.analogy.imageB}
+                        alt="Image B"
+                        width={100}
+                        height={100}
+                        className="rounded"
+                      />
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
 
-            {/* Answer options */}
-            <div className="border-t pt-8 mt-8">
-              <p className="text-center text-gray-600 mb-6">Choose the image that completes the pattern:</p>
-              <div className="flex justify-center space-x-6">
-                {question.options.map((option) => (
-                  <button
-                    key={option.id}
-                    onClick={() => handleAnswer(option.id)}
-                    className={`w-24 h-24 bg-white rounded-lg border-2 transition-all flex items-center justify-center ${
-                      answers[currentQuestion]?.answer === option.id
-                        ? "border-blue-900 bg-blue-100"
-                        : "border-gray-300 hover:border-blue-900 hover:bg-blue-50"
-                    }`}
-                  >
-                    <Image
-                      src={option.image}
-                      alt={`Option ${option.id}`}
-                      width={80}
-                      height={80}
-                      className="rounded"
-                    />
-                  </button>
-                ))}
-              </div>
-            </div>
+                {/* Bottom row: C relates to ? */}
+                <div className="flex items-center justify-center space-x-8">
+                  <div className="text-center">
+                    <div className="w-32 h-32 bg-white rounded-lg border-2 border-gray-300 flex items-center justify-center">
+                      <Image
+                        src={question.analogy.imageC}
+                        alt="Image C"
+                        width={100}
+                        height={100}
+                        className="rounded"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="text-4xl text-gray-400">:</div>
+                  
+                  <div className="text-center">
+                    <div className="w-32 h-32 bg-gray-100 rounded-lg border-2 border-dashed border-gray-400 flex items-center justify-center relative">
+                      {answers[currentQuestion]?.answer ? (
+                        <>
+                          <Image
+                            src={question.options.find(opt => opt.id === answers[currentQuestion].answer)?.image || ""}
+                            alt="Selected answer"
+                            width={100}
+                            height={100}
+                            className="rounded"
+                          />
+                          <button
+                            onClick={clearAnswer}
+                            className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full hover:bg-red-600 flex items-center justify-center text-sm font-bold"
+                          >
+                            ×
+                          </button>
+                        </>
+                      ) : (
+                        <span className="text-6xl text-gray-400">?</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Answer options */}
+                <div className="border-t pt-8 mt-8">
+                  <p className="text-center text-gray-600 mb-6">Choose the image that completes the pattern:</p>
+                  <div className="flex justify-center space-x-6">
+                    {question.options.map((option) => (
+                      <button
+                        key={option.id}
+                        onClick={() => handleAnswer(option.id)}
+                        className={`w-24 h-24 bg-white rounded-lg border-2 transition-all flex items-center justify-center ${
+                          answers[currentQuestion]?.answer === option.id
+                            ? "border-blue-900 bg-blue-100"
+                            : "border-gray-300 hover:border-blue-900 hover:bg-blue-50"
+                        }`}
+                      >
+                        <Image
+                          src={option.image}
+                          alt={`Option ${option.id}`}
+                          width={80}
+                          height={80}
+                          className="rounded"
+                        />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </>
+            ) : (
+              // Verbal analogy with words
+              <>
+                {/* Large word display with aligned colons */}
+                <div className="space-y-8">
+                  {/* Top row */}
+                  <div className="flex items-center justify-center">
+                    <div className="w-80 text-center">
+                      <div className="bg-white rounded-2xl border-2 border-gray-300 shadow-lg px-6 py-8">
+                        <span className="text-3xl font-bold text-gray-900">{question.analogy.wordA}</span>
+                      </div>
+                    </div>
+                    
+                    <div className="w-16 text-center">
+                      <div className="text-6xl text-gray-400 font-bold">:</div>
+                    </div>
+                    
+                    <div className="w-80 text-center">
+                      <div className="bg-white rounded-2xl border-2 border-gray-300 shadow-lg px-6 py-8">
+                        <span className="text-3xl font-bold text-gray-900">{question.analogy.wordB}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Bottom row */}
+                  <div className="flex items-center justify-center">
+                    <div className="w-80 text-center">
+                      <div className="bg-white rounded-2xl border-2 border-gray-300 shadow-lg px-6 py-8">
+                        <span className="text-3xl font-bold text-gray-900">{question.analogy.wordC}</span>
+                      </div>
+                    </div>
+                    
+                    <div className="w-16 text-center">
+                      <div className="text-6xl text-gray-400 font-bold">:</div>
+                    </div>
+                    
+                    <div className="w-80 text-center">
+                      <div className="bg-white rounded-2xl border-2 border-gray-300 shadow-lg px-6 py-8">
+                        <span className="text-3xl text-gray-400 font-bold">?</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
 
           {/* Navigation */}
@@ -280,7 +370,7 @@ export default function StudentAnalogiesTest() {
             {currentQuestion === QUESTIONS.length - 1 ? (
               <button
                 onClick={handleFinishTest}
-                disabled={!answers[currentQuestion]?.isComplete}
+                disabled={!answers[currentQuestion]?.isComplete && QUESTIONS[currentQuestion].type !== "verbal_analogy"}
                 className="px-4 py-2 bg-blue-900 text-white rounded-lg hover:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Finish Test
@@ -288,7 +378,7 @@ export default function StudentAnalogiesTest() {
             ) : (
               <button
                 onClick={handleNext}
-                disabled={!answers[currentQuestion]?.isComplete}
+                disabled={!answers[currentQuestion]?.isComplete && QUESTIONS[currentQuestion].type !== "verbal_analogy"}
                 className="px-4 py-2 bg-blue-900 text-white rounded-lg hover:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Next

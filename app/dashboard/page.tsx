@@ -264,7 +264,7 @@ export default function Dashboard() {
             <h1 className="text-2xl font-bold text-gray-900">Student Queue</h1>
             <button
               onClick={() => setShowAddForm(true)}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700"
+              className="px-4 py-2 bg-blue-900 text-white rounded-lg font-medium hover:bg-blue-800"
             >
               Add Student
             </button>
@@ -327,7 +327,7 @@ export default function Dashboard() {
                             window.location.href = `/profile/${student.id}`
                           }
                         }}
-                        className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+                        className="px-3 py-1 bg-blue-900 text-white text-sm rounded hover:bg-blue-800"
                       >
                         {student.testStatus === 'in-progress' && student.assignedSubtests.length > 0 ? 'Continue' : 'Start Test'}
                       </button>
@@ -449,7 +449,7 @@ export default function Dashboard() {
               <button
                 onClick={handleAddStudent}
                 disabled={!firstName.trim() || !lastName.trim() || !grade || !age}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                className="px-4 py-2 bg-blue-900 text-white rounded-lg font-medium hover:bg-blue-800 disabled:bg-gray-300 disabled:cursor-not-allowed"
               >
                 Add Student
               </button>
@@ -523,7 +523,7 @@ export default function Dashboard() {
                         navigator.clipboard.writeText(generateStudentLink(selectedStudent))
                         alert('Link copied!')
                       }}
-                      className="px-3 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+                      className="px-3 py-2 bg-blue-900 text-white text-sm rounded hover:bg-blue-800"
                     >
                       Copy
                     </button>
@@ -566,7 +566,7 @@ export default function Dashboard() {
                       continueTest(selectedStudent)
                       setSelectedStudent(null)
                     }}
-                    className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700"
+                    className="w-full px-4 py-2 bg-blue-900 text-white rounded-lg font-medium hover:bg-blue-800"
                   >
                     Continue Testing
                   </button>
@@ -576,7 +576,7 @@ export default function Dashboard() {
                       setShowTestSelection(true)
                       setSelectedSubtests(selectedStudent.assignedSubtests)
                     }}
-                    className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700"
+                    className="w-full px-4 py-2 bg-blue-900 text-white rounded-lg font-medium hover:bg-blue-800"
                   >
                     {selectedStudent.assignedSubtests.length > 0 ? 'Start New Test' : 'Start Test'}
                   </button>
@@ -664,7 +664,7 @@ export default function Dashboard() {
                   setSelectedSubtests([])
                 }}
                 disabled={selectedSubtests.length === 0}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                className="px-4 py-2 bg-blue-900 text-white rounded-lg font-medium hover:bg-blue-800 disabled:bg-gray-300 disabled:cursor-not-allowed"
               >
                 Start Test
               </button>
@@ -701,7 +701,7 @@ export default function Dashboard() {
                   setShowCompletionModal(false)
                   setCompletedStudent(null)
                 }}
-                className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700"
+                className="w-full px-4 py-2 bg-blue-900 text-white rounded-lg font-medium hover:bg-blue-800"
               >
                 Go to Dashboard
               </button>

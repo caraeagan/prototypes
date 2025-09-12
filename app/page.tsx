@@ -19,7 +19,7 @@ export default function Home() {
             <h2 className="text-xl font-semibold text-gray-900 mb-6">Welcome</h2>
             <Link 
               href="/dashboard" 
-              className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-blue-700 transition-colors inline-block"
+              className="w-full bg-blue-900 text-white py-3 px-4 rounded-lg font-semibold hover:bg-blue-800 transition-colors inline-block"
             >
               Enter Dashboard
             </Link>

@@ -267,7 +267,7 @@ export default function StudentProfile() {
   const [languageType, setLanguageType] = useState<'MUL' | 'MON' | null>(null)
   const [selectedPhases, setSelectedPhases] = useState<string[]>([])
   const [expandedPhases, setExpandedPhases] = useState<string[]>([])
-  const [customSelection, setCustomSelection] = useState(false)
+  const [searchTerm, setSearchTerm] = useState('')
   // MUL questionnaire fields
   const [respondent, setRespondent] = useState('')
   const [englishLearningStart, setEnglishLearningStart] = useState('')
@@ -296,6 +296,28 @@ export default function StudentProfile() {
         ? prev.filter(id => id !== subtestId)
         : [...prev, subtestId]
     )
+  }
+
+  const selectAllSubtests = () => {
+    const filteredSubtests = SUBTESTS.filter(subtest => 
+      !searchTerm || 
+      subtest.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      subtest.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      subtest.phase.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+    const allIds = filteredSubtests.map(s => s.id)
+    setSelectedSubtests(prev => [...new Set([...prev, ...allIds])])
+  }
+
+  const deselectAllSubtests = () => {
+    const filteredSubtests = SUBTESTS.filter(subtest => 
+      !searchTerm || 
+      subtest.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      subtest.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      subtest.phase.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+    const filteredIds = filteredSubtests.map(s => s.id)
+    setSelectedSubtests(prev => prev.filter(id => !filteredIds.includes(id)))
   }
 
   const getAvailablePhases = () => {
@@ -337,7 +359,17 @@ export default function StudentProfile() {
   }
 
   const getDisplayPhases = () => {
-    return customSelection ? getAllPhases() : getAvailablePhases()
+    return ['Pilot: Phase 1', 'Pilot: Phase 2', 'Pilot: Phase 3']
+  }
+
+  const getFilteredSubtests = (phase: string) => {
+    const phaseSubtests = getSubtestsByPhase(phase)
+    if (!searchTerm) return phaseSubtests
+    
+    return phaseSubtests.filter(subtest => 
+      subtest.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      subtest.description.toLowerCase().includes(searchTerm.toLowerCase())
+    )
   }
 
   const handlePhaseToggle = (phase: string) => {
@@ -395,7 +427,7 @@ export default function StudentProfile() {
     setSelectedSubtests([])
     setSelectedPhases([])
     setExpandedPhases([])
-    setCustomSelection(false)
+    setSearchTerm('')
     // Reset MUL questionnaire fields
     setRespondent('')
     setEnglishLearningStart('')
@@ -620,7 +652,7 @@ export default function StudentProfile() {
                         navigator.clipboard.writeText(generateStudentLink())
                         alert('Link copied!')
                       }}
-                      className="px-3 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+                      className="px-3 py-2 bg-blue-900 text-white text-sm rounded hover:bg-blue-800"
                     >
                       Copy
                     </button>
@@ -663,7 +695,7 @@ export default function StudentProfile() {
               {student.testStatus === 'in-progress' && (
                 <button
                   onClick={continueCurrentSession}
-                  className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700"
+                  className="w-full px-4 py-2 bg-blue-900 text-white rounded-lg font-medium hover:bg-blue-800"
                 >
                   Continue Current Session
                 </button>
@@ -721,7 +753,7 @@ export default function StudentProfile() {
 
       {/* Start Assessment Modal */}
       {showStartAssessmentModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-blue-100 bg-opacity-90 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-screen overflow-y-auto">
             <div className="px-6 py-4 border-b border-gray-200">
               <div className="flex justify-between items-center">
@@ -874,169 +906,99 @@ export default function StudentProfile() {
               {/* Step 5: Phase Selection */}
               {assessmentStep === 5 && (
                 <div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-4">Assessment Phases</h3>
+                  <h3 className="text-lg font-medium text-gray-900 mb-4">Select Subtests</h3>
                   
-                  {/* Custom Selection Toggle */}
-                  <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-                    <div className="flex items-center space-x-3">
+                  {/* Search functionality */}
+                  <div className="mb-4">
+                    <div className="relative">
                       <input
-                        type="checkbox"
-                        id="customSelection"
-                        checked={customSelection}
-                        onChange={toggleCustomSelection}
-                        className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                        type="text"
+                        placeholder="Search for a subtest..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
                       />
-                      <label htmlFor="customSelection" className="text-sm font-medium text-gray-900 cursor-pointer">
-                        Ignore recommendations and select from all phases
-                      </label>
+                      <svg className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 10a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
                     </div>
-                    {customSelection && (
-                      <p className="text-xs text-gray-600 mt-2 ml-7">
-                        You can now select from all available assessment phases regardless of student profile.
-                      </p>
-                    )}
                   </div>
 
                   <p className="text-gray-600 mb-4">
-                    {customSelection 
-                      ? `Select any assessment phases you want for ${student?.firstName}:`
-                      : `Based on your selections, the following assessment phases have been automatically selected for ${student?.firstName}:`
-                    }
+                    Based on your selections, some subtests have been automatically selected for {student?.firstName}. You can check or uncheck any subtest below.
                   </p>
 
-                  <div className="space-y-3">
-                    {getDisplayPhases().map((phase) => {
-                      const phaseSubtests = getSubtestsByPhase(phase)
-                      const isExpanded = expandedPhases.includes(phase)
-                      const isSelected = selectedPhases.includes(phase)
-                      
-                      return (
-                        <div key={phase} className="border border-gray-200 rounded-lg">
-                          <div className="flex items-center justify-between p-4">
-                            <div className="flex items-center space-x-3">
-                              <input
-                                type="checkbox"
-                                id={`phase-${phase}`}
-                                checked={isSelected}
-                                onChange={() => handlePhaseToggle(phase)}
-                                className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                              />
-                              <label htmlFor={`phase-${phase}`} className="text-sm font-medium text-gray-900 cursor-pointer">
-                                {phase}
-                              </label>
-                              <span className="text-xs text-gray-500">
-                                ({phaseSubtests.length} subtests)
-                              </span>
-                            </div>
-                            
-                            <button
-                              onClick={() => togglePhaseExpansion(phase)}
-                              className="p-1 hover:bg-gray-100 rounded"
-                            >
-                              <svg 
-                                className={`w-4 h-4 text-gray-500 transition-transform ${isExpanded ? 'rotate-180' : ''}`} 
-                                fill="none" 
-                                stroke="currentColor" 
-                                viewBox="0 0 24 24"
-                              >
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                              </svg>
-                            </button>
-                          </div>
-                          
-                          {isExpanded && (
-                            <div className="px-4 pb-4 border-t border-gray-100">
-                              <div className="mt-3 space-y-2">
-                                {phaseSubtests.map((subtest) => (
-                                  <div key={subtest.id} className="flex items-center space-x-3 py-2">
-                                    <div className="w-4"></div> {/* Indent for hierarchy */}
-                                    <div className="flex-1">
-                                      <div className="flex items-center justify-between">
-                                        <span className="text-sm text-gray-700">{subtest.name}</span>
-                                        <span className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded">
-                                          {subtest.phase}
-                                        </span>
-                                      </div>
-                                      <p className="text-xs text-gray-500 mt-1">{subtest.description}</p>
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      )
-                    })}
-
-                    {/* Other Section - Individual Subtest Selection */}
-                    <div className="border border-gray-200 rounded-lg">
-                      <div className="flex items-center justify-between p-4">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-4"></div> {/* No checkbox for Other header */}
-                          <label className="text-sm font-medium text-gray-900">
-                            Other
-                          </label>
-                          <span className="text-xs text-gray-500">
-                            (individual subtest selection)
-                          </span>
-                        </div>
-                        
-                        <button
-                          onClick={() => togglePhaseExpansion('Other')}
-                          className="p-1 hover:bg-gray-100 rounded"
-                        >
-                          <svg 
-                            className={`w-4 h-4 text-gray-500 transition-transform ${expandedPhases.includes('Other') ? 'rotate-180' : ''}`} 
-                            fill="none" 
-                            stroke="currentColor" 
-                            viewBox="0 0 24 24"
-                          >
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                          </svg>
-                        </button>
-                      </div>
-                      
-                      {expandedPhases.includes('Other') && (
-                        <div className="px-4 pb-4 border-t border-gray-100">
-                          <div className="mt-3 space-y-2">
-                            {SUBTESTS.map((subtest) => (
-                              <div key={subtest.id} className="flex items-center space-x-3 py-2">
-                                <input
-                                  type="checkbox"
-                                  id={`subtest-${subtest.id}`}
-                                  checked={selectedSubtests.includes(subtest.id)}
-                                  onChange={() => handleSubtestToggle(subtest.id)}
-                                  className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                                />
-                                <div className="flex-1">
-                                  <div className="flex items-center justify-between">
-                                    <label htmlFor={`subtest-${subtest.id}`} className="text-sm text-gray-700 cursor-pointer">
-                                      {subtest.name}
-                                    </label>
-                                    <span className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded">
-                                      {subtest.phase}
-                                    </span>
-                                  </div>
-                                  <p className="text-xs text-gray-500 mt-1">{subtest.description}</p>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
+                  {/* Select/Deselect All Controls */}
+                  <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-200">
+                    <div className="flex space-x-3">
+                      <button
+                        onClick={selectAllSubtests}
+                        className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
+                      >
+                        Select All{searchTerm ? ' (filtered)' : ''}
+                      </button>
+                      <button
+                        onClick={deselectAllSubtests}
+                        className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
+                      >
+                        Deselect All{searchTerm ? ' (filtered)' : ''}
+                      </button>
+                    </div>
+                    <div className="text-sm text-gray-600">
+                      {selectedSubtests.length} selected
                     </div>
                   </div>
 
-                  {selectedSubtests.length > 0 && (
-                    <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-                      <p className="text-sm text-blue-800">
-                        <strong>{selectedSubtests.length} subtest{selectedSubtests.length !== 1 ? 's' : ''}</strong> selected
-                        {selectedPhases.length > 0 && (
-                          <span> across <strong>{selectedPhases.length} phase{selectedPhases.length !== 1 ? 's' : ''}</strong></span>
-                        )}
-                      </p>
-                    </div>
-                  )}
+                  {/* Simple flat list of all subtests - Fixed height to leave room for button */}
+                  <div className="space-y-2 h-64 overflow-y-auto border border-gray-200 rounded-lg mb-4">
+                    {SUBTESTS
+                      .filter(subtest => 
+                        !searchTerm || 
+                        subtest.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        subtest.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        subtest.phase.toLowerCase().includes(searchTerm.toLowerCase())
+                      )
+                      .map((subtest) => (
+                        <div key={subtest.id} className="flex items-center space-x-3 p-4 hover:bg-gray-50 border-b border-gray-100 last:border-b-0">
+                          <input
+                            type="checkbox"
+                            id={`subtest-${subtest.id}`}
+                            checked={selectedSubtests.includes(subtest.id)}
+                            onChange={() => handleSubtestToggle(subtest.id)}
+                            className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          />
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between mb-1">
+                              <label htmlFor={`subtest-${subtest.id}`} className="text-sm font-medium text-gray-900 cursor-pointer">
+                                {subtest.name}
+                              </label>
+                              <span className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded-full">
+                                {subtest.phase}
+                              </span>
+                            </div>
+                            <p className="text-xs text-gray-600">{subtest.description}</p>
+                          </div>
+                        </div>
+                      ))
+                    }
+                    {SUBTESTS.filter(subtest => 
+                        !searchTerm || 
+                        subtest.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        subtest.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        subtest.phase.toLowerCase().includes(searchTerm.toLowerCase())
+                      ).length === 0 && (
+                      <div className="p-4 text-center text-gray-500">
+                        No subtests match your search.
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Selection summary - always visible */}
+                  <div className="p-3 bg-blue-50 rounded-lg">
+                    <p className="text-sm text-blue-800">
+                      <strong>{selectedSubtests.length} subtest{selectedSubtests.length !== 1 ? 's' : ''}</strong> selected for assessment
+                    </p>
+                  </div>
                 </div>
               )}
             </div>
@@ -1068,7 +1030,7 @@ export default function StudentProfile() {
                       (assessmentStep === 3 && !englishLearningStart) ||
                       (assessmentStep === 4 && (!schoolStart || !usSchoolStart || !englishLearningGaps))
                     }
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                    className="px-4 py-2 bg-blue-900 text-white rounded-lg font-medium hover:bg-blue-800 disabled:bg-gray-300 disabled:cursor-not-allowed"
                   >
                     Next
                   </button>
