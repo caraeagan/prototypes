@@ -207,6 +207,8 @@ function ExaminerInterfaceContent() {
                     window.location.href = `/examiner/analogies?session=${sessionId}`
                   } else if (tests.includes("pattern-reasoning")) {
                     window.location.href = `/examiner/pattern-reasoning?session=${sessionId}`
+                  } else if (tests.includes("math-concepts-applications")) {
+                    window.location.href = `/examiner/math-concepts?session=${sessionId}`
                   }
                 }}
                 className="px-6 py-3 bg-blue-900 text-white rounded-lg font-medium hover:bg-blue-800"

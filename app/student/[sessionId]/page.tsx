@@ -63,6 +63,8 @@ export default function StudentInterface() {
           window.location.href = `/student/${sessionId}/analogies`
         } else if (selectedTests?.includes("pattern-reasoning")) {
           window.location.href = `/student/${sessionId}/pattern-reasoning`
+        } else if (selectedTests?.includes("math-concepts-applications")) {
+          window.location.href = `/student/${sessionId}/math-concepts`
         }
       }
     }
