@@ -202,145 +202,131 @@ function ExaminerMathConceptsContent() {
             <div className="border-2 border-blue-500 rounded-lg p-1 bg-blue-100">
               <div className="text-xs font-semibold text-blue-700 mb-2 px-2">STUDENT VIEW</div>
               <div className="bg-white rounded p-6">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
                   {/* Question Section */}
                   <div className="space-y-6">
-                    <h3 className="text-xl font-bold text-gray-900">
+                    <h3 className="text-3xl font-bold text-gray-900 leading-relaxed">
                       {currentQuestionData.question}
                     </h3>
-                    
-                    {/* Answer Display */}
-                    <div className="space-y-4">
-                      <label className="block text-sm font-medium text-gray-700">
-                        Your Answer:
-                      </label>
-                      <div className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-lg">
-                        {studentAnswer || "No answer entered"}
-                      </div>
-                    </div>
                   </div>
 
                   {/* Calculator Section */}
-                  <div className="space-y-4">
-                    <h4 className="text-lg font-semibold text-gray-900">Calculator</h4>
-                    
-                    <div className="bg-slate-800 rounded-t-3xl rounded-b-2xl shadow-2xl p-4 w-80" style={{background: 'linear-gradient(145deg, #1e293b, #0f172a)'}}>
-                      
-                      {/* Screen */}
-                      <div className="bg-gray-800 rounded-lg p-2 mb-2 border-2 border-gray-700">
-                        <div className="bg-blue-950 text-white font-mono p-3 rounded min-h-[80px] flex flex-col justify-end">
-                          <div className="text-right break-all overflow-hidden" style={{
-                            fontSize: '1.5rem'
+                  <div className="flex justify-center">
+                    <div className="space-y-4">
+                      {/* Answer Output Box */}
+                      <div className="bg-white rounded-lg p-4 border border-gray-300 w-96">
+                        <div className="text-center font-lexend text-black min-h-[60px] flex items-center justify-center">
+                          <div className="text-4xl font-semibold break-all overflow-hidden" style={{
+                            fontSize: (studentAnswer || "0").length > 15 ? '1.5rem' : (studentAnswer || "0").length > 10 ? '2rem' : '2.5rem'
                           }}>
                             {studentAnswer || "0"}
                           </div>
                         </div>
                       </div>
+                      
+                      {/* Calculator */}
+                      <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 w-96">
 
-                      {/* Function Keys Row */}
-                      <div className="grid grid-cols-5 gap-2 mb-2">
-                        <div className="bg-gray-600 text-white text-sm py-2 px-2 rounded text-center font-semibold">
-                          CLEAR
-                        </div>
-                        <div className="bg-gray-600 text-white text-sm py-2 px-2 rounded text-center font-semibold">
-                          DEL
-                        </div>
-                        <div className="bg-gray-600 text-white text-sm py-2 px-2 rounded text-center font-semibold">
-                          √
-                        </div>
-                        <div className="bg-gray-600 text-white text-sm py-2 px-2 rounded text-center font-semibold">
-                          x²
-                        </div>
-                        <div className="bg-blue-600 text-white text-sm py-2 px-2 rounded text-center font-semibold">
-                          /
-                        </div>
-                      </div>
+                        {/* Button Grid */}
+                        <div className="grid grid-cols-5 gap-3">
+                          {/* Row 1 - Clear and Functions */}
+                          <div className="bg-orange-400 text-white py-2 rounded-lg font-semibold text-sm text-center">
+                            C
+                          </div>
+                          <div className="bg-orange-400 text-white py-2 rounded-lg font-semibold text-sm text-center">
+                            ⌫
+                          </div>
+                          <div className="bg-purple-400 text-white py-2 rounded-lg font-semibold text-xs text-center">
+                            √
+                          </div>
+                          <div className="bg-purple-400 text-white py-2 rounded-lg font-semibold text-xs text-center">
+                            x²
+                          </div>
+                          <div className="bg-orange-400 text-white py-2 rounded-lg font-semibold text-lg text-center">
+                            ÷
+                          </div>
 
-                      {/* Scientific Functions Row */}
-                      <div className="grid grid-cols-5 gap-2 mb-2">
-                        <div className="bg-gray-600 text-white text-sm py-2 px-2 rounded text-center font-semibold">
-                          ln
-                        </div>
-                        <div className="bg-gray-600 text-white text-sm py-2 px-2 rounded text-center font-semibold">
-                          log
-                        </div>
-                        <div className="bg-gray-600 text-white text-sm py-2 px-2 rounded text-center font-semibold">
-                          sin
-                        </div>
-                        <div className="bg-gray-600 text-white text-sm py-2 px-2 rounded text-center font-semibold">
-                          cos
-                        </div>
-                        <div className="bg-blue-600 text-white text-sm py-2 px-2 rounded text-center font-semibold">
-                          *
-                        </div>
-                      </div>
+                          {/* Row 2 - Trig Functions */}
+                          <div className="bg-purple-400 text-white py-2 rounded-lg font-semibold text-xs text-center">
+                            sin
+                          </div>
+                          <div className="bg-purple-400 text-white py-2 rounded-lg font-semibold text-xs text-center">
+                            cos
+                          </div>
+                          <div className="bg-purple-400 text-white py-2 rounded-lg font-semibold text-xs text-center">
+                            tan
+                          </div>
+                          <div className="bg-purple-400 text-white py-2 rounded-lg font-semibold text-xs text-center">
+                            log
+                          </div>
+                          <div className="bg-orange-400 text-white py-2 rounded-lg font-semibold text-lg text-center">
+                            ×
+                          </div>
 
-                      {/* More Functions Row */}
-                      <div className="grid grid-cols-5 gap-2 mb-2">
-                        <div className="bg-gray-600 text-white text-sm py-2 px-2 rounded text-center font-semibold">
-                          tan
-                        </div>
-                        <div className="bg-gray-600 text-white text-sm py-2 px-2 rounded text-center font-semibold">
-                          π
-                        </div>
-                        <div className="bg-gray-600 text-white text-sm py-2 px-2 rounded text-center font-semibold">
-                          (
-                        </div>
-                        <div className="bg-gray-600 text-white text-small py-2 px-2 rounded text-center font-semibold">
-                          )
-                        </div>
-                        <div className="bg-blue-600 text-white text-sm py-2 px-2 rounded text-center font-semibold">
-                          -
-                        </div>
-                      </div>
+                          {/* Row 3 - Numbers 7-9 */}
+                          <div className="bg-gray-200 text-black py-2 rounded-lg font-semibold text-lg text-center">
+                            7
+                          </div>
+                          <div className="bg-gray-200 text-black py-2 rounded-lg font-semibold text-lg text-center">
+                            8
+                          </div>
+                          <div className="bg-gray-200 text-black py-2 rounded-lg font-semibold text-lg text-center">
+                            9
+                          </div>
+                          <div className="bg-purple-400 text-white py-2 rounded-lg font-semibold text-xs text-center">
+                            ln
+                          </div>
+                          <div className="bg-orange-400 text-white py-2 rounded-lg font-semibold text-lg text-center">
+                            -
+                          </div>
 
-                      {/* Number Pad */}
-                      <div className="grid grid-cols-4 gap-2">
-                        {/* Row 1 */}
-                        <div className="bg-gray-300 text-black py-2 px-3 rounded font-bold text-lg text-center">
-                          7
-                        </div>
-                        <div className="bg-gray-300 text-black py-2 px-3 rounded font-bold text-lg text-center">
-                          8
-                        </div>
-                        <div className="bg-gray-300 text-black py-2 px-3 rounded font-bold text-lg text-center">
-                          9
-                        </div>
-                        <div className="bg-blue-600 text-white py-2 px-3 rounded font-bold text-lg text-center">
-                          +
-                        </div>
+                          {/* Row 4 - Numbers 4-6 */}
+                          <div className="bg-gray-200 text-black py-2 rounded-lg font-semibold text-lg text-center">
+                            4
+                          </div>
+                          <div className="bg-gray-200 text-black py-2 rounded-lg font-semibold text-lg text-center">
+                            5
+                          </div>
+                          <div className="bg-gray-200 text-black py-2 rounded-lg font-semibold text-lg text-center">
+                            6
+                          </div>
+                          <div className="bg-purple-400 text-white py-2 rounded-lg font-semibold text-sm text-center">
+                            π
+                          </div>
+                          <div className="bg-orange-400 text-white py-2 rounded-lg font-semibold text-lg text-center">
+                            +
+                          </div>
 
-                        {/* Row 2 */}
-                        <div className="bg-gray-300 text-black py-2 px-3 rounded font-bold text-lg text-center">
-                          4
-                        </div>
-                        <div className="bg-gray-300 text-black py-2 px-3 rounded font-bold text-lg text-center">
-                          5
-                        </div>
-                        <div className="bg-gray-300 text-black py-2 px-3 rounded font-bold text-lg text-center">
-                          6
-                        </div>
-                        <div className="bg-green-600 text-white py-2 px-3 rounded font-bold text-lg row-span-2 text-center">
-                          =
-                        </div>
+                          {/* Row 5 - Numbers 1-3 */}
+                          <div className="bg-gray-200 text-black py-2 rounded-lg font-semibold text-lg text-center">
+                            1
+                          </div>
+                          <div className="bg-gray-200 text-black py-2 rounded-lg font-semibold text-lg text-center">
+                            2
+                          </div>
+                          <div className="bg-gray-200 text-black py-2 rounded-lg font-semibold text-lg text-center">
+                            3
+                          </div>
+                          <div className="bg-purple-400 text-white py-2 rounded-lg font-semibold text-sm text-center">
+                            e
+                          </div>
+                          <div className="bg-blue-500 text-white py-2 rounded-lg font-semibold text-lg text-center">
+                            =
+                          </div>
 
-                        {/* Row 3 */}
-                        <div className="bg-gray-300 text-black py-2 px-3 rounded font-bold text-lg text-center">
-                          1
-                        </div>
-                        <div className="bg-gray-300 text-black py-2 px-3 rounded font-bold text-lg text-center">
-                          2
-                        </div>
-                        <div className="bg-gray-300 text-black py-2 px-3 rounded font-bold text-lg text-center">
-                          3
-                        </div>
-
-                        {/* Row 4 */}
-                        <div className="col-span-2 bg-gray-300 text-black py-2 px-3 rounded font-bold text-lg text-center">
-                          0
-                        </div>
-                        <div className="bg-gray-300 text-black py-2 px-3 rounded font-bold text-lg text-center">
-                          .
+                          {/* Row 6 - 0 and special */}
+                          <div className="bg-gray-200 text-black py-2 rounded-lg font-semibold text-lg text-center">
+                            (
+                          </div>
+                          <div className="bg-gray-200 text-black py-2 rounded-lg font-semibold text-lg text-center">
+                            0
+                          </div>
+                          <div className="bg-gray-200 text-black py-2 rounded-lg font-semibold text-lg text-center">
+                            )
+                          </div>
+                          <div className="bg-gray-200 text-black py-2 rounded-lg font-semibold text-lg text-center">
+                            .
+                          </div>
                         </div>
                       </div>
                     </div>

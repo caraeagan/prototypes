@@ -12,6 +12,7 @@ interface Student {
   lastName: string
   grade: string
   age: string
+  languageType: 'multilingual' | 'monolingual'
   createdAt: string
   sessionId?: string
   completedSubtests: string[]
@@ -321,16 +322,17 @@ export default function StudentProfile() {
   }
 
   const getAvailablePhases = () => {
-    if (!student || !languageType) return []
+    if (!student) return []
 
     const grade = student.grade.toLowerCase()
     const isPreschoolOrNoSchool = grade === 'k' || grade === 'ps' || grade === 'no school'
+    const studentLanguageType = student.languageType
 
     // Filter logic based on requirements
-    if (languageType === 'MUL') {
+    if (studentLanguageType === 'multilingual') {
       // Multilingual: pp1 and pp2
       return ['Pilot: Phase 1', 'Pilot: Phase 2']
-    } else if (languageType === 'MON') {
+    } else if (studentLanguageType === 'monolingual') {
       if (isPreschoolOrNoSchool) {
         // Monolingual (no school/PS): pp1 and pp2
         return ['Pilot: Phase 1', 'Pilot: Phase 2']
@@ -422,8 +424,13 @@ export default function StudentProfile() {
 
   const resetAssessmentModal = () => {
     setShowStartAssessmentModal(false)
-    setAssessmentStep(1)
-    setLanguageType(null)
+    // Start at different steps based on student's language type
+    if (student?.languageType === 'monolingual') {
+      setAssessmentStep(5) // Skip to phase selection for monolingual
+      setTimeout(autoSelectPhases, 0)
+    } else {
+      setAssessmentStep(2) // Start MUL questionnaire for multilingual
+    }
     setSelectedSubtests([])
     setSelectedPhases([])
     setExpandedPhases([])
@@ -437,14 +444,7 @@ export default function StudentProfile() {
   }
 
   const handleNextStep = () => {
-    if (assessmentStep === 1 && languageType) {
-      if (languageType === 'MON') {
-        setAssessmentStep(5) // Skip to phase selection for monolingual
-        setTimeout(autoSelectPhases, 0) // Auto-select phases after state updates
-      } else {
-        setAssessmentStep(2) // Start MUL questionnaire
-      }
-    } else if (assessmentStep === 2 && respondent) {
+    if (assessmentStep === 2 && respondent) {
       setAssessmentStep(3)
     } else if (assessmentStep === 3 && englishLearningStart) {
       setAssessmentStep(4)
@@ -772,42 +772,6 @@ export default function StudentProfile() {
             </div>
             
             <div className="px-6 py-4 space-y-6">
-              {/* Step 1: Language Type */}
-              {assessmentStep === 1 && (
-                <div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-4">Language Background</h3>
-                  <p className="text-gray-600 mb-4">Is the student multilingual or monolingual?</p>
-                  
-                  <div className="space-y-3">
-                    <div className="flex items-center space-x-3">
-                      <input
-                        type="radio"
-                        id="mul"
-                        name="languageType"
-                        checked={languageType === 'MUL'}
-                        onChange={() => setLanguageType('MUL')}
-                        className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
-                      />
-                      <label htmlFor="mul" className="text-sm font-medium text-gray-900">
-                        MUL - Multilingual
-                      </label>
-                    </div>
-                    <div className="flex items-center space-x-3">
-                      <input
-                        type="radio"
-                        id="mon"
-                        name="languageType"
-                        checked={languageType === 'MON'}
-                        onChange={() => setLanguageType('MON')}
-                        className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
-                      />
-                      <label htmlFor="mon" className="text-sm font-medium text-gray-900">
-                        MON - Monolingual
-                      </label>
-                    </div>
-                  </div>
-                </div>
-              )}
 
               {/* Step 2: Respondent Information (MUL only) */}
               {assessmentStep === 2 && (
@@ -1012,7 +976,7 @@ export default function StudentProfile() {
               </button>
               
               <div className="flex space-x-3">
-                {assessmentStep > 1 && assessmentStep < 5 && (
+                {assessmentStep > 2 && assessmentStep < 5 && (
                   <button
                     onClick={() => setAssessmentStep(assessmentStep - 1)}
                     className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-400"
@@ -1025,7 +989,6 @@ export default function StudentProfile() {
                   <button
                     onClick={handleNextStep}
                     disabled={
-                      (assessmentStep === 1 && !languageType) ||
                       (assessmentStep === 2 && !respondent) ||
                       (assessmentStep === 3 && !englishLearningStart) ||
                       (assessmentStep === 4 && (!schoolStart || !usSchoolStart || !englishLearningGaps))
