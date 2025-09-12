@@ -224,44 +224,124 @@ function ExaminerMathConceptsContent() {
                   <div className="space-y-4">
                     <h4 className="text-lg font-semibold text-gray-900">Calculator</h4>
                     
-                    <div className="bg-white rounded-lg shadow-md p-4 border">
-                      {/* Calculator Display */}
-                      <div className="mb-4">
-                        <div className="w-full h-16 bg-gray-100 border border-gray-300 rounded-lg flex items-center justify-end px-4">
-                          <span className="text-2xl font-mono text-gray-900">0</span>
+                    <div className="bg-slate-800 rounded-t-3xl rounded-b-2xl shadow-2xl p-4 w-80" style={{background: 'linear-gradient(145deg, #1e293b, #0f172a)'}}>
+                      
+                      {/* Screen */}
+                      <div className="bg-gray-800 rounded-lg p-2 mb-2 border-2 border-gray-700">
+                        <div className="bg-blue-950 text-white font-mono p-3 rounded min-h-[80px] flex flex-col justify-end">
+                          <div className="text-right break-all overflow-hidden" style={{
+                            fontSize: '1.5rem'
+                          }}>
+                            {studentAnswer || "0"}
+                          </div>
                         </div>
                       </div>
 
-                      {/* Calculator Buttons */}
-                      <div className="grid grid-cols-4 gap-2">
-                        <div className="col-span-2 bg-red-500 text-white p-3 rounded-lg font-semibold text-center text-sm">
-                          Clear
+                      {/* Function Keys Row */}
+                      <div className="grid grid-cols-5 gap-2 mb-2">
+                        <div className="bg-gray-600 text-white text-sm py-2 px-2 rounded text-center font-semibold">
+                          CLEAR
                         </div>
-                        <div className="bg-gray-300 text-gray-700 p-3 rounded-lg font-semibold text-center">
+                        <div className="bg-gray-600 text-white text-sm py-2 px-2 rounded text-center font-semibold">
                           DEL
                         </div>
-                        <div className="bg-blue-500 text-white p-3 rounded-lg font-semibold text-center">
+                        <div className="bg-gray-600 text-white text-sm py-2 px-2 rounded text-center font-semibold">
+                          √
+                        </div>
+                        <div className="bg-gray-600 text-white text-sm py-2 px-2 rounded text-center font-semibold">
+                          x²
+                        </div>
+                        <div className="bg-blue-600 text-white text-sm py-2 px-2 rounded text-center font-semibold">
                           /
                         </div>
+                      </div>
 
-                        <div className="bg-gray-200 text-gray-900 p-3 rounded-lg font-semibold text-center">7</div>
-                        <div className="bg-gray-200 text-gray-900 p-3 rounded-lg font-semibold text-center">8</div>
-                        <div className="bg-gray-200 text-gray-900 p-3 rounded-lg font-semibold text-center">9</div>
-                        <div className="bg-blue-500 text-white p-3 rounded-lg font-semibold text-center">*</div>
+                      {/* Scientific Functions Row */}
+                      <div className="grid grid-cols-5 gap-2 mb-2">
+                        <div className="bg-gray-600 text-white text-sm py-2 px-2 rounded text-center font-semibold">
+                          ln
+                        </div>
+                        <div className="bg-gray-600 text-white text-sm py-2 px-2 rounded text-center font-semibold">
+                          log
+                        </div>
+                        <div className="bg-gray-600 text-white text-sm py-2 px-2 rounded text-center font-semibold">
+                          sin
+                        </div>
+                        <div className="bg-gray-600 text-white text-sm py-2 px-2 rounded text-center font-semibold">
+                          cos
+                        </div>
+                        <div className="bg-blue-600 text-white text-sm py-2 px-2 rounded text-center font-semibold">
+                          *
+                        </div>
+                      </div>
 
-                        <div className="bg-gray-200 text-gray-900 p-3 rounded-lg font-semibold text-center">4</div>
-                        <div className="bg-gray-200 text-gray-900 p-3 rounded-lg font-semibold text-center">5</div>
-                        <div className="bg-gray-200 text-gray-900 p-3 rounded-lg font-semibold text-center">6</div>
-                        <div className="bg-blue-500 text-white p-3 rounded-lg font-semibold text-center">-</div>
+                      {/* More Functions Row */}
+                      <div className="grid grid-cols-5 gap-2 mb-2">
+                        <div className="bg-gray-600 text-white text-sm py-2 px-2 rounded text-center font-semibold">
+                          tan
+                        </div>
+                        <div className="bg-gray-600 text-white text-sm py-2 px-2 rounded text-center font-semibold">
+                          π
+                        </div>
+                        <div className="bg-gray-600 text-white text-sm py-2 px-2 rounded text-center font-semibold">
+                          (
+                        </div>
+                        <div className="bg-gray-600 text-white text-small py-2 px-2 rounded text-center font-semibold">
+                          )
+                        </div>
+                        <div className="bg-blue-600 text-white text-sm py-2 px-2 rounded text-center font-semibold">
+                          -
+                        </div>
+                      </div>
 
-                        <div className="bg-gray-200 text-gray-900 p-3 rounded-lg font-semibold text-center">1</div>
-                        <div className="bg-gray-200 text-gray-900 p-3 rounded-lg font-semibold text-center">2</div>
-                        <div className="bg-gray-200 text-gray-900 p-3 rounded-lg font-semibold text-center">3</div>
-                        <div className="bg-blue-500 text-white p-3 rounded-lg font-semibold text-center">+</div>
+                      {/* Number Pad */}
+                      <div className="grid grid-cols-4 gap-2">
+                        {/* Row 1 */}
+                        <div className="bg-gray-300 text-black py-2 px-3 rounded font-bold text-lg text-center">
+                          7
+                        </div>
+                        <div className="bg-gray-300 text-black py-2 px-3 rounded font-bold text-lg text-center">
+                          8
+                        </div>
+                        <div className="bg-gray-300 text-black py-2 px-3 rounded font-bold text-lg text-center">
+                          9
+                        </div>
+                        <div className="bg-blue-600 text-white py-2 px-3 rounded font-bold text-lg text-center">
+                          +
+                        </div>
 
-                        <div className="col-span-2 bg-gray-200 text-gray-900 p-3 rounded-lg font-semibold text-center">0</div>
-                        <div className="bg-gray-200 text-gray-900 p-3 rounded-lg font-semibold text-center">.</div>
-                        <div className="bg-green-500 text-white p-3 rounded-lg font-semibold text-center">=</div>
+                        {/* Row 2 */}
+                        <div className="bg-gray-300 text-black py-2 px-3 rounded font-bold text-lg text-center">
+                          4
+                        </div>
+                        <div className="bg-gray-300 text-black py-2 px-3 rounded font-bold text-lg text-center">
+                          5
+                        </div>
+                        <div className="bg-gray-300 text-black py-2 px-3 rounded font-bold text-lg text-center">
+                          6
+                        </div>
+                        <div className="bg-green-600 text-white py-2 px-3 rounded font-bold text-lg row-span-2 text-center">
+                          =
+                        </div>
+
+                        {/* Row 3 */}
+                        <div className="bg-gray-300 text-black py-2 px-3 rounded font-bold text-lg text-center">
+                          1
+                        </div>
+                        <div className="bg-gray-300 text-black py-2 px-3 rounded font-bold text-lg text-center">
+                          2
+                        </div>
+                        <div className="bg-gray-300 text-black py-2 px-3 rounded font-bold text-lg text-center">
+                          3
+                        </div>
+
+                        {/* Row 4 */}
+                        <div className="col-span-2 bg-gray-300 text-black py-2 px-3 rounded font-bold text-lg text-center">
+                          0
+                        </div>
+                        <div className="bg-gray-300 text-black py-2 px-3 rounded font-bold text-lg text-center">
+                          .
+                        </div>
                       </div>
                     </div>
                   </div>
