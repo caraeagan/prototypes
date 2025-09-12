@@ -8,6 +8,7 @@ interface Student {
   lastName: string
   grade: string
   age: string
+  languageType: 'multilingual' | 'monolingual'
   createdAt: string
   sessionId?: string
   completedSubtests: string[]
@@ -53,6 +54,7 @@ export default function Dashboard() {
   const [lastName, setLastName] = useState("")
   const [grade, setGrade] = useState("")
   const [age, setAge] = useState("")
+  const [languageType, setLanguageType] = useState("")
 
   // Load students from localStorage on mount
   useEffect(() => {
@@ -157,7 +159,7 @@ export default function Dashboard() {
   }
 
   const handleAddStudent = () => {
-    if (!firstName.trim() || !lastName.trim() || !grade || !age) {
+    if (!firstName.trim() || !lastName.trim() || !grade || !age || !languageType) {
       alert("Please fill in all student information")
       return
     }
@@ -168,6 +170,7 @@ export default function Dashboard() {
       lastName: lastName.trim(),
       grade,
       age,
+      languageType: languageType as 'multilingual' | 'monolingual',
       createdAt: new Date().toISOString(),
       completedSubtests: [],
       testStatus: 'not-started',
@@ -182,6 +185,7 @@ export default function Dashboard() {
     setLastName("")
     setGrade("")
     setAge("")
+    setLanguageType("")
     setShowAddForm(false)
   }
 
@@ -221,7 +225,8 @@ export default function Dashboard() {
       firstName: selectedStudent.firstName,
       lastName: selectedStudent.lastName,
       grade: selectedStudent.grade,
-      age: selectedStudent.age
+      age: selectedStudent.age,
+      languageType: selectedStudent.languageType
     }))
 
     // Navigate to examiner interface
@@ -240,7 +245,8 @@ export default function Dashboard() {
       firstName: student.firstName,
       lastName: student.lastName,
       grade: student.grade,
-      age: student.age
+      age: student.age,
+      languageType: student.languageType
     }))
 
     // Navigate to examiner interface
@@ -301,7 +307,7 @@ export default function Dashboard() {
                             {student.firstName} {student.lastName}
                           </h3>
                           <p className="text-sm text-gray-500">
-                            Grade {student.grade} • Age {student.age} {student.assignedSubtests.length > 0 ? `• ${student.assignedSubtests.length} subtest${student.assignedSubtests.length !== 1 ? 's' : ''} assigned` : ''}
+                            Grade {student.grade} • Age {student.age} • {student.languageType || 'Unknown'} {student.assignedSubtests.length > 0 ? `• ${student.assignedSubtests.length} subtest${student.assignedSubtests.length !== 1 ? 's' : ''} assigned` : ''}
                           </p>
                         </button>
                         
@@ -428,6 +434,22 @@ export default function Dashboard() {
                     ))}
                   </select>
                 </div>
+
+                <div>
+                  <label htmlFor="languageType" className="block text-sm font-medium text-gray-700 mb-1">
+                    Language Type
+                  </label>
+                  <select
+                    id="languageType"
+                    value={languageType}
+                    onChange={(e) => setLanguageType(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
+                  >
+                    <option value="">Select Language Type</option>
+                    <option value="monolingual">Monolingual</option>
+                    <option value="multilingual">Multilingual</option>
+                  </select>
+                </div>
               </div>
 
             </div>
@@ -440,6 +462,7 @@ export default function Dashboard() {
                   setLastName("")
                   setGrade("")
                   setAge("")
+                  setLanguageType("")
                   setSelectedSubtests([])
                 }}
                 className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-400"
@@ -448,7 +471,7 @@ export default function Dashboard() {
               </button>
               <button
                 onClick={handleAddStudent}
-                disabled={!firstName.trim() || !lastName.trim() || !grade || !age}
+                disabled={!firstName.trim() || !lastName.trim() || !grade || !age || !languageType}
                 className="px-4 py-2 bg-blue-900 text-white rounded-lg font-medium hover:bg-blue-800 disabled:bg-gray-300 disabled:cursor-not-allowed"
               >
                 Add Student
@@ -488,6 +511,10 @@ export default function Dashboard() {
                 <div>
                   <span className="text-gray-500">Age:</span>
                   <p className="font-medium">{selectedStudent.age} years old</p>
+                </div>
+                <div>
+                  <span className="text-gray-500">Language Type:</span>
+                  <p className="font-medium capitalize">{selectedStudent.languageType || 'Unknown'}</p>
                 </div>
                 <div>
                   <span className="text-gray-500">Added:</span>
