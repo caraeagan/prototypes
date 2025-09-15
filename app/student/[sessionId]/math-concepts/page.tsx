@@ -214,6 +214,16 @@ export default function StudentMathConceptsTest() {
               <h2 className="text-3xl font-bold text-gray-900 leading-relaxed">
                 {question.question}
               </h2>
+              
+              {/* Answer Field */}
+              <div className="space-y-4">
+                <label className="block text-sm font-medium text-gray-700">
+                  Your Answer:
+                </label>
+                <div className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-lg font-lexend">
+                  {calculatorDisplay === "0" ? "" : calculatorDisplay}
+                </div>
+              </div>
             </div>
 
             {/* Calculator Section */}
