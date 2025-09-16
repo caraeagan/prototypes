@@ -882,8 +882,71 @@ export default function StudentPatternReasoning() {
     )
   }
 
-  // Render shape based on type, color, and size
+  // Render complete SVG tile with background and border
+  const renderSVGTile = (item: any, isQuestionMark = false, isSelected = false, size = 'large') => {
+    const tileSize = size === 'small' ? 80 : 96 // w-20 h-20 (80px) or w-24 h-24 (96px)
+    const borderWidth = 2
+    const cornerRadius = 12
+    
+    // Determine tile colors based on state
+    let fillColor = '#FFFFFF'
+    let strokeColor = '#D1D5DB'
+    let strokeDashArray = ''
+    
+    if (isQuestionMark && !item) {
+      fillColor = '#DBEAFE'
+      strokeColor = '#1E3A8A'
+      strokeDashArray = '5,5'
+    } else if (isSelected) {
+      fillColor = '#DBEAFE'
+      strokeColor = '#1E3A8A'
+    }
+    
+    return (
+      <svg width={tileSize} height={tileSize} className="shadow-sm">
+        {/* Tile background and border */}
+        <rect
+          x={borderWidth / 2}
+          y={borderWidth / 2}
+          width={tileSize - borderWidth}
+          height={tileSize - borderWidth}
+          rx={cornerRadius}
+          ry={cornerRadius}
+          fill={fillColor}
+          stroke={strokeColor}
+          strokeWidth={borderWidth}
+          strokeDasharray={strokeDashArray}
+        />
+        
+        {/* Shape content */}
+        {item ? (
+          <g transform={`translate(${tileSize / 2}, ${tileSize / 2})`}>
+            {renderShapeContent(item)}
+          </g>
+        ) : isQuestionMark ? (
+          <text
+            x={tileSize / 2}
+            y={tileSize / 2}
+            textAnchor="middle"
+            dominantBaseline="central"
+            fontSize="32"
+            fontWeight="bold"
+            fill="#1E3A8A"
+          >
+            ?
+          </text>
+        ) : null}
+      </svg>
+    )
+  }
+
+  // Render shape with original div container (for backward compatibility)
   const renderShape = (item: any) => {
+    return renderShapeContent(item)
+  }
+
+  // Render shape content (without the tile container)
+  const renderShapeContent = (item: any) => {
     const colorMap: {[key: string]: {fill: string, stroke: string}} = {
       'red': { fill: '#DC2626', stroke: '#B91C1C' },
       'blue': { fill: '#2563EB', stroke: '#1D4ED8' },
@@ -950,12 +1013,14 @@ export default function StudentPatternReasoning() {
     }
 
     const commonStyle = {
-      width: '100%',
-      height: '100%',
       display: 'flex',
       alignItems: 'center',
-      justifyContent: 'center'
+      justifyContent: 'center',
+      width: '100%',
+      height: '100%'
     }
+
+    const viewBoxSize = 80
 
     switch (item.shape) {
       case 'circle':
@@ -973,54 +1038,50 @@ export default function StudentPatternReasoning() {
           }
           
           return (
-            <div style={commonStyle}>
-              <svg width="70" height="70" viewBox={`0 0 ${viewBox} ${viewBox}`}>
-                {positions.map((pos, i) => (
-                  <circle 
-                    key={i}
-                    cx={pos.x} 
-                    cy={pos.y} 
-                    r={size / 4}
-                    fill={item.style === 'outline' ? 'none' : colors.fill}
-                    stroke={colors.stroke} 
-                    strokeWidth="2"
-                  />
-                ))}
-              </svg>
-            </div>
+            <>
+              {positions.map((pos, i) => (
+                <circle 
+                  key={i}
+                  cx={pos.x - centerX} 
+                  cy={pos.y - centerY} 
+                  r={size / 4}
+                  fill={item.style === 'outline' ? 'none' : colors.fill}
+                  stroke={colors.stroke} 
+                  strokeWidth="2"
+                />
+              ))}
+            </>
           )
         }
         
         return (
-          <div style={commonStyle}>
-            <svg width="70" height="70" viewBox={`0 0 ${viewBox} ${viewBox}`}>
-              {item.modifier === 'stripe' && (
-                <defs>
-                  <pattern id="stripePatternCircle" patternUnits="userSpaceOnUse" width="4" height="4">
-                    <rect width="4" height="4" fill={colors.fill}/>
-                    <rect width="2" height="4" fill="black"/>
-                  </pattern>
-                </defs>
-              )}
-              <circle 
-                cx={centerX} 
-                cy={centerY} 
-                r={size / 2}
-                fill={item.style === 'outline' ? 'none' : (item.modifier === 'stripe' ? 'url(#stripePatternCircle)' : colors.fill)}
+          <>
+            {item.modifier === 'stripe' && (
+              <defs>
+                <pattern id="stripePatternCircle" patternUnits="userSpaceOnUse" width="4" height="4">
+                  <rect width="4" height="4" fill={colors.fill}/>
+                  <rect width="2" height="4" fill="black"/>
+                </pattern>
+              </defs>
+            )}
+            <circle 
+              cx={0} 
+              cy={0} 
+              r={size / 2}
+              fill={item.style === 'outline' ? 'none' : (item.modifier === 'stripe' ? 'url(#stripePatternCircle)' : colors.fill)}
                 stroke={colors.stroke} 
                 strokeWidth="2"
                 transform={item.reflected ? `scale(-1, 1) translate(${-2 * centerX}, 0)` : undefined}
               />
               {item.modifier === 'dot' && (
                 <circle
-                  cx={centerX}
-                  cy={centerY}
+                  cx={0}
+                  cy={0}
                   r={size / 8}
                   fill="black"
                 />
               )}
-            </svg>
-          </div>
+          </>
         )
 
       case 'square':
@@ -1038,50 +1099,46 @@ export default function StudentPatternReasoning() {
           }
           
           return (
-            <div style={commonStyle}>
-              <svg width="70" height="70" viewBox={`0 0 ${viewBox} ${viewBox}`}>
-                {positions.map((pos, i) => (
-                  <rect 
-                    key={i}
-                    x={pos.x - size/6} 
-                    y={pos.y - size/6} 
-                    width={size/3} 
-                    height={size/3}
-                    fill={item.style === 'outline' ? 'none' : colors.fill}
-                    stroke={colors.stroke} 
-                    strokeWidth="2"
-                    rx="2"
-                  />
-                ))}
-              </svg>
-            </div>
+            <>
+              {positions.map((pos, i) => (
+                <rect 
+                  key={i}
+                  x={pos.x - centerX - size/6} 
+                  y={pos.y - centerY - size/6} 
+                  width={size/3} 
+                  height={size/3}
+                  fill={item.style === 'outline' ? 'none' : colors.fill}
+                  stroke={colors.stroke} 
+                  strokeWidth="2"
+                  rx="2"
+                />
+              ))}
+            </>
           )
         }
         
         return (
-          <div style={commonStyle}>
-            <svg width="70" height="70" viewBox={`0 0 ${viewBox} ${viewBox}`}>
-              {item.modifier === 'stripe' && (
-                <defs>
-                  <pattern id="stripePatternSquare" patternUnits="userSpaceOnUse" width="4" height="4">
-                    <rect width="4" height="4" fill={colors.fill}/>
-                    <rect width="2" height="4" fill="black"/>
-                  </pattern>
-                </defs>
-              )}
-              <rect 
-                x={centerX - size / 2} 
-                y={centerY - size / 2} 
-                width={size} 
-                height={size}
-                fill={item.style === 'outline' ? 'none' : (item.modifier === 'stripe' ? 'url(#stripePatternSquare)' : colors.fill)}
-                stroke={colors.stroke} 
-                strokeWidth="2"
-                rx="3"
-                transform={item.reflected ? `scale(-1, 1) translate(${-2 * centerX}, 0)` : undefined}
-              />
-            </svg>
-          </div>
+          <>
+            {item.modifier === 'stripe' && (
+              <defs>
+                <pattern id="stripePatternSquare" patternUnits="userSpaceOnUse" width="4" height="4">
+                  <rect width="4" height="4" fill={colors.fill}/>
+                  <rect width="2" height="4" fill="black"/>
+                </pattern>
+              </defs>
+            )}
+            <rect 
+              x={-size / 2} 
+              y={-size / 2} 
+              width={size} 
+              height={size}
+              fill={item.style === 'outline' ? 'none' : (item.modifier === 'stripe' ? 'url(#stripePatternSquare)' : colors.fill)}
+              stroke={colors.stroke} 
+              strokeWidth="2"
+              rx="3"
+              transform={item.reflected ? `scale(-1, 1)` : undefined}
+            />
+          </>
         )
 
       case 'triangle':
@@ -1571,36 +1628,27 @@ export default function StudentPatternReasoning() {
                   <div className="grid grid-cols-2 gap-4">
                     {/* Top-left */}
                     <div className="flex flex-col items-center">
-                      <div className="w-24 h-24 border-2 border-gray-300 rounded-xl flex items-center justify-center bg-white shadow-sm">
-                        {renderShape(question.sequence[0])}
-                      </div>
+                      {renderSVGTile(question.sequence[0])}
                     </div>
                     
                     {/* Top-right */}
                     <div className="flex flex-col items-center">
-                      <div className="w-24 h-24 border-2 border-gray-300 rounded-xl flex items-center justify-center bg-white shadow-sm">
-                        {renderShape(question.sequence[1])}
-                      </div>
+                      {renderSVGTile(question.sequence[1])}
                     </div>
                     
                     {/* Bottom-left */}
                     <div className="flex flex-col items-center">
-                      <div className="w-24 h-24 border-2 border-gray-300 rounded-xl flex items-center justify-center bg-white shadow-sm">
-                        {renderShape(question.sequence[2])}
-                      </div>
+                      {renderSVGTile(question.sequence[2])}
                     </div>
                     
                     {/* Bottom-right (question mark) */}
                     <div className="flex flex-col items-center">
-                      <div className="w-24 h-24 border-2 border-dashed border-blue-900 rounded-xl flex items-center justify-center bg-blue-50 shadow-sm">
-                        {answers[currentQuestion]?.answer ? (
-                          renderShape(
-                            question.options.find((opt: any) => opt.id === answers[currentQuestion].answer) || {}
-                          )
-                        ) : (
-                          <span className="text-3xl font-bold text-blue-900">?</span>
-                        )}
-                      </div>
+                      {renderSVGTile(
+                        answers[currentQuestion]?.answer 
+                          ? question.options.find((opt: any) => opt.id === answers[currentQuestion].answer) 
+                          : null,
+                        !answers[currentQuestion]?.answer
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1609,35 +1657,29 @@ export default function StudentPatternReasoning() {
                   <div className="grid grid-cols-3 gap-3">
                     {question.sequence.map((item: any, index: number) => (
                       <div key={index} className="flex flex-col items-center">
-                        <div className={`w-20 h-20 border-2 rounded-xl flex items-center justify-center shadow-sm ${
-                          item === null ? 'border-dashed border-blue-900 bg-blue-50' : 'border-gray-300 bg-white'
-                        }`}>
-                          {item === null ? (
-                            answers[currentQuestion]?.answer ? (
-                              renderShape(
-                                question.options.find((opt: any) => opt.id === answers[currentQuestion].answer) || {}
-                              )
-                            ) : (
-                              <span className="text-2xl font-bold text-blue-900">?</span>
-                            )
-                          ) : (
-                            renderShape(item)
-                          )}
-                        </div>
+                        {renderSVGTile(
+                          item === null ? (
+                            answers[currentQuestion]?.answer 
+                              ? question.options.find((opt: any) => opt.id === answers[currentQuestion].answer) 
+                              : null
+                          ) : item,
+                          item === null && !answers[currentQuestion]?.answer,
+                          false,
+                          'small'
+                        )}
                       </div>
                     ))}
                     {/* Add the missing cell for bottom-right if not already present */}
                     {question.sequence.length === 8 && (
                       <div className="flex flex-col items-center">
-                        <div className="w-20 h-20 border-2 border-dashed border-blue-900 rounded-xl flex items-center justify-center bg-blue-50 shadow-sm">
-                          {answers[currentQuestion]?.answer ? (
-                            renderShape(
-                              question.options.find((opt: any) => opt.id === answers[currentQuestion].answer) || {}
-                            )
-                          ) : (
-                            <span className="text-2xl font-bold text-blue-900">?</span>
-                          )}
-                        </div>
+                        {renderSVGTile(
+                          answers[currentQuestion]?.answer 
+                            ? question.options.find((opt: any) => opt.id === answers[currentQuestion].answer) 
+                            : null,
+                          !answers[currentQuestion]?.answer,
+                          false,
+                          'small'
+                        )}
                       </div>
                     )}
                   </div>
@@ -1647,8 +1689,8 @@ export default function StudentPatternReasoning() {
                 <div className="flex justify-center items-center mb-4 gap-6">
                   {question.sequence.map((step: any, index) => (
                     <div key={index} className="flex flex-col items-center">
-                      <div className="w-24 h-24 border-2 border-gray-300 rounded-xl flex items-center justify-center bg-white shadow-sm mb-2">
-                        {renderShape(step)}
+                      <div className="mb-2">
+                        {renderSVGTile(step)}
                       </div>
                       <p className="text-lg font-bold text-gray-900">{index + 1}</p>
                     </div>
@@ -1656,13 +1698,12 @@ export default function StudentPatternReasoning() {
                   
                   {/* Fourth tile with question mark */}
                   <div className="flex flex-col items-center">
-                    <div className="w-24 h-24 border-2 border-dashed border-blue-900 rounded-xl flex items-center justify-center bg-blue-50 shadow-sm mb-2">
-                      {answers[currentQuestion]?.answer ? (
-                        renderShape(
-                          question.options.find((opt: any) => opt.id === answers[currentQuestion].answer) || {}
-                        )
-                      ) : (
-                        <span className="text-2xl text-blue-900 font-bold">?</span>
+                    <div className="mb-2">
+                      {renderSVGTile(
+                        answers[currentQuestion]?.answer 
+                          ? question.options.find((opt: any) => opt.id === answers[currentQuestion].answer) 
+                          : null,
+                        !answers[currentQuestion]?.answer
                       )}
                     </div>
                     <p className="text-lg font-bold text-gray-900">4</p>
@@ -1682,13 +1723,9 @@ export default function StudentPatternReasoning() {
                     <div key={option.id} className="flex flex-col items-center">
                       <button
                         onClick={() => handleAnswer(option.id)}
-                        className={`w-24 h-24 rounded-xl border-2 transition-all flex items-center justify-center mb-2 ${
-                          answers[currentQuestion]?.answer === option.id
-                            ? "border-blue-900 bg-blue-100"
-                            : "border-gray-300 hover:border-blue-900 hover:bg-blue-50"
-                        }`}
+                        className="transition-all mb-2 hover:scale-105"
                       >
-                        {renderShape(option)}
+                        {renderSVGTile(option, false, answers[currentQuestion]?.answer === option.id)}
                       </button>
                       <p className="text-lg font-bold text-gray-900">{option.id}</p>
                     </div>

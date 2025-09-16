@@ -1,0 +1,27 @@
+
+    <svg width="220" height="220" viewBox="0 0 220 220">
+      <!-- Circle -->
+      <circle cx="110" cy="110" r="60"
+              fill="#F472B6" stroke="#EC4899" stroke-width="3" fill-opacity="0.3"/>
+      
+      
+        <!-- Radius line -->
+        <line x1="110" y1="110" x2="170" y2="110"
+              stroke="#1F2937" stroke-width="2"/>
+        <circle cx="110" cy="110" r="3" fill="#1F2937"/>
+        <circle cx="170" cy="110" r="3" fill="#1F2937"/>
+        
+        <!-- Radius label -->
+        <text x="140" y="100" 
+              text-anchor="middle" font-family="Arial" font-size="14" font-weight="bold" fill="#1F2937">
+          r = 4 inches
+        </text>
+      
+      
+      <!-- Area label -->
+      <text x="110" y="200" 
+            text-anchor="middle" font-family="Arial" font-size="16" font-weight="bold" fill="#1F2937">
+        Area = πr² = π × 4² = ?
+      </text>
+    </svg>
+  

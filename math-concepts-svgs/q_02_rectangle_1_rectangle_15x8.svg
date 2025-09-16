@@ -1,0 +1,62 @@
+
+    <svg width="325" height="220" viewBox="0 0 325 220">
+      <line x1="50" y1="50" x2="50" y2="170" 
+                          stroke="#D1D5DB" stroke-width="1" stroke-dasharray="2,2"/><line x1="65" y1="50" x2="65" y2="170" 
+                          stroke="#D1D5DB" stroke-width="1" stroke-dasharray="2,2"/><line x1="80" y1="50" x2="80" y2="170" 
+                          stroke="#D1D5DB" stroke-width="1" stroke-dasharray="2,2"/><line x1="95" y1="50" x2="95" y2="170" 
+                          stroke="#D1D5DB" stroke-width="1" stroke-dasharray="2,2"/><line x1="110" y1="50" x2="110" y2="170" 
+                          stroke="#D1D5DB" stroke-width="1" stroke-dasharray="2,2"/><line x1="125" y1="50" x2="125" y2="170" 
+                          stroke="#D1D5DB" stroke-width="1" stroke-dasharray="2,2"/><line x1="140" y1="50" x2="140" y2="170" 
+                          stroke="#D1D5DB" stroke-width="1" stroke-dasharray="2,2"/><line x1="155" y1="50" x2="155" y2="170" 
+                          stroke="#D1D5DB" stroke-width="1" stroke-dasharray="2,2"/><line x1="170" y1="50" x2="170" y2="170" 
+                          stroke="#D1D5DB" stroke-width="1" stroke-dasharray="2,2"/><line x1="185" y1="50" x2="185" y2="170" 
+                          stroke="#D1D5DB" stroke-width="1" stroke-dasharray="2,2"/><line x1="200" y1="50" x2="200" y2="170" 
+                          stroke="#D1D5DB" stroke-width="1" stroke-dasharray="2,2"/><line x1="215" y1="50" x2="215" y2="170" 
+                          stroke="#D1D5DB" stroke-width="1" stroke-dasharray="2,2"/><line x1="230" y1="50" x2="230" y2="170" 
+                          stroke="#D1D5DB" stroke-width="1" stroke-dasharray="2,2"/><line x1="245" y1="50" x2="245" y2="170" 
+                          stroke="#D1D5DB" stroke-width="1" stroke-dasharray="2,2"/><line x1="260" y1="50" x2="260" y2="170" 
+                          stroke="#D1D5DB" stroke-width="1" stroke-dasharray="2,2"/><line x1="275" y1="50" x2="275" y2="170" 
+                          stroke="#D1D5DB" stroke-width="1" stroke-dasharray="2,2"/><line x1="50" y1="50" x2="275" y2="50" 
+                          stroke="#D1D5DB" stroke-width="1" stroke-dasharray="2,2"/><line x1="50" y1="65" x2="275" y2="65" 
+                          stroke="#D1D5DB" stroke-width="1" stroke-dasharray="2,2"/><line x1="50" y1="80" x2="275" y2="80" 
+                          stroke="#D1D5DB" stroke-width="1" stroke-dasharray="2,2"/><line x1="50" y1="95" x2="275" y2="95" 
+                          stroke="#D1D5DB" stroke-width="1" stroke-dasharray="2,2"/><line x1="50" y1="110" x2="275" y2="110" 
+                          stroke="#D1D5DB" stroke-width="1" stroke-dasharray="2,2"/><line x1="50" y1="125" x2="275" y2="125" 
+                          stroke="#D1D5DB" stroke-width="1" stroke-dasharray="2,2"/><line x1="50" y1="140" x2="275" y2="140" 
+                          stroke="#D1D5DB" stroke-width="1" stroke-dasharray="2,2"/><line x1="50" y1="155" x2="275" y2="155" 
+                          stroke="#D1D5DB" stroke-width="1" stroke-dasharray="2,2"/><line x1="50" y1="170" x2="275" y2="170" 
+                          stroke="#D1D5DB" stroke-width="1" stroke-dasharray="2,2"/>
+      
+      <!-- Rectangle -->
+      <rect x="50" y="50" width="225" height="120"
+            fill="#93C5FD" stroke="#1D4ED8" stroke-width="3" fill-opacity="0.3"/>
+      
+      
+        <!-- Width dimension -->
+        <g stroke="#1F2937" stroke-width="2" font-family="Arial" font-size="14" font-weight="bold">
+          <line x1="50" y1="30" x2="275" y2="30"/>
+          <line x1="50" y1="25" x2="50" y2="35"/>
+          <line x1="275" y1="25" 
+                x2="275" y2="35"/>
+          <text x="162.5" y="25" 
+                text-anchor="middle" fill="#1F2937">15 feet</text>
+        </g>
+        
+        <!-- Height dimension -->
+        <g stroke="#1F2937" stroke-width="2" font-family="Arial" font-size="14" font-weight="bold">
+          <line x1="30" y1="50" x2="30" y2="170"/>
+          <line x1="25" y1="50" x2="35" y2="50"/>
+          <line x1="25" y1="170" 
+                x2="35" y2="170"/>
+          <text x="15" y="110" 
+                text-anchor="middle" fill="#1F2937" transform="rotate(-90 15 110)">8 feet</text>
+        </g>
+      
+      
+      <!-- Area label -->
+      <text x="162.5" y="110" 
+            text-anchor="middle" font-family="Arial" font-size="16" font-weight="bold" fill="#1F2937">
+        Area = 15 × 8 = ? sq ft
+      </text>
+    </svg>
+  

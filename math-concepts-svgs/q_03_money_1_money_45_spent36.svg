@@ -1,0 +1,52 @@
+
+    <svg width="400" height="200" viewBox="0 0 400 200">
+      <!-- Starting money -->
+      <g transform="translate(20, 20)">
+        <rect x="0" y="0" width="80" height="40" fill="#10B981" stroke="#047857" stroke-width="2" rx="5"/>
+        <text x="40" y="25" text-anchor="middle" font-family="Arial" font-size="14" font-weight="bold" fill="white">
+          $45
+        </text>
+        <text x="40" y="55" text-anchor="middle" font-family="Arial" font-size="12" fill="#374151">
+          Starting Amount
+        </text>
+      </g>
+      
+      <!-- Minus sign -->
+      <text x="120" y="45" font-family="Arial" font-size="24" font-weight="bold" fill="#374151">-</text>
+      
+      <!-- Items purchased -->
+      
+        <g transform="translate(150, 20)">
+          <rect x="0" y="0" width="70" height="40" fill="#EF4444" stroke="#DC2626" stroke-width="2" rx="5"/>
+          <text x="35" y="15" text-anchor="middle" font-family="Arial" font-size="10" font-weight="bold" fill="white">
+            3 books
+          </text>
+          <text x="35" y="30" text-anchor="middle" font-family="Arial" font-size="12" font-weight="bold" fill="white">
+            $36
+          </text>
+          <text x="35" y="55" text-anchor="middle" font-family="Arial" font-size="10" fill="#374151">
+            3 × $12
+          </text>
+        </g>
+      
+      
+      <!-- Equals sign -->
+      <text x="20" y="120" font-family="Arial" font-size="24" font-weight="bold" fill="#374151">=</text>
+      
+      <!-- Result -->
+      <g transform="translate(60, 95)">
+        <rect x="0" y="0" width="80" height="40" fill="#8B5CF6" stroke="#7C3AED" stroke-width="2" rx="5"/>
+        <text x="40" y="25" text-anchor="middle" font-family="Arial" font-size="14" font-weight="bold" fill="white">
+          $9
+        </text>
+        <text x="40" y="55" text-anchor="middle" font-family="Arial" font-size="12" fill="#374151">
+          Money Left
+        </text>
+      </g>
+      
+      <!-- Calculation -->
+      <text x="160" y="115" font-family="Arial" font-size="14" fill="#374151">
+        $45 - $36 = $9
+      </text>
+    </svg>
+  
