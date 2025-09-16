@@ -269,6 +269,7 @@ export default function StudentProfile() {
   const [selectedPhases, setSelectedPhases] = useState<string[]>([])
   const [expandedPhases, setExpandedPhases] = useState<string[]>([])
   const [searchTerm, setSearchTerm] = useState('')
+  const [customSelection, setCustomSelection] = useState(false)
   // MUL questionnaire fields
   const [respondent, setRespondent] = useState('')
   const [englishLearningStart, setEnglishLearningStart] = useState('')
@@ -422,25 +423,30 @@ export default function StudentProfile() {
     }
   }
 
-  const resetAssessmentModal = () => {
-    setShowStartAssessmentModal(false)
-    // Start at different steps based on student's language type
+  const initializeAssessmentModal = () => {
+    // Reset all fields
+    setSelectedSubtests([])
+    setSelectedPhases([])
+    setExpandedPhases([])
+    setSearchTerm('')
+    setRespondent('')
+    setEnglishLearningStart('')
+    setSchoolStart('')
+    setUsSchoolStart('')
+    setEnglishLearningGaps('')
+    
+    // Set step based on student's language type
     if (student?.languageType === 'monolingual') {
       setAssessmentStep(5) // Skip to phase selection for monolingual
       setTimeout(autoSelectPhases, 0)
     } else {
       setAssessmentStep(2) // Start MUL questionnaire for multilingual
     }
-    setSelectedSubtests([])
-    setSelectedPhases([])
-    setExpandedPhases([])
-    setSearchTerm('')
-    // Reset MUL questionnaire fields
-    setRespondent('')
-    setEnglishLearningStart('')
-    setSchoolStart('')
-    setUsSchoolStart('')
-    setEnglishLearningGaps('')
+  }
+
+  const resetAssessmentModal = () => {
+    setShowStartAssessmentModal(false)
+    initializeAssessmentModal()
   }
 
   const handleNextStep = () => {
@@ -568,7 +574,10 @@ export default function StudentProfile() {
                  'Not Started'}
               </div>
               <button
-                onClick={() => setShowStartAssessmentModal(true)}
+                onClick={() => {
+                  initializeAssessmentModal()
+                  setShowStartAssessmentModal(true)
+                }}
                 className="px-4 py-2 bg-green-600 text-white text-sm rounded-lg font-medium hover:bg-green-700"
               >
                 Start Assessment

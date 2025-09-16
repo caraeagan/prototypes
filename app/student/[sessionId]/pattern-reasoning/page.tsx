@@ -13,7 +13,7 @@ const QUESTION_GROUPS = {
       {
         id: 1,
         ageGroup: "2.5-3.5",
-        type: "color_pattern",
+        type: "repetition_pattern",
         question: "What comes next in the pattern?",
         sequence: [
           { color: "red", shape: "circle", label: "Red circle" },
@@ -30,7 +30,7 @@ const QUESTION_GROUPS = {
       {
         id: 2,
         ageGroup: "2.5-3.5",
-        type: "color_pattern",
+        type: "repetition_pattern",
         question: "What comes next in the pattern?",
         sequence: [
           { color: "blue", shape: "square", label: "Blue square" },
@@ -47,85 +47,85 @@ const QUESTION_GROUPS = {
       {
         id: 3,
         ageGroup: "2.5-3.5",
-        type: "color_pattern",
+        type: "repetition_pattern",
         question: "What comes next in the pattern?",
         sequence: [
-          { color: "orange", shape: "diamond", label: "Orange diamond" },
-          { color: "orange", shape: "diamond", label: "Orange diamond" }
+          { color: "yellow", shape: "diamond", label: "Yellow diamond" },
+          { color: "yellow", shape: "diamond", label: "Yellow diamond" }
         ],
         options: [
-          { id: "1", color: "orange", shape: "diamond", label: "Orange diamond" },
+          { id: "1", color: "red", shape: "diamond", label: "Red diamond" },
           { id: "2", color: "blue", shape: "diamond", label: "Blue diamond" },
-          { id: "3", color: "green", shape: "diamond", label: "Green diamond" },
-          { id: "4", color: "red", shape: "diamond", label: "Red diamond" }
+          { id: "3", color: "yellow", shape: "diamond", label: "Yellow diamond" },
+          { id: "4", color: "green", shape: "diamond", label: "Green diamond" }
         ],
-        correctAnswer: "1"
+        correctAnswer: "3"
       },
       {
         id: 4,
         ageGroup: "2.5-3.5",
-        type: "shape_pattern",
+        type: "repetition_pattern",
         question: "What comes next in the pattern?",
         sequence: [
-          { shape: "circle", color: "teal", label: "Teal circle" },
-          { shape: "circle", color: "teal", label: "Teal circle" }
+          { shape: "circle", color: "coral", label: "Circle" },
+          { shape: "circle", color: "coral", label: "Circle" }
         ],
         options: [
-          { id: "1", shape: "square", color: "coral", label: "Coral square" },
-          { id: "2", shape: "triangle", color: "amber", label: "Amber triangle" },
-          { id: "3", shape: "star", color: "lavender", label: "Lavender star" },
-          { id: "4", shape: "circle", color: "teal", label: "Teal circle" }
+          { id: "1", shape: "square", color: "turquoise", label: "Square" },
+          { id: "2", shape: "triangle", color: "lavender", label: "Triangle" },
+          { id: "3", shape: "star", color: "mint", label: "Star" },
+          { id: "4", shape: "circle", color: "coral", label: "Circle" }
         ],
         correctAnswer: "4"
       },
       {
         id: 5,
         ageGroup: "2.5-3.5",
-        type: "shape_pattern",
+        type: "repetition_pattern",
         question: "What comes next in the pattern?",
         sequence: [
-          { shape: "square", color: "mint", label: "Mint square" },
-          { shape: "square", color: "mint", label: "Mint square" }
+          { shape: "square", color: "peach", label: "Square" },
+          { shape: "square", color: "peach", label: "Square" }
         ],
         options: [
-          { id: "1", shape: "circle", color: "pink", label: "Pink circle" },
-          { id: "2", shape: "triangle", color: "sky", label: "Sky triangle" },
-          { id: "3", shape: "square", color: "mint", label: "Mint square" },
-          { id: "4", shape: "star", color: "gold", label: "Gold star" }
+          { id: "1", shape: "circle", color: "navy", label: "Circle" },
+          { id: "2", shape: "triangle", color: "maroon", label: "Triangle" },
+          { id: "3", shape: "square", color: "peach", label: "Square" },
+          { id: "4", shape: "star", color: "aqua", label: "Star" }
         ],
         correctAnswer: "3"
       },
       {
         id: 6,
         ageGroup: "2.5-3.5",
-        type: "shape_pattern",
+        type: "repetition_pattern",
         question: "What comes next in the pattern?",
         sequence: [
-          { shape: "triangle", color: "violet", label: "Violet triangle" },
-          { shape: "triangle", color: "violet", label: "Violet triangle" }
+          { shape: "triangle", color: "indigo", label: "Triangle" },
+          { shape: "triangle", color: "indigo", label: "Triangle" }
         ],
         options: [
-          { id: "1", shape: "triangle", color: "violet", label: "Violet triangle" },
-          { id: "2", shape: "circle", color: "peach", label: "Peach circle" },
-          { id: "3", shape: "square", color: "turquoise", label: "Turquoise square" },
-          { id: "4", shape: "star", color: "lime", label: "Lime star" }
+          { id: "1", shape: "triangle", color: "indigo", label: "Triangle" },
+          { id: "2", shape: "circle", color: "fuchsia", label: "Circle" },
+          { id: "3", shape: "square", color: "sky", label: "Square" },
+          { id: "4", shape: "star", color: "slate", label: "Star" }
         ],
         correctAnswer: "1"
       },
       {
         id: 7,
         ageGroup: "2.5-3.5",
-        type: "shape_pattern",
+        type: "repetition_pattern",
         question: "What comes next in the pattern?",
         sequence: [
-          { shape: "star", color: "fuchsia", label: "Fuchsia star" },
-          { shape: "star", color: "fuchsia", label: "Fuchsia star" }
+          { shape: "star", color: "yellow", label: "Star" },
+          { shape: "star", color: "yellow", label: "Star" }
         ],
         options: [
-          { id: "1", shape: "heart", color: "crimson", label: "Crimson heart" },
-          { id: "2", shape: "circle", color: "indigo", label: "Indigo circle" },
-          { id: "3", shape: "star", color: "fuchsia", label: "Fuchsia star" },
-          { id: "4", shape: "square", color: "emerald", label: "Emerald square" }
+          { id: "1", shape: "heart", color: "pink", label: "Heart" },
+          { id: "2", shape: "circle", color: "blue", label: "Circle" },
+          { id: "3", shape: "star", color: "yellow", label: "Star" },
+          { id: "4", shape: "square", color: "green", label: "Square" }
         ],
         correctAnswer: "3"
       }
@@ -137,18 +137,18 @@ const QUESTION_GROUPS = {
       {
         id: 8,
         ageGroup: "3.5-4",
-        type: "alternating_pattern",
+        type: "shape_sequence_pattern",
         question: "What comes next in the pattern?",
         sequence: [
-          { shape: "circle", color: "rose", label: "Rose circle" },
-          { shape: "square", color: "cyan", label: "Cyan square" },
-          { shape: "circle", color: "rose", label: "Rose circle" }
+          { shape: "circle", color: "emerald", label: "Circle" },
+          { shape: "square", color: "purple", label: "Square" },
+          { shape: "circle", color: "emerald", label: "Circle" }
         ],
         options: [
-          { id: "1", shape: "circle", color: "rose", label: "Rose circle" },
-          { id: "2", shape: "square", color: "cyan", label: "Cyan square" },
-          { id: "3", shape: "triangle", color: "amber", label: "Amber triangle" },
-          { id: "4", shape: "star", color: "lavender", label: "Lavender star" }
+          { id: "1", shape: "circle", color: "emerald", label: "Circle" },
+          { id: "2", shape: "square", color: "purple", label: "Square" },
+          { id: "3", shape: "triangle", color: "orange", label: "Triangle" },
+          { id: "4", shape: "star", color: "gold", label: "Star" }
         ],
         correctAnswer: "2"
       },
@@ -158,33 +158,33 @@ const QUESTION_GROUPS = {
         type: "size_pattern",
         question: "What comes next in the pattern?",
         sequence: [
-          { shape: "circle", size: "big", label: "Big circle" },
-          { shape: "circle", size: "small", label: "Small circle" },
-          { shape: "circle", size: "big", label: "Big circle" }
+          { shape: "circle", size: "big", color: "teal", label: "Big circle" },
+          { shape: "circle", size: "small", color: "teal", label: "Small circle" },
+          { shape: "circle", size: "big", color: "teal", label: "Big circle" }
         ],
         options: [
-          { id: "1", shape: "square", size: "big", label: "Big square" },
-          { id: "2", shape: "circle", size: "small", label: "Small circle" },
-          { id: "3", shape: "star", size: "small", label: "Small star" },
-          { id: "4", shape: "triangle", label: "Triangle" }
+          { id: "1", shape: "square", size: "big", color: "red", label: "Big square" },
+          { id: "2", shape: "circle", size: "small", color: "teal", label: "Small circle" },
+          { id: "3", shape: "star", size: "small", color: "gold", label: "Small star" },
+          { id: "4", shape: "triangle", color: "pink", label: "Triangle" }
         ],
         correctAnswer: "2"
       },
       {
         id: 10,
         ageGroup: "3.5-4",
-        type: "alternating_pattern",
+        type: "shape_sequence_pattern",
         question: "What comes next in the pattern?",
         sequence: [
-          { shape: "triangle", color: "gold", label: "Gold triangle" },
-          { shape: "circle", color: "teal", label: "Teal circle" },
-          { shape: "triangle", color: "gold", label: "Gold triangle" }
+          { shape: "triangle", color: "coral", label: "Triangle" },
+          { shape: "circle", color: "lime", label: "Circle" },
+          { shape: "triangle", color: "coral", label: "Triangle" }
         ],
         options: [
-          { id: "1", shape: "circle", color: "teal", label: "Teal circle" },
-          { id: "2", shape: "square", color: "coral", label: "Coral square" },
-          { id: "3", shape: "star", color: "mint", label: "Mint star" },
-          { id: "4", shape: "heart", color: "violet", label: "Violet heart" }
+          { id: "1", shape: "circle", color: "lime", label: "Circle" },
+          { id: "2", shape: "square", color: "violet", label: "Square" },
+          { id: "3", shape: "star", color: "amber", label: "Star" },
+          { id: "4", shape: "heart", color: "rose", label: "Heart" }
         ],
         correctAnswer: "1"
       },
@@ -194,15 +194,15 @@ const QUESTION_GROUPS = {
         type: "size_pattern",
         question: "What comes next in the pattern?",
         sequence: [
-          { shape: "square", size: "big", label: "Big square" },
-          { shape: "square", size: "small", label: "Small square" },
-          { shape: "square", size: "big", label: "Big square" }
+          { shape: "square", size: "big", color: "navy", label: "Big square" },
+          { shape: "square", size: "small", color: "navy", label: "Small square" },
+          { shape: "square", size: "big", color: "navy", label: "Big square" }
         ],
         options: [
-          { id: "1", shape: "circle", size: "small", label: "Small circle" },
-          { id: "2", shape: "square", size: "small", label: "Small square" },
-          { id: "3", shape: "triangle", label: "Triangle" },
-          { id: "4", shape: "heart", label: "Heart" }
+          { id: "1", shape: "circle", size: "small", color: "cyan", label: "Small circle" },
+          { id: "2", shape: "square", size: "small", color: "navy", label: "Small square" },
+          { id: "3", shape: "triangle", color: "maroon", label: "Triangle" },
+          { id: "4", shape: "heart", color: "fuchsia", label: "Heart" }
         ],
         correctAnswer: "2"
       },
@@ -212,17 +212,18 @@ const QUESTION_GROUPS = {
         type: "alternating_pattern",
         question: "What comes next in the pattern?",
         sequence: [
-          { shape: "star", label: "Star" },
-          { shape: "heart", label: "Heart" },
-          { shape: "star", label: "Star" }
+          { shape: "star", color: "gold", label: "Star" },
+          { shape: "heart", color: "crimson", label: "Heart" },
+          { shape: "star", color: "gold", label: "Star" },
+          { shape: "heart", color: "crimson", label: "Heart" }
         ],
         options: [
-          { id: "1", shape: "circle", label: "Circle" },
-          { id: "2", shape: "square", label: "Square" },
-          { id: "3", shape: "star", label: "Star" },
-          { id: "4", shape: "heart", label: "Heart" }
+          { id: "1", shape: "circle", color: "sky", label: "Circle" },
+          { id: "2", shape: "square", color: "emerald", label: "Square" },
+          { id: "3", shape: "star", color: "gold", label: "Star" },
+          { id: "4", shape: "triangle", color: "slate", label: "Triangle" }
         ],
-        correctAnswer: "4"
+        correctAnswer: "3"
       },
       {
         id: 13,
@@ -230,16 +231,16 @@ const QUESTION_GROUPS = {
         type: "complex_size_pattern",
         question: "What comes next in the pattern?",
         sequence: [
-          { shape: "triangle", size: "big", label: "Big triangle" },
-          { shape: "triangle", size: "small", label: "Small triangle" },
-          { shape: "triangle", size: "big", label: "Big triangle" },
-          { shape: "triangle", size: "small", label: "Small triangle" }
+          { shape: "triangle", size: "big", color: "violet", label: "Big triangle" },
+          { shape: "triangle", size: "small", color: "violet", label: "Small triangle" },
+          { shape: "triangle", size: "big", color: "violet", label: "Big triangle" },
+          { shape: "triangle", size: "small", color: "violet", label: "Small triangle" }
         ],
         options: [
-          { id: "1", shape: "circle", label: "Circle" },
-          { id: "2", shape: "triangle", size: "big", label: "Big triangle" },
-          { id: "3", shape: "square", label: "Square" },
-          { id: "4", shape: "star", label: "Star" }
+          { id: "1", shape: "circle", color: "aqua", label: "Circle" },
+          { id: "2", shape: "triangle", size: "big", color: "violet", label: "Big triangle" },
+          { id: "3", shape: "square", color: "peach", label: "Square" },
+          { id: "4", shape: "star", color: "mint", label: "Star" }
         ],
         correctAnswer: "2"
       },
@@ -249,764 +250,497 @@ const QUESTION_GROUPS = {
         type: "alternating_pattern",
         question: "What comes next in the pattern?",
         sequence: [
-          { shape: "circle", color: "lavender", label: "Lavender circle" },
-          { shape: "triangle", color: "peach", label: "Peach triangle" },
-          { shape: "circle", color: "lavender", label: "Lavender circle" }
+          { shape: "circle", color: "turquoise", label: "Circle" },
+          { shape: "triangle", color: "lavender", label: "Triangle" },
+          { shape: "circle", color: "turquoise", label: "Circle" },
+          { shape: "triangle", color: "lavender", label: "Triangle" }
         ],
         options: [
-          { id: "1", shape: "heart", color: "crimson", label: "Crimson heart" },
-          { id: "2", shape: "square", color: "indigo", label: "Indigo square" },
-          { id: "3", shape: "circle", color: "lavender", label: "Lavender circle" },
-          { id: "4", shape: "triangle", color: "peach", label: "Peach triangle" }
+          { id: "1", shape: "heart", color: "rose", label: "Heart" },
+          { id: "2", shape: "square", color: "amber", label: "Square" },
+          { id: "3", shape: "circle", color: "turquoise", label: "Circle" },
+          { id: "4", shape: "star", color: "gold", label: "Star" }
         ],
-        correctAnswer: "4"
+        correctAnswer: "3"
       }
     ]
   },
-  "4-5": {
-    title: "Ages 4-5 (Pre-K)",
+  "4.5-5": {
+    title: "Ages 4.5-5 (Pre-K)",
     questions: [
       {
         id: 15,
-        ageGroup: "4-5",
-        type: "three_shape_pattern",
+        ageGroup: "4.5-5",
+        type: "repeating_sequence_pattern",
         question: "What comes next in the pattern?",
         sequence: [
-          { shape: "circle", color: "pink", label: "Pink circle" },
-          { shape: "square", color: "lime", label: "Lime square" },
-          { shape: "triangle", color: "sky", label: "Sky triangle" }
+          { shape: "circle", color: "green", label: "Circle" },
+          { shape: "square", color: "purple", label: "Square" },
+          { shape: "triangle", color: "orange", label: "Triangle" },
+          { shape: "circle", color: "green", label: "Circle" },
+          { shape: "square", color: "purple", label: "Square" }
         ],
         options: [
-          { id: "1", shape: "circle", color: "pink", label: "Pink circle" },
-          { id: "2", shape: "square", color: "lime", label: "Lime square" },
-          { id: "3", shape: "triangle", color: "sky", label: "Sky triangle" },
-          { id: "4", shape: "star", color: "gold", label: "Gold star" }
+          { id: "1", shape: "triangle", color: "orange", label: "Triangle" },
+          { id: "2", shape: "circle", color: "green", label: "Circle" },
+          { id: "3", shape: "star", color: "yellow", label: "Star" },
+          { id: "4", shape: "square", color: "purple", label: "Square" }
         ],
         correctAnswer: "1"
       },
       {
         id: 16,
-        ageGroup: "4-5",
-        type: "counting_pattern",
+        ageGroup: "4.5-5",
+        type: "dot_counting_pattern",
         question: "What comes next in the pattern?",
         sequence: [
-          { shape: "dot", count: 1, label: "1 dot" },
-          { shape: "dot", count: 2, label: "2 dots" },
-          { shape: "dot", count: 3, label: "3 dots" }
+          { shape: "dots", count: 1, color: "red", label: "1 dot" },
+          { shape: "dots", count: 2, color: "red", label: "2 dots" },
+          { shape: "dots", count: 3, color: "red", label: "3 dots" },
+          { shape: "dots", count: 4, color: "red", label: "4 dots" }
         ],
         options: [
-          { id: "1", shape: "dot", count: 4, label: "4 dots" },
-          { id: "2", shape: "dot", count: 2, label: "2 dots" },
-          { id: "3", shape: "dot", count: 1, label: "1 dot" },
-          { id: "4", shape: "dot", count: 5, label: "5 dots" }
-        ],
-        correctAnswer: "1"
-      },
-      {
-        id: 17,
-        ageGroup: "4-5",
-        type: "three_shape_pattern",
-        question: "What comes next in the pattern?",
-        sequence: [
-          { shape: "triangle", color: "coral", label: "Coral triangle" },
-          { shape: "circle", color: "turquoise", label: "Turquoise circle" },
-          { shape: "star", color: "amber", label: "Amber star" }
-        ],
-        options: [
-          { id: "1", shape: "heart", color: "fuchsia", label: "Fuchsia heart" },
-          { id: "2", shape: "triangle", color: "coral", label: "Coral triangle" },
-          { id: "3", shape: "circle", color: "turquoise", label: "Turquoise circle" },
-          { id: "4", shape: "square", color: "mint", label: "Mint square" }
+          { id: "1", shape: "dots", count: 5, color: "red", label: "5 dots" },
+          { id: "2", shape: "dots", count: 6, color: "red", label: "6 dots" },
+          { id: "3", shape: "dots", count: 2, color: "red", label: "2 dots" },
+          { id: "4", shape: "dots", count: 1, color: "red", label: "1 dot" }
         ],
         correctAnswer: "2"
       },
       {
-        id: 18,
-        ageGroup: "4-5",
-        type: "star_counting_pattern",
+        id: 17,
+        ageGroup: "4.5-5",
+        type: "repeating_sequence_pattern",
         question: "What comes next in the pattern?",
         sequence: [
-          { shape: "star", count: 1, label: "1 star" },
-          { shape: "star", count: 2, label: "2 stars" },
-          { shape: "star", count: 3, label: "3 stars" }
+          { shape: "square", color: "teal", label: "Square" },
+          { shape: "triangle", color: "pink", label: "Triangle" },
+          { shape: "circle", color: "lime", label: "Circle" },
+          { shape: "square", color: "teal", label: "Square" },
+          { shape: "triangle", color: "pink", label: "Triangle" }
         ],
         options: [
-          { id: "1", shape: "star", count: 4, label: "4 stars" },
-          { id: "2", shape: "star", count: 1, label: "1 star" },
-          { id: "3", shape: "star", count: 5, label: "5 stars" },
-          { id: "4", shape: "star", count: 2, label: "2 stars" }
+          { id: "1", shape: "circle", color: "lime", label: "Circle" },
+          { id: "2", shape: "star", color: "gold", label: "Star" },
+          { id: "3", shape: "square", color: "teal", label: "Square" },
+          { id: "4", shape: "heart", color: "crimson", label: "Heart" }
+        ],
+        correctAnswer: "1"
+      },
+      {
+        id: 18,
+        ageGroup: "4.5-5",
+        type: "size_progression_pattern",
+        question: "What comes next in the pattern?",
+        sequence: [
+          { shape: "circle", size: "big", color: "coral", label: "Big circle" },
+          { shape: "circle", size: "medium", color: "coral", label: "Medium circle" },
+          { shape: "circle", size: "small", color: "coral", label: "Small circle" }
+        ],
+        options: [
+          { id: "1", shape: "circle", size: "tiny", color: "coral", label: "Tiny circle" },
+          { id: "2", shape: "square", color: "navy", label: "Square" },
+          { id: "3", shape: "triangle", color: "emerald", label: "Triangle" },
+          { id: "4", shape: "circle", size: "big", color: "maroon", label: "Big square" }
         ],
         correctAnswer: "1"
       },
       {
         id: 19,
-        ageGroup: "4-5",
-        type: "color_size_pattern",
+        ageGroup: "4.5-5",
+        type: "repeating_sequence_pattern",
         question: "What comes next in the pattern?",
         sequence: [
-          { shape: "circle", color: "red", size: "big", label: "Big red circle" },
-          { shape: "circle", color: "blue", size: "small", label: "Small blue circle" },
-          { shape: "circle", color: "red", size: "big", label: "Big red circle" }
+          { shape: "triangle", color: "violet", label: "Triangle" },
+          { shape: "star", color: "amber", label: "Star" },
+          { shape: "heart", color: "rose", label: "Heart" },
+          { shape: "triangle", color: "violet", label: "Triangle" },
+          { shape: "star", color: "amber", label: "Star" }
         ],
         options: [
-          { id: "1", shape: "circle", color: "green", size: "medium", label: "Medium green circle" },
-          { id: "2", shape: "circle", color: "blue", size: "small", label: "Small blue circle" },
-          { id: "3", shape: "circle", color: "red", size: "small", label: "Small red circle" },
-          { id: "4", shape: "square", color: "blue", label: "Blue square" }
+          { id: "1", shape: "heart", color: "rose", label: "Heart" },
+          { id: "2", shape: "circle", color: "cyan", label: "Circle" },
+          { id: "3", shape: "square", color: "emerald", label: "Square" },
+          { id: "4", shape: "triangle", color: "violet", label: "Triangle" }
         ],
-        correctAnswer: "2"
+        correctAnswer: "1"
       },
       {
         id: 20,
-        ageGroup: "4-5",
-        type: "progressive_size_pattern",
+        ageGroup: "4.5-5",
+        type: "star_counting_pattern",
         question: "What comes next in the pattern?",
         sequence: [
-          { shape: "square", size: "tiny", label: "Tiny square" },
-          { shape: "square", size: "small", label: "Small square" },
-          { shape: "square", size: "medium", label: "Medium square" }
+          { shape: "stars", count: 1, color: "gold", label: "1 star" },
+          { shape: "stars", count: 2, color: "gold", label: "2 stars" },
+          { shape: "stars", count: 3, color: "gold", label: "3 stars" }
         ],
         options: [
-          { id: "1", shape: "square", size: "big", label: "Big square" },
-          { id: "2", shape: "square", size: "small", label: "Small square" },
-          { id: "3", shape: "triangle", size: "medium", label: "Medium triangle" },
-          { id: "4", shape: "square", size: "tiny", label: "Tiny square" }
+          { id: "1", shape: "stars", count: 4, color: "gold", label: "4 stars" },
+          { id: "2", shape: "stars", count: 5, color: "gold", label: "5 stars" },
+          { id: "3", shape: "stars", count: 2, color: "gold", label: "2 stars" },
+          { id: "4", shape: "stars", count: 1, color: "gold", label: "1 star" }
         ],
         correctAnswer: "1"
       },
       {
         id: 21,
-        ageGroup: "4-5",
-        type: "alternating_shape_size",
+        ageGroup: "4.5-5",
+        type: "size_progression_pattern",
         question: "What comes next in the pattern?",
         sequence: [
-          { shape: "triangle", size: "big", label: "Big triangle" },
-          { shape: "circle", size: "small", label: "Small circle" },
-          { shape: "triangle", size: "big", label: "Big triangle" }
+          { shape: "square", size: "small", color: "mint", label: "Small square" },
+          { shape: "square", size: "medium", color: "mint", label: "Medium square" },
+          { shape: "square", size: "big", color: "mint", label: "Big square" }
         ],
         options: [
-          { id: "1", shape: "triangle", size: "small", label: "Small triangle" },
-          { id: "2", shape: "circle", size: "small", label: "Small circle" },
-          { id: "3", shape: "square", size: "big", label: "Big square" },
-          { id: "4", shape: "star", label: "Star" }
+          { id: "1", shape: "circle", size: "tiny", color: "cyan", label: "Tiny circle" },
+          { id: "2", shape: "triangle", color: "fuchsia", label: "Triangle" },
+          { id: "3", shape: "square", size: "bigger", color: "mint", label: "Bigger square" },
+          { id: "4", shape: "star", color: "crimson", label: "Star" }
         ],
-        correctAnswer: "2"
+        correctAnswer: "3"
       }
     ]
   },
   "6-7": {
-    title: "Ages 6-7 (Kindergarten)",
+    title: "Ages 6-7",
     questions: [
       {
         id: 22,
         ageGroup: "6-7",
-        type: "abab_pattern",
+        type: "rotation_pattern",
         question: "What comes next in the pattern?",
         sequence: [
-          { shape: "circle", color: "red", label: "Red circle" },
-          { shape: "square", color: "blue", label: "Blue square" },
-          { shape: "circle", color: "red", label: "Red circle" }
+          { shape: "triangle", rotation: 0, color: "blue", label: "Triangle (pointing up)" },
+          { shape: "triangle", rotation: 90, color: "blue", label: "Triangle (pointing right)" },
+          { shape: "triangle", rotation: 180, color: "blue", label: "Triangle (pointing down)" },
+          { shape: "triangle", rotation: 0, color: "blue", label: "Triangle (pointing up)" },
+          { shape: "triangle", rotation: 90, color: "blue", label: "Triangle (pointing right)" }
         ],
         options: [
-          { id: "1", shape: "triangle", color: "green", label: "Green triangle" },
-          { id: "2", shape: "square", color: "blue", label: "Blue square" },
-          { id: "3", shape: "circle", color: "blue", label: "Blue circle" },
-          { id: "4", shape: "square", color: "red", label: "Red square" }
+          { id: "1", shape: "triangle", rotation: 270, color: "blue", label: "Triangle (pointing left)" },
+          { id: "2", shape: "triangle", rotation: 180, color: "blue", label: "Triangle (pointing down)" },
+          { id: "3", shape: "triangle", rotation: 0, color: "blue", label: "Triangle (pointing up)" },
+          { id: "4", shape: "triangle", rotation: 90, color: "blue", label: "Triangle (pointing right)" }
         ],
         correctAnswer: "2"
       },
       {
         id: 23,
         ageGroup: "6-7",
-        type: "abc_pattern",
+        type: "color_alternating_pattern",
         question: "What comes next in the pattern?",
         sequence: [
-          { shape: "triangle", color: "emerald", label: "Emerald triangle" },
-          { shape: "circle", color: "coral", label: "Coral circle" },
-          { shape: "square", color: "sky", label: "Sky square" }
+          { shape: "circle", color: "red", label: "Red circle" },
+          { shape: "circle", color: "blue", label: "Blue circle" },
+          { shape: "circle", color: "red", label: "Red circle" },
+          { shape: "circle", color: "blue", label: "Blue circle" }
         ],
         options: [
-          { id: "1", shape: "triangle", color: "emerald", label: "Emerald triangle" },
-          { id: "2", shape: "star", color: "gold", label: "Gold star" },
-          { id: "3", shape: "heart", color: "fuchsia", label: "Fuchsia heart" },
-          { id: "4", shape: "diamond", color: "peach", label: "Peach diamond" }
+          { id: "1", shape: "circle", color: "green", label: "Green circle" },
+          { id: "2", shape: "circle", color: "yellow", label: "Yellow circle" },
+          { id: "3", shape: "circle", color: "red", label: "Red circle" },
+          { id: "4", shape: "circle", color: "purple", label: "Purple circle" }
         ],
-        correctAnswer: "1"
+        correctAnswer: "3"
       },
       {
         id: 24,
         ageGroup: "6-7",
-        type: "size_progression",
+        type: "star_counting_pattern",
         question: "What comes next in the pattern?",
         sequence: [
-          { shape: "circle", size: "small", label: "Small circle" },
-          { shape: "circle", size: "medium", label: "Medium circle" },
-          { shape: "circle", size: "big", label: "Big circle" }
+          { shape: "stars", count: 1, color: "gold", label: "1 star" },
+          { shape: "stars", count: 2, color: "gold", label: "2 stars" },
+          { shape: "stars", count: 3, color: "gold", label: "3 stars" }
         ],
         options: [
-          { id: "1", shape: "circle", size: "bigger", label: "Bigger circle" },
-          { id: "2", shape: "circle", size: "small", label: "Small circle" },
-          { id: "3", shape: "square", size: "big", label: "Big square" },
-          { id: "4", shape: "circle", size: "medium", label: "Medium circle" }
+          { id: "1", shape: "stars", count: 5, color: "gold", label: "5 stars" },
+          { id: "2", shape: "stars", count: 2, color: "gold", label: "2 stars" },
+          { id: "3", shape: "stars", count: 4, color: "gold", label: "4 stars" },
+          { id: "4", shape: "stars", count: 1, color: "gold", label: "1 star" }
         ],
-        correctAnswer: "1"
+        correctAnswer: "3"
       },
       {
         id: 25,
         ageGroup: "6-7",
-        type: "number_shape_pattern",
+        type: "size_progression_pattern",
         question: "What comes next in the pattern?",
         sequence: [
-          { shape: "dot", count: 2, label: "2 dots" },
-          { shape: "dot", count: 4, label: "4 dots" },
-          { shape: "dot", count: 6, label: "6 dots" }
+          { shape: "square", size: "small", color: "purple", label: "Small square" },
+          { shape: "square", size: "medium", color: "purple", label: "Medium square" },
+          { shape: "square", size: "big", color: "purple", label: "Big square" }
         ],
         options: [
-          { id: "1", shape: "dot", count: 8, label: "8 dots" },
-          { id: "2", shape: "dot", count: 7, label: "7 dots" },
-          { id: "3", shape: "dot", count: 5, label: "5 dots" },
-          { id: "4", shape: "dot", count: 10, label: "10 dots" }
+          { id: "1", shape: "circle", size: "small", color: "orange", label: "Small circle" },
+          { id: "2", shape: "triangle", size: "medium", color: "green", label: "Medium triangle" },
+          { id: "3", shape: "square", size: "bigger", color: "purple", label: "Bigger square" },
+          { id: "4", shape: "star", size: "big", color: "yellow", label: "Big star" }
         ],
-        correctAnswer: "1"
+        correctAnswer: "3"
       },
       {
         id: 26,
         ageGroup: "6-7",
-        type: "complex_alternating",
+        type: "position_pattern",
         question: "What comes next in the pattern?",
         sequence: [
-          { shape: "triangle", size: "big", color: "red", label: "Big red triangle" },
-          { shape: "square", size: "small", color: "blue", label: "Small blue square" },
-          { shape: "triangle", size: "big", color: "red", label: "Big red triangle" }
+          { shape: "circle", position: "left", color: "teal", label: "Circle on the left" },
+          { shape: "circle", position: "middle", color: "teal", label: "Circle in the middle" },
+          { shape: "circle", position: "right", color: "teal", label: "Circle on the right" },
+          { shape: "circle", position: "left", color: "teal", label: "Circle on the left" },
+          { shape: "circle", position: "middle", color: "teal", label: "Circle in the middle" }
         ],
         options: [
-          { id: "1", shape: "square", size: "small", color: "blue", label: "Small blue square" },
-          { id: "2", shape: "circle", size: "medium", color: "green", label: "Medium green circle" },
-          { id: "3", shape: "triangle", size: "small", color: "blue", label: "Small blue triangle" },
-          { id: "4", shape: "star", size: "big", color: "yellow", label: "Big yellow star" }
-        ],
-        correctAnswer: "1"
-      },
-      {
-        id: 27,
-        ageGroup: "6-7",
-        type: "aaab_pattern",
-        question: "What comes next in the pattern?",
-        sequence: [
-          { shape: "circle", color: "aqua", label: "Aqua circle" },
-          { shape: "circle", color: "aqua", label: "Aqua circle" },
-          { shape: "circle", color: "aqua", label: "Aqua circle" }
-        ],
-        options: [
-          { id: "1", shape: "circle", color: "aqua", label: "Aqua circle" },
-          { id: "2", shape: "square", color: "rose", label: "Rose square" },
-          { id: "3", shape: "triangle", color: "gold", label: "Gold triangle" },
-          { id: "4", shape: "star", color: "mint", label: "Mint star" }
+          { id: "1", shape: "circle", position: "left", color: "teal", label: "Left" },
+          { id: "2", shape: "circle", position: "right", color: "teal", label: "Right" },
+          { id: "3", shape: "circle", position: "middle", color: "teal", label: "Middle" },
+          { id: "4", shape: "circle", position: "nowhere", color: "gray", label: "Nowhere" }
         ],
         correctAnswer: "2"
       },
       {
-        id: 28,
+        id: 27,
         ageGroup: "6-7",
-        type: "abcd_pattern",
-        question: "What comes next in the pattern?",
+        type: "matrix_pattern",
+        question: "What goes in the bottom-right corner?",
         sequence: [
-          { shape: "circle", color: "violet", label: "Violet circle" },
-          { shape: "square", color: "coral", label: "Coral square" },
-          { shape: "triangle", color: "teal", label: "Teal triangle" }
+          { shape: "circle", color: "blue", label: "Circle" },
+          { shape: "triangle", color: "red", label: "Triangle" },
+          { shape: "circle", modifier: "dot", color: "blue", label: "Circle + dot" }
         ],
         options: [
-          { id: "1", shape: "star", color: "amber", label: "Amber star" },
-          { id: "2", shape: "circle", color: "violet", label: "Violet circle" },
-          { id: "3", shape: "heart", color: "pink", label: "Pink heart" },
-          { id: "4", shape: "diamond", color: "lime", label: "Lime diamond" }
+          { id: "1", shape: "triangle", modifier: "stripe", color: "red", label: "Triangle + stripe" },
+          { id: "2", shape: "triangle", size: "bigger", color: "red", label: "Triangle (bigger)" },
+          { id: "3", shape: "triangle", modifier: "dot", color: "red", label: "Triangle + dot" },
+          { id: "4", shape: "triangle", rotation: 90, color: "red", label: "Triangle (rotated)" }
         ],
-        correctAnswer: "1"
+        correctAnswer: "3"
+      },
+      {
+        id: 28,
+        ageGroup: "6-7",
+        type: "matrix_pattern",
+        question: "What goes in the bottom-right corner?",
+        sequence: [
+          { shape: "star", size: "small", color: "gold", label: "Small star" },
+          { shape: "star", size: "medium", color: "gold", label: "Medium star" },
+          { shape: "heart", size: "small", color: "pink", label: "Small heart" }
+        ],
+        options: [
+          { id: "1", shape: "heart", size: "big", color: "pink", label: "Large heart" },
+          { id: "2", shape: "triangle", size: "small", color: "green", label: "Small triangle" },
+          { id: "3", shape: "heart", size: "medium", color: "pink", label: "Medium heart" },
+          { id: "4", shape: "circle", size: "medium", color: "blue", label: "Medium circle" }
+        ],
+        correctAnswer: "3"
       }
     ]
   },
   "8-9": {
-    title: "Ages 8-9 (Elementary)",
+    title: "Ages 8-9",
     questions: [
       {
         id: 29,
         ageGroup: "8-9",
-        type: "rotation_pattern",
-        question: "What comes next in the pattern?",
+        type: "matrix_3x3_pattern",
+        question: "What goes in the bottom-right corner?",
         sequence: [
-          { shape: "triangle", rotation: 0, label: "Triangle pointing up" },
-          { shape: "triangle", rotation: 90, label: "Triangle pointing right" },
-          { shape: "triangle", rotation: 180, label: "Triangle pointing down" }
+          { shape: "circle", size: "small", color: "red", label: "Red small circle" },
+          { shape: "circle", size: "small", color: "blue", label: "Blue small circle" },
+          { shape: "circle", size: "small", color: "green", label: "Green small circle" },
+          { shape: "circle", size: "medium", color: "red", label: "Red medium circle" },
+          { shape: "circle", size: "medium", color: "blue", label: "Blue medium circle" },
+          { shape: "circle", size: "medium", color: "green", label: "Green medium circle" },
+          { shape: "circle", size: "big", color: "red", label: "Red large circle" },
+          { shape: "circle", size: "big", color: "blue", label: "Blue large circle" }
         ],
         options: [
-          { id: "1", shape: "triangle", rotation: 270, label: "Triangle pointing left" },
-          { id: "2", shape: "triangle", rotation: 0, label: "Triangle pointing up" },
-          { id: "3", shape: "square", rotation: 0, label: "Square" },
-          { id: "4", shape: "triangle", rotation: 45, label: "Tilted triangle" }
+          { id: "1", shape: "circle", size: "small", color: "red", label: "Red small circle" },
+          { id: "2", shape: "square", size: "big", color: "blue", label: "Blue large square" },
+          { id: "3", shape: "circle", size: "big", color: "green", label: "Green large circle" },
+          { id: "4", shape: "circle", size: "medium", color: "green", label: "Green medium circle" }
         ],
-        correctAnswer: "1"
+        correctAnswer: "3"
       },
       {
         id: 30,
         ageGroup: "8-9",
-        type: "fibonacci_pattern",
-        question: "What comes next in the pattern?",
+        type: "matrix_3x3_pattern",
+        question: "What goes in the bottom-middle cell?",
         sequence: [
-          { shape: "dot", count: 1, label: "1 dot" },
-          { shape: "dot", count: 1, label: "1 dot" },
-          { shape: "dot", count: 2, label: "2 dots" }
+          { shape: "triangle", color: "yellow", label: "Yellow triangle" },
+          { shape: "triangle", color: "orange", label: "Orange triangle" },
+          { shape: "triangle", color: "red", label: "Red triangle" },
+          { shape: "square", color: "yellow", label: "Yellow square" },
+          { shape: "square", color: "orange", label: "Orange square" },
+          { shape: "square", color: "red", label: "Red square" },
+          { shape: "circle", color: "yellow", label: "Yellow circle" },
+          null,
+          { shape: "circle", color: "red", label: "Red circle" }
         ],
         options: [
-          { id: "1", shape: "dot", count: 3, label: "3 dots" },
-          { id: "2", shape: "dot", count: 4, label: "4 dots" },
-          { id: "3", shape: "dot", count: 2, label: "2 dots" },
-          { id: "4", shape: "dot", count: 5, label: "5 dots" }
+          { id: "1", shape: "circle", color: "yellow", label: "Yellow circle" },
+          { id: "2", shape: "triangle", color: "red", label: "Red triangle" },
+          { id: "3", shape: "circle", color: "orange", label: "Orange circle" },
+          { id: "4", shape: "square", color: "red", label: "Red square" }
         ],
-        correctAnswer: "1"
+        correctAnswer: "3"
       },
       {
         id: 31,
         ageGroup: "8-9",
-        type: "color_rotation",
-        question: "What comes next in the pattern?",
+        type: "matrix_3x3_pattern",
+        question: "What goes in the bottom-right corner?",
         sequence: [
-          { shape: "square", color: "crimson", label: "Crimson square" },
-          { shape: "square", color: "turquoise", label: "Turquoise square" },
-          { shape: "square", color: "lime", label: "Lime square" }
+          { shape: "star", size: "small", color: "gold", label: "Small star" },
+          { shape: "heart", size: "small", color: "pink", label: "Small heart" },
+          { shape: "diamond", size: "small", color: "purple", label: "Small diamond" },
+          { shape: "star", size: "medium", color: "gold", label: "Medium star" },
+          { shape: "heart", size: "medium", color: "pink", label: "Medium heart" },
+          { shape: "diamond", size: "medium", color: "purple", label: "Medium diamond" },
+          { shape: "star", size: "big", color: "gold", label: "Large star" },
+          { shape: "heart", size: "big", color: "pink", label: "Large heart" }
         ],
         options: [
-          { id: "1", shape: "square", color: "amber", label: "Amber square" },
-          { id: "2", shape: "square", color: "crimson", label: "Crimson square" },
-          { id: "3", shape: "triangle", color: "crimson", label: "Crimson triangle" },
-          { id: "4", shape: "square", color: "lavender", label: "Lavender square" }
+          { id: "1", shape: "diamond", size: "big", color: "purple", label: "Large diamond" },
+          { id: "2", shape: "star", size: "big", color: "gold", label: "Large star" },
+          { id: "3", shape: "heart", size: "medium", color: "pink", label: "Medium heart" },
+          { id: "4", shape: "diamond", size: "small", color: "purple", label: "Small diamond" }
         ],
         correctAnswer: "1"
       },
       {
         id: 32,
         ageGroup: "8-9",
-        type: "position_pattern",
-        question: "What comes next in the pattern?",
+        type: "matrix_3x3_pattern",
+        question: "What goes in the bottom-left cell?",
         sequence: [
-          { shape: "circle", color: "fuchsia", position: "top", label: "Fuchsia circle at top" },
-          { shape: "circle", color: "fuchsia", position: "middle", label: "Fuchsia circle in middle" },
-          { shape: "circle", color: "fuchsia", position: "bottom", label: "Fuchsia circle at bottom" }
+          { shape: "circle", color: "blue", style: "solid", label: "Solid blue circle" },
+          { shape: "circle", color: "purple", style: "solid", label: "Solid purple circle" },
+          { shape: "circle", color: "pink", style: "solid", label: "Solid pink circle" },
+          { shape: "triangle", color: "blue", style: "outline", label: "Outline blue triangle" },
+          { shape: "triangle", color: "purple", style: "outline", label: "Outline purple triangle" },
+          { shape: "triangle", color: "pink", style: "outline", label: "Outline pink triangle" },
+          null,
+          { shape: "square", color: "purple", modifier: "stripe", label: "Striped purple square" },
+          { shape: "square", color: "pink", modifier: "stripe", label: "Striped pink square" }
         ],
         options: [
-          { id: "1", shape: "circle", color: "fuchsia", position: "top", label: "Fuchsia circle at top" },
-          { id: "2", shape: "circle", color: "fuchsia", position: "left", label: "Fuchsia circle on left" },
-          { id: "3", shape: "square", color: "emerald", position: "top", label: "Emerald square at top" },
-          { id: "4", shape: "circle", color: "fuchsia", position: "right", label: "Fuchsia circle on right" }
+          { id: "1", shape: "circle", color: "purple", modifier: "stripe", label: "Striped purple circle" },
+          { id: "2", shape: "triangle", color: "pink", modifier: "stripe", label: "Striped pink triangle" },
+          { id: "3", shape: "square", color: "blue", modifier: "stripe", label: "Striped blue square" },
+          { id: "4", shape: "star", color: "blue", style: "outline", label: "Outline blue star" }
         ],
-        correctAnswer: "1"
+        correctAnswer: "3"
       },
       {
         id: 33,
         ageGroup: "8-9",
-        type: "skip_counting",
-        question: "What comes next in the pattern?",
+        type: "matrix_3x3_pattern",
+        question: "What goes in row 3, column 2?",
         sequence: [
-          { shape: "star", count: 3, label: "3 stars" },
-          { shape: "star", count: 6, label: "6 stars" },
-          { shape: "star", count: 9, label: "9 stars" }
+          { shape: "circle", count: 1, color: "blue", label: "1 circle" },
+          { shape: "circle", count: 2, color: "blue", label: "2 circles" },
+          { shape: "circle", count: 3, color: "blue", label: "3 circles" },
+          { shape: "triangle", count: 1, color: "green", label: "1 triangle" },
+          { shape: "triangle", count: 2, color: "green", label: "2 triangles" },
+          { shape: "triangle", count: 3, color: "green", label: "3 triangles" },
+          { shape: "square", count: 1, color: "red", label: "1 square" },
+          null,
+          { shape: "square", count: 3, color: "red", label: "3 squares" }
         ],
         options: [
-          { id: "1", shape: "star", count: 12, label: "12 stars" },
-          { id: "2", shape: "star", count: 10, label: "10 stars" },
-          { id: "3", shape: "star", count: 11, label: "11 stars" },
-          { id: "4", shape: "star", count: 15, label: "15 stars" }
+          { id: "1", shape: "triangle", count: 2, color: "green", label: "2 triangles" },
+          { id: "2", shape: "circle", count: 3, color: "blue", label: "3 circles" },
+          { id: "3", shape: "square", count: 2, color: "red", label: "2 squares" },
+          { id: "4", shape: "square", count: 1, color: "red", label: "1 square" }
         ],
-        correctAnswer: "1"
+        correctAnswer: "3"
       },
       {
         id: 34,
         ageGroup: "8-9",
-        type: "complex_color_shape",
-        question: "What comes next in the pattern?",
+        type: "matrix_3x3_pattern", 
+        question: "What goes in the middle-right cell?",
         sequence: [
-          { shape: "circle", color: "rose", size: "big", label: "Big rose circle" },
-          { shape: "square", color: "cyan", size: "small", label: "Small cyan square" },
-          { shape: "triangle", color: "mint", size: "medium", label: "Medium mint triangle" }
+          { shape: "square", size: "small", rotation: 0, color: "purple", label: "Small square" },
+          { shape: "square", size: "small", rotation: 90, color: "purple", label: "Small rotated square" },
+          { shape: "square", size: "small", rotation: 180, color: "purple", label: "Small rotated square" },
+          { shape: "triangle", size: "medium", rotation: 0, color: "orange", label: "Medium triangle" },
+          null,
+          { shape: "triangle", size: "medium", rotation: 180, color: "orange", label: "Medium rotated triangle" },
+          { shape: "star", size: "big", rotation: 0, color: "teal", label: "Large star" },
+          { shape: "star", size: "big", rotation: 90, color: "teal", label: "Large rotated star" },
+          { shape: "star", size: "big", rotation: 180, color: "teal", label: "Large rotated star" }
         ],
         options: [
-          { id: "1", shape: "star", color: "gold", size: "big", label: "Big gold star" },
-          { id: "2", shape: "heart", color: "violet", size: "small", label: "Small violet heart" },
-          { id: "3", shape: "diamond", color: "coral", size: "medium", label: "Medium coral diamond" },
-          { id: "4", shape: "circle", color: "rose", size: "small", label: "Small rose circle" }
+          { id: "1", shape: "circle", size: "big", color: "yellow", label: "Large circle" },
+          { id: "2", shape: "triangle", size: "medium", rotation: 90, color: "orange", label: "Medium rotated triangle" },
+          { id: "3", shape: "star", size: "medium", color: "teal", label: "Medium star" },
+          { id: "4", shape: "square", size: "small", color: "purple", label: "Small square" }
         ],
-        correctAnswer: "1"
-      },
-      {
-        id: 35,
-        ageGroup: "8-9",
-        type: "mirror_pattern",
-        question: "What comes next in the pattern?",
-        sequence: [
-          { shape: "triangle", rotation: 0, label: "Triangle pointing up" },
-          { shape: "triangle", rotation: 180, label: "Triangle pointing down" },
-          { shape: "triangle", rotation: 0, label: "Triangle pointing up" }
-        ],
-        options: [
-          { id: "1", shape: "triangle", rotation: 180, label: "Triangle pointing down" },
-          { id: "2", shape: "triangle", rotation: 90, label: "Triangle pointing right" },
-          { id: "3", shape: "square", rotation: 0, label: "Square" },
-          { id: "4", shape: "triangle", rotation: 270, label: "Triangle pointing left" }
-        ],
-        correctAnswer: "1"
+        correctAnswer: "2"
       }
     ]
   },
   "10-11": {
-    title: "Ages 10-11 (Elementary)",
+    title: "Ages 10-11",
     questions: [
+      {
+        id: 35,
+        ageGroup: "10-11",
+        type: "rotation_sequence",
+        question: "A diamond rotates 90° clockwise each step. The blue half points up, right, down… What comes next?",
+        sequence: [
+          { shape: "diamond", color: "split", topColor: "blue", bottomColor: "red", rotation: 0, size: "medium" },
+          { shape: "diamond", color: "split", topColor: "blue", bottomColor: "red", rotation: 90, size: "medium" },
+          { shape: "diamond", color: "split", topColor: "blue", bottomColor: "red", rotation: 180, size: "medium" }
+        ],
+        options: [
+          { id: "1", shape: "diamond", color: "split", topColor: "blue", bottomColor: "red", rotation: 270, size: "medium", label: "Left" },
+          { id: "2", shape: "diamond", color: "split", topColor: "blue", bottomColor: "red", rotation: 0, size: "medium", label: "Up" },
+          { id: "3", shape: "diamond", color: "split", topColor: "blue", bottomColor: "red", rotation: 90, size: "medium", label: "Right" },
+          { id: "4", shape: "diamond", color: "split", topColor: "blue", bottomColor: "red", rotation: 180, size: "medium", label: "Down" }
+        ],
+        correctAnswer: "1"
+      },
       {
         id: 36,
         ageGroup: "10-11",
-        type: "matrix_pattern",
-        question: "What comes next in the pattern?",
+        type: "flip_rotate_pattern",
+        question: "A triangle flips horizontally, then rotates 180°, then flips again (pattern repeats). If the last position was 'pointing left,' what comes next?",
         sequence: [
-          { shape: "circle", color: "red", size: "small", label: "Small red circle" },
-          { shape: "circle", color: "red", size: "big", label: "Big red circle" },
-          { shape: "square", color: "blue", size: "small", label: "Small blue square" }
+          { shape: "triangle", color: "green", rotation: 0, reflected: false, size: "medium" },
+          { shape: "triangle", color: "green", rotation: 90, reflected: false, size: "medium" },
+          { shape: "triangle", color: "green", rotation: 270, reflected: false, size: "medium" },
+          { shape: "triangle", color: "green", rotation: 180, reflected: false, size: "medium" },
+          { shape: "triangle", color: "green", rotation: 0, reflected: false, size: "medium" },
+          { shape: "triangle", color: "green", rotation: 90, reflected: false, size: "medium" },
+          { shape: "triangle", color: "green", rotation: 270, reflected: false, size: "medium" }
         ],
         options: [
-          { id: "1", shape: "square", color: "blue", size: "big", label: "Big blue square" },
-          { id: "2", shape: "triangle", color: "green", size: "small", label: "Small green triangle" },
-          { id: "3", shape: "circle", color: "red", size: "medium", label: "Medium red circle" },
-          { id: "4", shape: "star", color: "yellow", size: "big", label: "Big yellow star" }
+          { id: "1", shape: "triangle", color: "green", rotation: 0, reflected: false, size: "medium", label: "Pointing up" },
+          { id: "2", shape: "triangle", color: "green", rotation: 270, reflected: false, size: "medium", label: "Pointing right" },
+          { id: "3", shape: "triangle", color: "green", rotation: 270, reflected: true, size: "medium", label: "Pointing left" },
+          { id: "4", shape: "triangle", color: "green", rotation: 180, reflected: false, size: "medium", label: "Pointing down" }
         ],
-        correctAnswer: "1"
-      },
-      {
-        id: 37,
-        ageGroup: "10-11",
-        type: "algebraic_pattern",
-        question: "What comes next in the pattern?",
-        sequence: [
-          { shape: "dot", count: 2, label: "2 dots" },
-          { shape: "dot", count: 5, label: "5 dots" },
-          { shape: "dot", count: 8, label: "8 dots" }
-        ],
-        options: [
-          { id: "1", shape: "dot", count: 11, label: "11 dots" },
-          { id: "2", shape: "dot", count: 12, label: "12 dots" },
-          { id: "3", shape: "dot", count: 10, label: "10 dots" },
-          { id: "4", shape: "dot", count: 9, label: "9 dots" }
-        ],
-        correctAnswer: "1"
-      },
-      {
-        id: 38,
-        ageGroup: "10-11",
-        type: "transformation_rule",
-        question: "What comes next in the pattern?",
-        sequence: [
-          { shape: "triangle", color: "red", size: "small", label: "Small red triangle" },
-          { shape: "triangle", color: "blue", size: "medium", label: "Medium blue triangle" },
-          { shape: "triangle", color: "green", size: "big", label: "Big green triangle" }
-        ],
-        options: [
-          { id: "1", shape: "triangle", color: "yellow", size: "bigger", label: "Bigger yellow triangle" },
-          { id: "2", shape: "square", color: "red", size: "small", label: "Small red square" },
-          { id: "3", shape: "triangle", color: "purple", size: "small", label: "Small purple triangle" },
-          { id: "4", shape: "circle", color: "orange", size: "big", label: "Big orange circle" }
-        ],
-        correctAnswer: "1"
-      },
-      {
-        id: 39,
-        ageGroup: "10-11",
-        type: "complex_rotation",
-        question: "What comes next in the pattern?",
-        sequence: [
-          { shape: "triangle", rotation: 0, color: "red", label: "Red triangle pointing up" },
-          { shape: "triangle", rotation: 45, color: "blue", label: "Blue triangle tilted right" },
-          { shape: "triangle", rotation: 90, color: "green", label: "Green triangle pointing right" }
-        ],
-        options: [
-          { id: "1", shape: "triangle", rotation: 135, color: "yellow", label: "Yellow triangle tilted down-right" },
-          { id: "2", shape: "triangle", rotation: 0, color: "purple", label: "Purple triangle pointing up" },
-          { id: "3", shape: "square", rotation: 45, color: "orange", label: "Tilted orange square" },
-          { id: "4", shape: "triangle", rotation: 180, color: "red", label: "Red triangle pointing down" }
-        ],
-        correctAnswer: "1"
-      },
-      {
-        id: 40,
-        ageGroup: "10-11",
-        type: "advanced_counting",
-        question: "What comes next in the pattern?",
-        sequence: [
-          { shape: "star", count: 1, label: "1 star" },
-          { shape: "star", count: 4, label: "4 stars" },
-          { shape: "star", count: 9, label: "9 stars" }
-        ],
-        options: [
-          { id: "1", shape: "star", count: 16, label: "16 stars" },
-          { id: "2", shape: "star", count: 12, label: "12 stars" },
-          { id: "3", shape: "star", count: 13, label: "13 stars" },
-          { id: "4", shape: "star", count: 15, label: "15 stars" }
-        ],
-        correctAnswer: "1"
-      },
-      {
-        id: 41,
-        ageGroup: "10-11",
-        type: "dual_transformation",
-        question: "What comes next in the pattern?",
-        sequence: [
-          { shape: "circle", color: "red", size: "big", label: "Big red circle" },
-          { shape: "square", color: "blue", size: "small", label: "Small blue square" },
-          { shape: "triangle", color: "green", size: "medium", label: "Medium green triangle" }
-        ],
-        options: [
-          { id: "1", shape: "star", color: "yellow", size: "tiny", label: "Tiny yellow star" },
-          { id: "2", shape: "heart", color: "purple", size: "big", label: "Big purple heart" },
-          { id: "3", shape: "diamond", color: "orange", size: "bigger", label: "Bigger orange diamond" },
-          { id: "4", shape: "circle", color: "red", size: "medium", label: "Medium red circle" }
-        ],
-        correctAnswer: "1"
-      },
-      {
-        id: 42,
-        ageGroup: "10-11",
-        type: "pattern_within_pattern",
-        question: "What comes next in the pattern?",
-        sequence: [
-          { shape: "dot", count: 3, color: "red", label: "3 red dots" },
-          { shape: "dot", count: 6, color: "blue", label: "6 blue dots" },
-          { shape: "dot", count: 9, color: "green", label: "9 green dots" }
-        ],
-        options: [
-          { id: "1", shape: "dot", count: 12, color: "yellow", label: "12 yellow dots" },
-          { id: "2", shape: "dot", count: 10, color: "purple", label: "10 purple dots" },
-          { id: "3", shape: "dot", count: 15, color: "orange", label: "15 orange dots" },
-          { id: "4", shape: "star", count: 12, color: "red", label: "12 red stars" }
-        ],
-        correctAnswer: "1"
-      }
-    ]
-  },
-  "12-14": {
-    title: "Ages 12-14 (Middle School)",
-    questions: [
-      {
-        id: 43,
-        ageGroup: "12-14",
-        type: "advanced_matrix",
-        question: "What comes next in the pattern?",
-        sequence: [
-          { shape: "triangle", color: "red", rotation: 0, size: "small", label: "Small red triangle up" },
-          { shape: "triangle", color: "blue", rotation: 90, size: "medium", label: "Medium blue triangle right" },
-          { shape: "triangle", color: "green", rotation: 180, size: "big", label: "Big green triangle down" }
-        ],
-        options: [
-          { id: "1", shape: "triangle", color: "yellow", rotation: 270, size: "bigger", label: "Bigger yellow triangle left" },
-          { id: "2", shape: "square", color: "purple", rotation: 0, size: "small", label: "Small purple square" },
-          { id: "3", shape: "triangle", color: "orange", rotation: 45, size: "medium", label: "Medium orange triangle tilted" },
-          { id: "4", shape: "circle", color: "red", rotation: 0, size: "big", label: "Big red circle" }
-        ],
-        correctAnswer: "1"
-      },
-      {
-        id: 44,
-        ageGroup: "12-14",
-        type: "fibonacci_advanced",
-        question: "What comes next in the pattern?",
-        sequence: [
-          { shape: "star", count: 1, label: "1 star" },
-          { shape: "star", count: 2, label: "2 stars" },
-          { shape: "star", count: 3, label: "3 stars" }
-        ],
-        options: [
-          { id: "1", shape: "star", count: 5, label: "5 stars" },
-          { id: "2", shape: "star", count: 4, label: "4 stars" },
-          { id: "3", shape: "star", count: 6, label: "6 stars" },
-          { id: "4", shape: "star", count: 8, label: "8 stars" }
-        ],
-        correctAnswer: "1"
-      },
-      {
-        id: 45,
-        ageGroup: "12-14",
-        type: "geometric_progression",
-        question: "What comes next in the pattern?",
-        sequence: [
-          { shape: "dot", count: 2, label: "2 dots" },
-          { shape: "dot", count: 6, label: "6 dots" },
-          { shape: "dot", count: 18, label: "18 dots" }
-        ],
-        options: [
-          { id: "1", shape: "dot", count: 54, label: "54 dots" },
-          { id: "2", shape: "dot", count: 36, label: "36 dots" },
-          { id: "3", shape: "dot", count: 24, label: "24 dots" },
-          { id: "4", shape: "dot", count: 72, label: "72 dots" }
-        ],
-        correctAnswer: "1"
-      },
-      {
-        id: 46,
-        ageGroup: "12-14",
-        type: "multi_rule_pattern",
-        question: "What comes next in the pattern?",
-        sequence: [
-          { shape: "circle", color: "red", size: "small", rotation: 0, label: "Small red circle" },
-          { shape: "square", color: "blue", size: "medium", rotation: 45, label: "Medium blue square tilted" },
-          { shape: "triangle", color: "green", size: "big", rotation: 90, label: "Big green triangle right" }
-        ],
-        options: [
-          { id: "1", shape: "star", color: "yellow", size: "bigger", rotation: 135, label: "Bigger yellow star tilted left" },
-          { id: "2", shape: "heart", color: "purple", size: "small", rotation: 0, label: "Small purple heart" },
-          { id: "3", shape: "diamond", color: "orange", size: "medium", rotation: 90, label: "Medium orange diamond right" },
-          { id: "4", shape: "circle", color: "red", size: "big", rotation: 180, label: "Big red circle flipped" }
-        ],
-        correctAnswer: "1"
-      },
-      {
-        id: 47,
-        ageGroup: "12-14",
-        type: "prime_number_pattern",
-        question: "What comes next in the pattern?",
-        sequence: [
-          { shape: "dot", count: 2, label: "2 dots" },
-          { shape: "dot", count: 3, label: "3 dots" },
-          { shape: "dot", count: 5, label: "5 dots" }
-        ],
-        options: [
-          { id: "1", shape: "dot", count: 7, label: "7 dots" },
-          { id: "2", shape: "dot", count: 6, label: "6 dots" },
-          { id: "3", shape: "dot", count: 8, label: "8 dots" },
-          { id: "4", shape: "dot", count: 9, label: "9 dots" }
-        ],
-        correctAnswer: "1"
-      },
-      {
-        id: 48,
-        ageGroup: "12-14",
-        type: "complex_transformation_matrix",
-        question: "What comes next in the pattern?",
-        sequence: [
-          { shape: "triangle", color: "red", size: "small", rotation: 0, label: "Small red triangle up" },
-          { shape: "circle", color: "blue", size: "medium", rotation: 90, label: "Medium blue circle" },
-          { shape: "square", color: "green", size: "big", rotation: 180, label: "Big green square" }
-        ],
-        options: [
-          { id: "1", shape: "star", color: "yellow", size: "bigger", rotation: 270, label: "Bigger yellow star" },
-          { id: "2", shape: "heart", color: "purple", size: "tiny", rotation: 45, label: "Tiny purple heart tilted" },
-          { id: "3", shape: "diamond", color: "orange", size: "small", rotation: 135, label: "Small orange diamond" },
-          { id: "4", shape: "triangle", color: "red", size: "medium", rotation: 225, label: "Medium red triangle" }
-        ],
-        correctAnswer: "1"
-      }
-    ]
-  },
-  "15+": {
-    title: "Ages 15+ (High School+)",
-    questions: [
-      {
-        id: 49,
-        ageGroup: "15+",
-        type: "advanced_algebraic",
-        question: "What comes next in the pattern?",
-        sequence: [
-          { shape: "dot", count: 1, label: "1 dot" },
-          { shape: "dot", count: 8, label: "8 dots" },
-          { shape: "dot", count: 27, label: "27 dots" }
-        ],
-        options: [
-          { id: "1", shape: "dot", count: 64, label: "64 dots" },
-          { id: "2", shape: "dot", count: 54, label: "54 dots" },
-          { id: "3", shape: "dot", count: 36, label: "36 dots" },
-          { id: "4", shape: "dot", count: 125, label: "125 dots" }
-        ],
-        correctAnswer: "1"
-      },
-      {
-        id: 50,
-        ageGroup: "15+",
-        type: "complex_geometric_transformation",
-        question: "What comes next in the pattern?",
-        sequence: [
-          { shape: "triangle", color: "red", size: "small", rotation: 0, label: "Small red triangle up" },
-          { shape: "square", color: "blue", size: "medium", rotation: 90, label: "Medium blue square rotated" },
-          { shape: "pentagon", color: "green", size: "big", rotation: 180, label: "Big green pentagon flipped" }
-        ],
-        options: [
-          { id: "1", shape: "hexagon", color: "yellow", size: "bigger", rotation: 270, label: "Bigger yellow hexagon rotated left" },
-          { id: "2", shape: "circle", color: "purple", size: "tiny", rotation: 45, label: "Tiny purple circle tilted" },
-          { id: "3", shape: "star", color: "orange", size: "small", rotation: 135, label: "Small orange star" },
-          { id: "4", shape: "heart", color: "pink", size: "medium", rotation: 225, label: "Medium pink heart" }
-        ],
-        correctAnswer: "1"
-      },
-      {
-        id: 51,
-        ageGroup: "15+",
-        type: "matrix_reasoning_advanced",
-        question: "What comes next in the pattern?",
-        sequence: [
-          { shape: "circle", color: "red", size: "big", rotation: 0, position: "top", label: "Big red circle at top" },
-          { shape: "square", color: "blue", size: "medium", rotation: 45, position: "middle", label: "Medium blue square tilted in middle" },
-          { shape: "triangle", color: "green", size: "small", rotation: 90, position: "bottom", label: "Small green triangle right at bottom" }
-        ],
-        options: [
-          { id: "1", shape: "star", color: "yellow", size: "tiny", rotation: 135, position: "top", label: "Tiny yellow star tilted at top" },
-          { id: "2", shape: "heart", color: "purple", size: "bigger", rotation: 180, position: "middle", label: "Bigger purple heart flipped in middle" },
-          { id: "3", shape: "diamond", color: "orange", size: "big", rotation: 225, position: "bottom", label: "Big orange diamond rotated at bottom" },
-          { id: "4", shape: "circle", color: "pink", size: "medium", rotation: 270, position: "left", label: "Medium pink circle left rotated" }
-        ],
-        correctAnswer: "1"
-      },
-      {
-        id: 52,
-        ageGroup: "15+",
-        type: "exponential_pattern",
-        question: "What comes next in the pattern?",
-        sequence: [
-          { shape: "star", count: 4, label: "4 stars" },
-          { shape: "star", count: 16, label: "16 stars" },
-          { shape: "star", count: 64, label: "64 stars" }
-        ],
-        options: [
-          { id: "1", shape: "star", count: 256, label: "256 stars" },
-          { id: "2", shape: "star", count: 128, label: "128 stars" },
-          { id: "3", shape: "star", count: 192, label: "192 stars" },
-          { id: "4", shape: "star", count: 100, label: "100 stars" }
-        ],
-        correctAnswer: "1"
-      },
-      {
-        id: 53,
-        ageGroup: "15+",
-        type: "multi_dimensional_transformation",
-        question: "What comes next in the pattern?",
-        sequence: [
-          { shape: "triangle", color: "red", size: "small", rotation: 0, filled: true, label: "Small filled red triangle up" },
-          { shape: "square", color: "blue", size: "medium", rotation: 90, filled: false, label: "Medium outline blue square right" },
-          { shape: "circle", color: "green", size: "big", rotation: 180, filled: true, label: "Big filled green circle" }
-        ],
-        options: [
-          { id: "1", shape: "star", color: "yellow", size: "bigger", rotation: 270, filled: false, label: "Bigger outline yellow star left" },
-          { id: "2", shape: "heart", color: "purple", size: "tiny", rotation: 45, filled: true, label: "Tiny filled purple heart" },
-          { id: "3", shape: "diamond", color: "orange", size: "small", rotation: 135, filled: false, label: "Small outline orange diamond" },
-          { id: "4", shape: "triangle", color: "pink", size: "medium", rotation: 225, filled: true, label: "Medium filled pink triangle" }
-        ],
-        correctAnswer: "1"
+        correctAnswer: "4"
       }
     ]
   }
 }
 
-// Flatten all question groups into single array for backwards compatibility  
+// Include all age group questions
 const QUESTIONS = [
   ...QUESTION_GROUPS["2.5-3.5"].questions,
   ...QUESTION_GROUPS["3.5-4"].questions,
-  ...QUESTION_GROUPS["4-5"].questions,
+  ...QUESTION_GROUPS["4.5-5"].questions,
   ...QUESTION_GROUPS["6-7"].questions,
   ...QUESTION_GROUPS["8-9"].questions,
-  ...QUESTION_GROUPS["10-11"].questions,
-  ...QUESTION_GROUPS["12-14"].questions,
-  ...QUESTION_GROUPS["15+"].questions
+  ...QUESTION_GROUPS["10-11"].questions
 ]
 
 export default function StudentPatternReasoning() {
@@ -1178,17 +912,42 @@ export default function StudentPatternReasoning() {
       'maroon': { fill: '#991B1B', stroke: '#7F1D1D' },
       'gold': { fill: '#F59E0B', stroke: '#D97706' },
       'crimson': { fill: '#DC143C', stroke: '#B91C1C' },
-      'aqua': { fill: '#06B6D4', stroke: '#0891B2' }
+      'aqua': { fill: '#06B6D4', stroke: '#0891B2' },
+      'lightblue': { fill: '#7DD3FC', stroke: '#38BDF8' },
+      'darkblue': { fill: '#1E3A8A', stroke: '#1E40AF' }
     }
 
-    const colors = colorMap[item.color] || { fill: '#6B7280', stroke: '#4B5563' }
+    const colors = colorMap[item.color] || { fill: '#2563EB', stroke: '#1D4ED8' }
     const size = item.size === 'big' ? 50 : 
                  item.size === 'small' ? 35 : 
                  item.size === 'medium' ? 42 :
                  item.size === 'tiny' ? 28 :
                  item.size === 'bigger' ? 55 : 42
     const viewBox = 70
-    const center = viewBox / 2
+    let centerX = viewBox / 2
+    let centerY = viewBox / 2
+    
+    // Handle position property
+    if (item.position) {
+      switch(item.position) {
+        case 'top':
+          centerY = viewBox / 4
+          break
+        case 'bottom':
+          centerY = (viewBox * 3) / 4
+          break
+        case 'left':
+          centerX = viewBox / 3
+          break
+        case 'right':
+          centerX = (viewBox * 2) / 3
+          break
+        case 'middle':
+        default:
+          // Keep center position
+          break
+      }
+    }
 
     const commonStyle = {
       width: '100%',
@@ -1200,62 +959,233 @@ export default function StudentPatternReasoning() {
 
     switch (item.shape) {
       case 'circle':
+        const circleCount = item.count || 1
+        if (circleCount > 1) {
+          // Handle multiple circles
+          const positions = []
+          if (circleCount === 2) {
+            positions.push({ x: centerX - size/4, y: centerY })
+            positions.push({ x: centerX + size/4, y: centerY })
+          } else if (circleCount === 3) {
+            positions.push({ x: centerX, y: centerY - size/4 })
+            positions.push({ x: centerX - size/4, y: centerY + size/4 })
+            positions.push({ x: centerX + size/4, y: centerY + size/4 })
+          }
+          
+          return (
+            <div style={commonStyle}>
+              <svg width="70" height="70" viewBox={`0 0 ${viewBox} ${viewBox}`}>
+                {positions.map((pos, i) => (
+                  <circle 
+                    key={i}
+                    cx={pos.x} 
+                    cy={pos.y} 
+                    r={size / 4}
+                    fill={item.style === 'outline' ? 'none' : colors.fill}
+                    stroke={colors.stroke} 
+                    strokeWidth="2"
+                  />
+                ))}
+              </svg>
+            </div>
+          )
+        }
+        
         return (
           <div style={commonStyle}>
             <svg width="70" height="70" viewBox={`0 0 ${viewBox} ${viewBox}`}>
+              {item.modifier === 'stripe' && (
+                <defs>
+                  <pattern id="stripePatternCircle" patternUnits="userSpaceOnUse" width="4" height="4">
+                    <rect width="4" height="4" fill={colors.fill}/>
+                    <rect width="2" height="4" fill="black"/>
+                  </pattern>
+                </defs>
+              )}
               <circle 
-                cx={center} 
-                cy={center} 
+                cx={centerX} 
+                cy={centerY} 
                 r={size / 2}
-                fill={colors.fill}
+                fill={item.style === 'outline' ? 'none' : (item.modifier === 'stripe' ? 'url(#stripePatternCircle)' : colors.fill)}
                 stroke={colors.stroke} 
                 strokeWidth="2"
+                transform={item.reflected ? `scale(-1, 1) translate(${-2 * centerX}, 0)` : undefined}
               />
+              {item.modifier === 'dot' && (
+                <circle
+                  cx={centerX}
+                  cy={centerY}
+                  r={size / 8}
+                  fill="black"
+                />
+              )}
             </svg>
           </div>
         )
 
       case 'square':
+        const squareCount = item.count || 1
+        if (squareCount > 1) {
+          // Handle multiple squares
+          const positions = []
+          if (squareCount === 2) {
+            positions.push({ x: centerX - size/4, y: centerY })
+            positions.push({ x: centerX + size/4, y: centerY })
+          } else if (squareCount === 3) {
+            positions.push({ x: centerX, y: centerY - size/4 })
+            positions.push({ x: centerX - size/4, y: centerY + size/4 })
+            positions.push({ x: centerX + size/4, y: centerY + size/4 })
+          }
+          
+          return (
+            <div style={commonStyle}>
+              <svg width="70" height="70" viewBox={`0 0 ${viewBox} ${viewBox}`}>
+                {positions.map((pos, i) => (
+                  <rect 
+                    key={i}
+                    x={pos.x - size/6} 
+                    y={pos.y - size/6} 
+                    width={size/3} 
+                    height={size/3}
+                    fill={item.style === 'outline' ? 'none' : colors.fill}
+                    stroke={colors.stroke} 
+                    strokeWidth="2"
+                    rx="2"
+                  />
+                ))}
+              </svg>
+            </div>
+          )
+        }
+        
         return (
           <div style={commonStyle}>
             <svg width="70" height="70" viewBox={`0 0 ${viewBox} ${viewBox}`}>
+              {item.modifier === 'stripe' && (
+                <defs>
+                  <pattern id="stripePatternSquare" patternUnits="userSpaceOnUse" width="4" height="4">
+                    <rect width="4" height="4" fill={colors.fill}/>
+                    <rect width="2" height="4" fill="black"/>
+                  </pattern>
+                </defs>
+              )}
               <rect 
-                x={center - size / 2} 
-                y={center - size / 2} 
+                x={centerX - size / 2} 
+                y={centerY - size / 2} 
                 width={size} 
                 height={size}
-                fill={colors.fill}
+                fill={item.style === 'outline' ? 'none' : (item.modifier === 'stripe' ? 'url(#stripePatternSquare)' : colors.fill)}
                 stroke={colors.stroke} 
                 strokeWidth="2"
                 rx="3"
+                transform={item.reflected ? `scale(-1, 1) translate(${-2 * centerX}, 0)` : undefined}
               />
             </svg>
           </div>
         )
 
       case 'triangle':
+        const rotation = item.rotation || 0
+        const triangleCount = item.count || 1
+        
+        if (triangleCount > 1) {
+          // Handle multiple triangles
+          const positions = []
+          if (triangleCount === 2) {
+            positions.push({ x: centerX - size/4, y: centerY })
+            positions.push({ x: centerX + size/4, y: centerY })
+          } else if (triangleCount === 3) {
+            positions.push({ x: centerX, y: centerY - size/4 })
+            positions.push({ x: centerX - size/4, y: centerY + size/4 })
+            positions.push({ x: centerX + size/4, y: centerY + size/4 })
+          }
+          
+          return (
+            <div style={commonStyle}>
+              <svg width="70" height="70" viewBox={`0 0 ${viewBox} ${viewBox}`}>
+                {positions.map((pos, i) => (
+                  <polygon 
+                    key={i}
+                    points={`${pos.x},${pos.y - size / 6} ${pos.x + size / 6},${pos.y + size / 6} ${pos.x - size / 6},${pos.y + size / 6}`}
+                    fill={item.style === 'outline' ? 'none' : colors.fill}
+                    stroke={colors.stroke} 
+                    strokeWidth="2"
+                  />
+                ))}
+              </svg>
+            </div>
+          )
+        }
+        
         return (
           <div style={commonStyle}>
             <svg width="70" height="70" viewBox={`0 0 ${viewBox} ${viewBox}`}>
+              {item.modifier === 'stripe' && (
+                <defs>
+                  <pattern id="stripePattern" patternUnits="userSpaceOnUse" width="4" height="4">
+                    <rect width="4" height="4" fill={colors.fill}/>
+                    <rect width="2" height="4" fill="black"/>
+                  </pattern>
+                </defs>
+              )}
               <polygon 
-                points={`${center},${center - size / 2} ${center + size / 2},${center + size / 2} ${center - size / 2},${center + size / 2}`}
-                fill={colors.fill} 
+                points={`${centerX},${centerY - size / 2} ${centerX + size / 2},${centerY + size / 2} ${centerX - size / 2},${centerY + size / 2}`}
+                fill={item.style === 'outline' ? 'none' : (item.modifier === 'stripe' ? 'url(#stripePattern)' : colors.fill)} 
                 stroke={colors.stroke} 
                 strokeWidth="2"
+                transform={item.reflected ? `rotate(${rotation} ${centerX} ${centerY}) scale(-1, 1) translate(${-2 * centerX}, 0)` : `rotate(${rotation} ${centerX} ${centerY})`}
               />
+              {item.modifier === 'dot' && (
+                <circle
+                  cx={centerX}
+                  cy={centerY}
+                  r={size / 8}
+                  fill="black"
+                  transform={item.reflected ? `rotate(${rotation} ${centerX} ${centerY}) scale(-1, 1) translate(${-2 * centerX}, 0)` : `rotate(${rotation} ${centerX} ${centerY})`}
+                />
+              )}
             </svg>
           </div>
         )
 
       case 'diamond':
+        if (item.color === 'split' && item.topColor && item.bottomColor) {
+          const topColors = colorMap[item.topColor] || { fill: '#2563EB', stroke: '#1D4ED8' }
+          const bottomColors = colorMap[item.bottomColor] || { fill: '#DC2626', stroke: '#B91C1C' }
+          
+          return (
+            <div style={commonStyle}>
+              <svg width="70" height="70" viewBox={`0 0 ${viewBox} ${viewBox}`}>
+                <g transform={item.rotation ? `rotate(${item.rotation} ${centerX} ${centerY})` : undefined}>
+                  {/* Top half of diamond */}
+                  <polygon 
+                    points={`${centerX},${centerY - size / 2} ${centerX + size / 2},${centerY} ${centerX},${centerY} ${centerX - size / 2},${centerY}`}
+                    fill={topColors.fill} 
+                    stroke={colors.stroke} 
+                    strokeWidth="2"
+                  />
+                  {/* Bottom half of diamond */}
+                  <polygon 
+                    points={`${centerX - size / 2},${centerY} ${centerX},${centerY} ${centerX + size / 2},${centerY} ${centerX},${centerY + size / 2}`}
+                    fill={bottomColors.fill} 
+                    stroke={colors.stroke} 
+                    strokeWidth="2"
+                  />
+                </g>
+              </svg>
+            </div>
+          )
+        }
+        
         return (
           <div style={commonStyle}>
             <svg width="70" height="70" viewBox={`0 0 ${viewBox} ${viewBox}`}>
               <polygon 
-                points={`${center},${center - size / 2} ${center + size / 2},${center} ${center},${center + size / 2} ${center - size / 2},${center}`}
+                points={`${centerX},${centerY - size / 2} ${centerX + size / 2},${centerY} ${centerX},${centerY + size / 2} ${centerX - size / 2},${centerY}`}
                 fill={colors.fill} 
                 stroke={colors.stroke} 
                 strokeWidth="2"
+                transform={item.rotation ? `rotate(${item.rotation} ${centerX} ${centerY})` : undefined}
               />
             </svg>
           </div>
@@ -1288,7 +1218,7 @@ export default function StudentPatternReasoning() {
         
         const innerRadius = adaptiveStarSize * 0.4
         const starTotalWidth = (starCount - 1) * adaptiveSpacing
-        const starStartX = center - starTotalWidth / 2
+        const starStartX = centerX - starTotalWidth / 2
 
         return (
           <div style={commonStyle}>
@@ -1300,7 +1230,7 @@ export default function StudentPatternReasoning() {
                   const angle = (j * Math.PI) / 5
                   const radius = j % 2 === 0 ? adaptiveStarSize : innerRadius
                   const x = starCenterX + Math.cos(angle - Math.PI / 2) * radius
-                  const y = center + Math.sin(angle - Math.PI / 2) * radius
+                  const y = centerY + Math.sin(angle - Math.PI / 2) * radius
                   starPoints += `${x},${y} `
                 }
                 return (
@@ -1318,70 +1248,170 @@ export default function StudentPatternReasoning() {
         )
 
       case 'heart':
+        const heartDirection = item.direction || 'up'
+        let heartTransform = ''
+        
+        switch (heartDirection) {
+          case 'down':
+            heartTransform = `rotate(180 ${centerX} ${centerY})`
+            break
+          case 'left':
+            heartTransform = `rotate(270 ${centerX} ${centerY})`
+            break
+          case 'right':
+            heartTransform = `rotate(90 ${centerX} ${centerY})`
+            break
+          case 'up':
+          default:
+            heartTransform = `rotate(180 ${centerX} ${centerY})`
+            break
+        }
+        
         return (
           <div style={commonStyle}>
             <svg width="70" height="70" viewBox={`0 0 ${viewBox} ${viewBox}`}>
               <path 
-                d={`M${center},${center + size * 0.3} C${center - size * 0.5},${center - size * 0.1} ${center - size * 0.5},${center - size * 0.5} ${center},${center - size * 0.2} C${center + size * 0.5},${center - size * 0.5} ${center + size * 0.5},${center - size * 0.1} ${center},${center + size * 0.3}Z`}
+                d={`M${centerX},${centerY + size * 0.3} C${centerX - size * 0.5},${centerY - size * 0.1} ${centerX - size * 0.5},${centerY - size * 0.5} ${centerX},${centerY - size * 0.2} C${centerX + size * 0.5},${centerY - size * 0.5} ${centerX + size * 0.5},${centerY - size * 0.1} ${centerX},${centerY + size * 0.3}Z`}
                 fill={colors.fill} 
                 stroke={colors.stroke} 
                 strokeWidth="2"
+                transform={heartTransform}
               />
             </svg>
           </div>
         )
 
-      case 'dot':
+      case 'dots':
         const dotCount = item.count || 1
-        // Adaptive dot size and spacing based on count
-        let dotSize, dotSpacing
         
-        if (dotCount === 1) {
-          dotSize = 10
-          dotSpacing = 0
-        } else if (dotCount === 2) {
+        // Multi-row dot layout with bigger dots
+        let dotSize, dotsPerRow, rows
+        
+        if (dotCount <= 3) {
           dotSize = 8
-          dotSpacing = 20
-        } else if (dotCount === 3) {
+          dotsPerRow = dotCount
+          rows = 1
+        } else if (dotCount <= 6) {
           dotSize = 7
-          dotSpacing = 15
-        } else if (dotCount === 4) {
+          dotsPerRow = Math.ceil(dotCount / 2)
+          rows = 2
+        } else if (dotCount <= 12) {
           dotSize = 6
-          dotSpacing = 12
-        } else if (dotCount === 5) {
+          dotsPerRow = Math.ceil(dotCount / 3)
+          rows = 3
+        } else if (dotCount <= 20) {
           dotSize = 5
-          dotSpacing = 10
-        } else if (dotCount === 6) {
-          dotSize = 4
-          dotSpacing = 8
-        } else if (dotCount === 7) {
-          dotSize = 4
-          dotSpacing = 7
-        } else if (dotCount === 8) {
-          dotSize = 3
-          dotSpacing = 6
+          dotsPerRow = Math.ceil(dotCount / 4)
+          rows = 4
         } else {
-          dotSize = 3
-          dotSpacing = 5
+          dotSize = 4
+          dotsPerRow = Math.ceil(dotCount / 5)
+          rows = 5
         }
         
-        const dotTotalWidth = (dotCount - 1) * dotSpacing
-        const dotStartX = center - dotTotalWidth / 2
+        const spacing = Math.min(12, (60 - dotsPerRow * dotSize) / (dotsPerRow + 1))
+        const rowSpacing = Math.min(12, (60 - rows * dotSize) / (rows + 1))
 
         return (
           <div style={commonStyle}>
             <svg width="70" height="70" viewBox={`0 0 ${viewBox} ${viewBox}`}>
-              {Array.from({ length: dotCount }, (_, i) => (
-                <circle 
-                  key={i}
-                  cx={dotStartX + i * dotSpacing} 
-                  cy={center} 
-                  r={dotSize / 2}
-                  fill={colors.fill}
-                  stroke={colors.stroke} 
-                  strokeWidth="1"
-                />
-              ))}
+              {Array.from({ length: dotCount }, (_, i) => {
+                const row = Math.floor(i / dotsPerRow)
+                const col = i % dotsPerRow
+                const dotsInThisRow = Math.min(dotsPerRow, dotCount - row * dotsPerRow)
+                
+                const totalRowWidth = dotsInThisRow * dotSize + (dotsInThisRow - 1) * spacing
+                const startX = centerX - totalRowWidth / 2
+                const startY = centerY - (rows * dotSize + (rows - 1) * rowSpacing) / 2
+                
+                const cx = startX + col * (dotSize + spacing) + dotSize / 2
+                const cy = startY + row * (dotSize + rowSpacing) + dotSize / 2
+                
+                return (
+                  <circle 
+                    key={i}
+                    cx={cx} 
+                    cy={cy} 
+                    r={dotSize / 2}
+                    fill={colors.fill}
+                    stroke={colors.stroke} 
+                    strokeWidth="1"
+                  />
+                )
+              })}
+            </svg>
+          </div>
+        )
+
+      case 'stars':
+        const numStars = item.count || 1
+        
+        // Multi-row star layout
+        let starSize, starsPerRow, starRows
+        
+        if (numStars <= 3) {
+          starSize = 8
+          starsPerRow = numStars
+          starRows = 1
+        } else if (numStars <= 6) {
+          starSize = 7
+          starsPerRow = Math.ceil(numStars / 2)
+          starRows = 2
+        } else if (numStars <= 12) {
+          starSize = 6
+          starsPerRow = Math.ceil(numStars / 3)
+          starRows = 3
+        } else if (numStars <= 20) {
+          starSize = 5
+          starsPerRow = Math.ceil(numStars / 4)
+          starRows = 4
+        } else {
+          starSize = 4
+          starsPerRow = Math.ceil(numStars / 5)
+          starRows = 5
+        }
+        
+        const starSpacing = Math.min(12, (60 - starsPerRow * starSize) / (starsPerRow + 1))
+        const starRowSpacing = Math.min(12, (60 - starRows * starSize) / (starRows + 1))
+
+        return (
+          <div style={commonStyle}>
+            <svg width="70" height="70" viewBox={`0 0 ${viewBox} ${viewBox}`}>
+              {Array.from({ length: numStars }, (_, i) => {
+                const row = Math.floor(i / starsPerRow)
+                const col = i % starsPerRow
+                const starsInThisRow = Math.min(starsPerRow, numStars - row * starsPerRow)
+                
+                const totalRowWidth = starsInThisRow * starSize + (starsInThisRow - 1) * starSpacing
+                const startX = centerX - totalRowWidth / 2
+                const startY = centerY - (starRows * starSize + (starRows - 1) * starRowSpacing) / 2
+                
+                const cx = startX + col * (starSize + starSpacing) + starSize / 2
+                const cy = startY + row * (starSize + starRowSpacing) + starSize / 2
+                
+                const starRadius = starSize / 2
+                const points = []
+                for (let j = 0; j < 5; j++) {
+                  const outerAngle = (j * 2 * Math.PI) / 5 - Math.PI / 2
+                  const innerAngle = ((j + 0.5) * 2 * Math.PI) / 5 - Math.PI / 2
+                  const outerX = cx + Math.cos(outerAngle) * starRadius
+                  const outerY = cy + Math.sin(outerAngle) * starRadius
+                  const innerX = cx + Math.cos(innerAngle) * (starRadius * 0.4)
+                  const innerY = cy + Math.sin(innerAngle) * (starRadius * 0.4)
+                  points.push(`${outerX},${outerY}`)
+                  points.push(`${innerX},${innerY}`)
+                }
+                
+                return (
+                  <polygon
+                    key={i}
+                    points={points.join(' ')}
+                    fill={colors.fill}
+                    stroke={colors.stroke}
+                    strokeWidth="1"
+                  />
+                )
+              })}
             </svg>
           </div>
         )
@@ -1391,13 +1421,69 @@ export default function StudentPatternReasoning() {
           <div style={commonStyle}>
             <svg width="70" height="70" viewBox={`0 0 ${viewBox} ${viewBox}`}>
               <circle 
-                cx={center} 
-                cy={center} 
+                cx={centerX} 
+                cy={centerY} 
                 r={size / 2}
                 fill={colors.fill}
                 stroke={colors.stroke} 
                 strokeWidth="2"
               />
+            </svg>
+          </div>
+        )
+        
+      case 'hexagon':
+        const hexagonDotCount = item.dotCount || 0
+        return (
+          <div style={commonStyle}>
+            <svg width="70" height="70" viewBox={`0 0 ${viewBox} ${viewBox}`}>
+              {item.modifier === 'stripe' && (
+                <defs>
+                  <pattern id="stripePatternHex" patternUnits="userSpaceOnUse" width="4" height="4">
+                    <rect width="4" height="4" fill={colors.fill}/>
+                    <rect width="2" height="4" fill="black"/>
+                  </pattern>
+                </defs>
+              )}
+              <polygon 
+                points={`${centerX + size/2},${centerY} ${centerX + size/4},${centerY - size/2} ${centerX - size/4},${centerY - size/2} ${centerX - size/2},${centerY} ${centerX - size/4},${centerY + size/2} ${centerX + size/4},${centerY + size/2}`}
+                fill={item.modifier === 'stripe' ? 'url(#stripePatternHex)' : colors.fill}
+                stroke={colors.stroke} 
+                strokeWidth="2"
+                transform={item.rotation ? `rotate(${item.rotation} ${centerX} ${centerY})` : undefined}
+              />
+              {hexagonDotCount > 0 && Array.from({ length: hexagonDotCount }, (_, i) => {
+                // Arrange dots in a small grid inside hexagon
+                let dotX, dotY
+                if (hexagonDotCount === 1) {
+                  dotX = centerX
+                  dotY = centerY
+                } else if (hexagonDotCount === 2) {
+                  dotX = centerX + (i === 0 ? -8 : 8)
+                  dotY = centerY
+                } else if (hexagonDotCount === 3) {
+                  dotX = centerX + (i === 1 ? -8 : i === 2 ? 8 : 0)
+                  dotY = centerY + (i === 0 ? -8 : 8)
+                } else if (hexagonDotCount === 4) {
+                  dotX = centerX + (i % 2 === 0 ? -8 : 8)
+                  dotY = centerY + (i < 2 ? -8 : 8)
+                } else {
+                  // For more dots, arrange in a circle pattern
+                  const angle = (i * 2 * Math.PI) / hexagonDotCount
+                  dotX = centerX + Math.cos(angle) * 10
+                  dotY = centerY + Math.sin(angle) * 10
+                }
+                
+                return (
+                  <circle 
+                    key={i}
+                    cx={dotX} 
+                    cy={dotY} 
+                    r={3}
+                    fill="black"
+                  />
+                )
+              })}
             </svg>
           </div>
         )
@@ -1479,31 +1565,110 @@ export default function StudentPatternReasoning() {
           {/* Pattern Sequence */}
           <div className="space-y-4">
             <div className="text-center">
-              {/* Show 3 shapes in sequence + question mark for 4th */}
-              <div className="flex justify-center items-center mb-4 gap-6">
-                {question.sequence.map((step: any, index) => (
-                  <div key={index} className="flex flex-col items-center">
-                    <div className="w-24 h-24 border-2 border-gray-300 rounded-xl flex items-center justify-center bg-white shadow-sm mb-2">
-                      {renderShape(step)}
+              {/* Matrix questions (2x2 or 3x3 grid) or regular sequence */}
+              {question.type === 'matrix_pattern' ? (
+                <div className="flex justify-center mb-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    {/* Top-left */}
+                    <div className="flex flex-col items-center">
+                      <div className="w-24 h-24 border-2 border-gray-300 rounded-xl flex items-center justify-center bg-white shadow-sm">
+                        {renderShape(question.sequence[0])}
+                      </div>
                     </div>
-                    <p className="text-lg font-bold text-gray-900">{index + 1}</p>
+                    
+                    {/* Top-right */}
+                    <div className="flex flex-col items-center">
+                      <div className="w-24 h-24 border-2 border-gray-300 rounded-xl flex items-center justify-center bg-white shadow-sm">
+                        {renderShape(question.sequence[1])}
+                      </div>
+                    </div>
+                    
+                    {/* Bottom-left */}
+                    <div className="flex flex-col items-center">
+                      <div className="w-24 h-24 border-2 border-gray-300 rounded-xl flex items-center justify-center bg-white shadow-sm">
+                        {renderShape(question.sequence[2])}
+                      </div>
+                    </div>
+                    
+                    {/* Bottom-right (question mark) */}
+                    <div className="flex flex-col items-center">
+                      <div className="w-24 h-24 border-2 border-dashed border-blue-900 rounded-xl flex items-center justify-center bg-blue-50 shadow-sm">
+                        {answers[currentQuestion]?.answer ? (
+                          renderShape(
+                            question.options.find((opt: any) => opt.id === answers[currentQuestion].answer) || {}
+                          )
+                        ) : (
+                          <span className="text-3xl font-bold text-blue-900">?</span>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                ))}
-                
-                {/* Fourth tile with question mark */}
-                <div className="flex flex-col items-center">
-                  <div className="w-24 h-24 border-2 border-dashed border-blue-900 rounded-xl flex items-center justify-center bg-blue-50 shadow-sm mb-2">
-                    {answers[currentQuestion]?.answer ? (
-                      renderShape(
-                        question.options.find((opt: any) => opt.id === answers[currentQuestion].answer) || {}
-                      )
-                    ) : (
-                      <span className="text-2xl text-blue-900 font-bold">?</span>
+                </div>
+              ) : question.type === 'matrix_3x3_pattern' ? (
+                <div className="flex justify-center mb-4">
+                  <div className="grid grid-cols-3 gap-3">
+                    {question.sequence.map((item: any, index: number) => (
+                      <div key={index} className="flex flex-col items-center">
+                        <div className={`w-20 h-20 border-2 rounded-xl flex items-center justify-center shadow-sm ${
+                          item === null ? 'border-dashed border-blue-900 bg-blue-50' : 'border-gray-300 bg-white'
+                        }`}>
+                          {item === null ? (
+                            answers[currentQuestion]?.answer ? (
+                              renderShape(
+                                question.options.find((opt: any) => opt.id === answers[currentQuestion].answer) || {}
+                              )
+                            ) : (
+                              <span className="text-2xl font-bold text-blue-900">?</span>
+                            )
+                          ) : (
+                            renderShape(item)
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                    {/* Add the missing cell for bottom-right if not already present */}
+                    {question.sequence.length === 8 && (
+                      <div className="flex flex-col items-center">
+                        <div className="w-20 h-20 border-2 border-dashed border-blue-900 rounded-xl flex items-center justify-center bg-blue-50 shadow-sm">
+                          {answers[currentQuestion]?.answer ? (
+                            renderShape(
+                              question.options.find((opt: any) => opt.id === answers[currentQuestion].answer) || {}
+                            )
+                          ) : (
+                            <span className="text-2xl font-bold text-blue-900">?</span>
+                          )}
+                        </div>
+                      </div>
                     )}
                   </div>
-                  <p className="text-lg font-bold text-gray-900">4</p>
                 </div>
-              </div>
+              ) : (
+                /* Regular sequence display */
+                <div className="flex justify-center items-center mb-4 gap-6">
+                  {question.sequence.map((step: any, index) => (
+                    <div key={index} className="flex flex-col items-center">
+                      <div className="w-24 h-24 border-2 border-gray-300 rounded-xl flex items-center justify-center bg-white shadow-sm mb-2">
+                        {renderShape(step)}
+                      </div>
+                      <p className="text-lg font-bold text-gray-900">{index + 1}</p>
+                    </div>
+                  ))}
+                  
+                  {/* Fourth tile with question mark */}
+                  <div className="flex flex-col items-center">
+                    <div className="w-24 h-24 border-2 border-dashed border-blue-900 rounded-xl flex items-center justify-center bg-blue-50 shadow-sm mb-2">
+                      {answers[currentQuestion]?.answer ? (
+                        renderShape(
+                          question.options.find((opt: any) => opt.id === answers[currentQuestion].answer) || {}
+                        )
+                      ) : (
+                        <span className="text-2xl text-blue-900 font-bold">?</span>
+                      )}
+                    </div>
+                    <p className="text-lg font-bold text-gray-900">4</p>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Light grey divider line */}
