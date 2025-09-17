@@ -1012,13 +1012,6 @@ export default function StudentPatternReasoning() {
       }
     }
 
-    const commonStyle = {
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      width: '100%',
-      height: '100%'
-    }
 
     const viewBoxSize = 80
 
@@ -1029,12 +1022,12 @@ export default function StudentPatternReasoning() {
           // Handle multiple circles
           const positions = []
           if (circleCount === 2) {
-            positions.push({ x: centerX - size/4, y: centerY })
-            positions.push({ x: centerX + size/4, y: centerY })
+            positions.push({ x: 0 - size/4, y: 0 })
+            positions.push({ x: 0 + size/4, y: 0 })
           } else if (circleCount === 3) {
-            positions.push({ x: centerX, y: centerY - size/4 })
-            positions.push({ x: centerX - size/4, y: centerY + size/4 })
-            positions.push({ x: centerX + size/4, y: centerY + size/4 })
+            positions.push({ x: 0, y: 0 - size/4 })
+            positions.push({ x: 0 - size/4, y: 0 + size/4 })
+            positions.push({ x: 0 + size/4, y: 0 + size/4 })
           }
           
           return (
@@ -1042,8 +1035,8 @@ export default function StudentPatternReasoning() {
               {positions.map((pos, i) => (
                 <circle 
                   key={i}
-                  cx={pos.x - centerX} 
-                  cy={pos.y - centerY} 
+                  cx={pos.x} 
+                  cy={pos.y} 
                   r={size / 4}
                   fill={item.style === 'outline' ? 'none' : colors.fill}
                   stroke={colors.stroke} 
@@ -1071,7 +1064,7 @@ export default function StudentPatternReasoning() {
               fill={item.style === 'outline' ? 'none' : (item.modifier === 'stripe' ? 'url(#stripePatternCircle)' : colors.fill)}
                 stroke={colors.stroke} 
                 strokeWidth="2"
-                transform={item.reflected ? `scale(-1, 1) translate(${-2 * centerX}, 0)` : undefined}
+                transform={item.reflected ? `scale(-1, 1)` : undefined}
               />
               {item.modifier === 'dot' && (
                 <circle
@@ -1090,12 +1083,12 @@ export default function StudentPatternReasoning() {
           // Handle multiple squares
           const positions = []
           if (squareCount === 2) {
-            positions.push({ x: centerX - size/4, y: centerY })
-            positions.push({ x: centerX + size/4, y: centerY })
+            positions.push({ x: 0 - size/4, y: 0 })
+            positions.push({ x: 0 + size/4, y: 0 })
           } else if (squareCount === 3) {
-            positions.push({ x: centerX, y: centerY - size/4 })
-            positions.push({ x: centerX - size/4, y: centerY + size/4 })
-            positions.push({ x: centerX + size/4, y: centerY + size/4 })
+            positions.push({ x: 0, y: 0 - size/4 })
+            positions.push({ x: 0 - size/4, y: 0 + size/4 })
+            positions.push({ x: 0 + size/4, y: 0 + size/4 })
           }
           
           return (
@@ -1103,8 +1096,8 @@ export default function StudentPatternReasoning() {
               {positions.map((pos, i) => (
                 <rect 
                   key={i}
-                  x={pos.x - centerX - size/6} 
-                  y={pos.y - centerY - size/6} 
+                  x={pos.x - size/6} 
+                  y={pos.y - size/6} 
                   width={size/3} 
                   height={size/3}
                   fill={item.style === 'outline' ? 'none' : colors.fill}
@@ -1149,60 +1142,56 @@ export default function StudentPatternReasoning() {
           // Handle multiple triangles
           const positions = []
           if (triangleCount === 2) {
-            positions.push({ x: centerX - size/4, y: centerY })
-            positions.push({ x: centerX + size/4, y: centerY })
+            positions.push({ x: 0 - size/4, y: 0 })
+            positions.push({ x: 0 + size/4, y: 0 })
           } else if (triangleCount === 3) {
-            positions.push({ x: centerX, y: centerY - size/4 })
-            positions.push({ x: centerX - size/4, y: centerY + size/4 })
-            positions.push({ x: centerX + size/4, y: centerY + size/4 })
+            positions.push({ x: 0, y: 0 - size/4 })
+            positions.push({ x: 0 - size/4, y: 0 + size/4 })
+            positions.push({ x: 0 + size/4, y: 0 + size/4 })
           }
           
           return (
-            <div style={commonStyle}>
-              <svg width="70" height="70" viewBox={`0 0 ${viewBox} ${viewBox}`}>
-                {positions.map((pos, i) => (
-                  <polygon 
-                    key={i}
-                    points={`${pos.x},${pos.y - size / 6} ${pos.x + size / 6},${pos.y + size / 6} ${pos.x - size / 6},${pos.y + size / 6}`}
-                    fill={item.style === 'outline' ? 'none' : colors.fill}
-                    stroke={colors.stroke} 
-                    strokeWidth="2"
-                  />
-                ))}
-              </svg>
-            </div>
+            <>
+              {positions.map((pos, i) => (
+                <polygon 
+                  key={i}
+                  points={`${pos.x},${pos.y - size / 6} ${pos.x + size / 6},${pos.y + size / 6} ${pos.x - size / 6},${pos.y + size / 6}`}
+                  fill={item.style === 'outline' ? 'none' : colors.fill}
+                  stroke={colors.stroke} 
+                  strokeWidth="2"
+                />
+              ))}
+            </>
           )
         }
         
         return (
-          <div style={commonStyle}>
-            <svg width="70" height="70" viewBox={`0 0 ${viewBox} ${viewBox}`}>
-              {item.modifier === 'stripe' && (
-                <defs>
-                  <pattern id="stripePattern" patternUnits="userSpaceOnUse" width="4" height="4">
-                    <rect width="4" height="4" fill={colors.fill}/>
-                    <rect width="2" height="4" fill="black"/>
-                  </pattern>
-                </defs>
-              )}
-              <polygon 
-                points={`${centerX},${centerY - size / 2} ${centerX + size / 2},${centerY + size / 2} ${centerX - size / 2},${centerY + size / 2}`}
-                fill={item.style === 'outline' ? 'none' : (item.modifier === 'stripe' ? 'url(#stripePattern)' : colors.fill)} 
-                stroke={colors.stroke} 
-                strokeWidth="2"
-                transform={item.reflected ? `rotate(${rotation} ${centerX} ${centerY}) scale(-1, 1) translate(${-2 * centerX}, 0)` : `rotate(${rotation} ${centerX} ${centerY})`}
+          <>
+            {item.modifier === 'stripe' && (
+              <defs>
+                <pattern id="stripePattern" patternUnits="userSpaceOnUse" width="4" height="4">
+                  <rect width="4" height="4" fill={colors.fill}/>
+                  <rect width="2" height="4" fill="black"/>
+                </pattern>
+              </defs>
+            )}
+            <polygon 
+              points={`0,${-size / 2} ${size / 2},${size / 2} ${-size / 2},${size / 2}`}
+              fill={item.style === 'outline' ? 'none' : (item.modifier === 'stripe' ? 'url(#stripePattern)' : colors.fill)} 
+              stroke={colors.stroke} 
+              strokeWidth="2"
+              transform={item.reflected ? `rotate(${rotation}) scale(-1, 1)` : `rotate(${rotation})`}
+            />
+            {item.modifier === 'dot' && (
+              <circle
+                cx={0}
+                cy={0}
+                r={size / 8}
+                fill="black"
+                transform={item.reflected ? `rotate(${rotation}) scale(-1, 1)` : `rotate(${rotation})`}
               />
-              {item.modifier === 'dot' && (
-                <circle
-                  cx={centerX}
-                  cy={centerY}
-                  r={size / 8}
-                  fill="black"
-                  transform={item.reflected ? `rotate(${rotation} ${centerX} ${centerY}) scale(-1, 1) translate(${-2 * centerX}, 0)` : `rotate(${rotation} ${centerX} ${centerY})`}
-                />
-              )}
-            </svg>
-          </div>
+            )}
+          </>
         )
 
       case 'diamond':
@@ -1211,41 +1200,37 @@ export default function StudentPatternReasoning() {
           const bottomColors = colorMap[item.bottomColor] || { fill: '#DC2626', stroke: '#B91C1C' }
           
           return (
-            <div style={commonStyle}>
-              <svg width="70" height="70" viewBox={`0 0 ${viewBox} ${viewBox}`}>
-                <g transform={item.rotation ? `rotate(${item.rotation} ${centerX} ${centerY})` : undefined}>
-                  {/* Top half of diamond */}
-                  <polygon 
-                    points={`${centerX},${centerY - size / 2} ${centerX + size / 2},${centerY} ${centerX},${centerY} ${centerX - size / 2},${centerY}`}
-                    fill={topColors.fill} 
-                    stroke={colors.stroke} 
-                    strokeWidth="2"
-                  />
-                  {/* Bottom half of diamond */}
-                  <polygon 
-                    points={`${centerX - size / 2},${centerY} ${centerX},${centerY} ${centerX + size / 2},${centerY} ${centerX},${centerY + size / 2}`}
-                    fill={bottomColors.fill} 
-                    stroke={colors.stroke} 
-                    strokeWidth="2"
-                  />
-                </g>
-              </svg>
-            </div>
+            <>
+              <g transform={item.rotation ? `rotate(${item.rotation})` : undefined}>
+                {/* Top half of diamond */}
+                <polygon 
+                  points={`0,${-size / 2} ${size / 2},0 0,0 ${-size / 2},0`}
+                  fill={topColors.fill} 
+                  stroke={colors.stroke} 
+                  strokeWidth="2"
+                />
+                {/* Bottom half of diamond */}
+                <polygon 
+                  points={`${-size / 2},0 0,0 ${size / 2},0 0,${size / 2}`}
+                  fill={bottomColors.fill} 
+                  stroke={colors.stroke} 
+                  strokeWidth="2"
+                />
+              </g>
+            </>
           )
         }
         
         return (
-          <div style={commonStyle}>
-            <svg width="70" height="70" viewBox={`0 0 ${viewBox} ${viewBox}`}>
+          <>
               <polygon 
-                points={`${centerX},${centerY - size / 2} ${centerX + size / 2},${centerY} ${centerX},${centerY + size / 2} ${centerX - size / 2},${centerY}`}
+                points={`0,${-size / 2} ${size / 2},0 0,${size / 2} ${-size / 2},0`}
                 fill={colors.fill} 
                 stroke={colors.stroke} 
                 strokeWidth="2"
-                transform={item.rotation ? `rotate(${item.rotation} ${centerX} ${centerY})` : undefined}
+                transform={item.rotation ? `rotate(${item.rotation})` : undefined}
               />
-            </svg>
-          </div>
+          </>
         )
 
       case 'star':
@@ -1275,11 +1260,10 @@ export default function StudentPatternReasoning() {
         
         const innerRadius = adaptiveStarSize * 0.4
         const starTotalWidth = (starCount - 1) * adaptiveSpacing
-        const starStartX = centerX - starTotalWidth / 2
+        const starStartX = -starTotalWidth / 2
 
         return (
-          <div style={commonStyle}>
-            <svg width="70" height="70" viewBox={`0 0 ${viewBox} ${viewBox}`}>
+          <>
               {Array.from({ length: starCount }, (_, i) => {
                 let starPoints = ''
                 const starCenterX = starStartX + i * adaptiveSpacing
@@ -1287,7 +1271,7 @@ export default function StudentPatternReasoning() {
                   const angle = (j * Math.PI) / 5
                   const radius = j % 2 === 0 ? adaptiveStarSize : innerRadius
                   const x = starCenterX + Math.cos(angle - Math.PI / 2) * radius
-                  const y = centerY + Math.sin(angle - Math.PI / 2) * radius
+                  const y = 0 + Math.sin(angle - Math.PI / 2) * radius
                   starPoints += `${x},${y} `
                 }
                 return (
@@ -1300,8 +1284,7 @@ export default function StudentPatternReasoning() {
                   />
                 )
               })}
-            </svg>
-          </div>
+          </>
         )
 
       case 'heart':
@@ -1310,32 +1293,30 @@ export default function StudentPatternReasoning() {
         
         switch (heartDirection) {
           case 'down':
-            heartTransform = `rotate(180 ${centerX} ${centerY})`
+            heartTransform = `rotate(180 0 0)`
             break
           case 'left':
-            heartTransform = `rotate(270 ${centerX} ${centerY})`
+            heartTransform = `rotate(270 0 0)`
             break
           case 'right':
-            heartTransform = `rotate(90 ${centerX} ${centerY})`
+            heartTransform = `rotate(90 0 0)`
             break
           case 'up':
           default:
-            heartTransform = `rotate(180 ${centerX} ${centerY})`
+            heartTransform = ``
             break
         }
         
         return (
-          <div style={commonStyle}>
-            <svg width="70" height="70" viewBox={`0 0 ${viewBox} ${viewBox}`}>
+          <>
               <path 
-                d={`M${centerX},${centerY + size * 0.3} C${centerX - size * 0.5},${centerY - size * 0.1} ${centerX - size * 0.5},${centerY - size * 0.5} ${centerX},${centerY - size * 0.2} C${centerX + size * 0.5},${centerY - size * 0.5} ${centerX + size * 0.5},${centerY - size * 0.1} ${centerX},${centerY + size * 0.3}Z`}
+                d={`M0,${size * 0.3} C${-size * 0.5},${-size * 0.1} ${-size * 0.5},${-size * 0.5} 0,${-size * 0.2} C${size * 0.5},${-size * 0.5} ${size * 0.5},${-size * 0.1} 0,${size * 0.3}Z`}
                 fill={colors.fill} 
                 stroke={colors.stroke} 
                 strokeWidth="2"
                 transform={heartTransform}
               />
-            </svg>
-          </div>
+          </>
         )
 
       case 'dots':
@@ -1370,16 +1351,15 @@ export default function StudentPatternReasoning() {
         const rowSpacing = Math.min(12, (60 - rows * dotSize) / (rows + 1))
 
         return (
-          <div style={commonStyle}>
-            <svg width="70" height="70" viewBox={`0 0 ${viewBox} ${viewBox}`}>
+          <>
               {Array.from({ length: dotCount }, (_, i) => {
                 const row = Math.floor(i / dotsPerRow)
                 const col = i % dotsPerRow
                 const dotsInThisRow = Math.min(dotsPerRow, dotCount - row * dotsPerRow)
                 
                 const totalRowWidth = dotsInThisRow * dotSize + (dotsInThisRow - 1) * spacing
-                const startX = centerX - totalRowWidth / 2
-                const startY = centerY - (rows * dotSize + (rows - 1) * rowSpacing) / 2
+                const startX = 0 - totalRowWidth / 2
+                const startY = 0 - (rows * dotSize + (rows - 1) * rowSpacing) / 2
                 
                 const cx = startX + col * (dotSize + spacing) + dotSize / 2
                 const cy = startY + row * (dotSize + rowSpacing) + dotSize / 2
@@ -1396,8 +1376,7 @@ export default function StudentPatternReasoning() {
                   />
                 )
               })}
-            </svg>
-          </div>
+          </>
         )
 
       case 'stars':
@@ -1432,16 +1411,15 @@ export default function StudentPatternReasoning() {
         const starRowSpacing = Math.min(12, (60 - starRows * starSize) / (starRows + 1))
 
         return (
-          <div style={commonStyle}>
-            <svg width="70" height="70" viewBox={`0 0 ${viewBox} ${viewBox}`}>
+          <>
               {Array.from({ length: numStars }, (_, i) => {
                 const row = Math.floor(i / starsPerRow)
                 const col = i % starsPerRow
                 const starsInThisRow = Math.min(starsPerRow, numStars - row * starsPerRow)
                 
                 const totalRowWidth = starsInThisRow * starSize + (starsInThisRow - 1) * starSpacing
-                const startX = centerX - totalRowWidth / 2
-                const startY = centerY - (starRows * starSize + (starRows - 1) * starRowSpacing) / 2
+                const startX = 0 - totalRowWidth / 2
+                const startY = 0 - (starRows * starSize + (starRows - 1) * starRowSpacing) / 2
                 
                 const cx = startX + col * (starSize + starSpacing) + starSize / 2
                 const cy = startY + row * (starSize + starRowSpacing) + starSize / 2
@@ -1469,31 +1447,27 @@ export default function StudentPatternReasoning() {
                   />
                 )
               })}
-            </svg>
-          </div>
+          </>
         )
 
       default:
         return (
-          <div style={commonStyle}>
-            <svg width="70" height="70" viewBox={`0 0 ${viewBox} ${viewBox}`}>
+          <>
               <circle 
-                cx={centerX} 
-                cy={centerY} 
+                cx={0} 
+                cy={0} 
                 r={size / 2}
                 fill={colors.fill}
                 stroke={colors.stroke} 
                 strokeWidth="2"
               />
-            </svg>
-          </div>
+          </>
         )
         
       case 'hexagon':
         const hexagonDotCount = item.dotCount || 0
         return (
-          <div style={commonStyle}>
-            <svg width="70" height="70" viewBox={`0 0 ${viewBox} ${viewBox}`}>
+          <>
               {item.modifier === 'stripe' && (
                 <defs>
                   <pattern id="stripePatternHex" patternUnits="userSpaceOnUse" width="4" height="4">
@@ -1503,32 +1477,32 @@ export default function StudentPatternReasoning() {
                 </defs>
               )}
               <polygon 
-                points={`${centerX + size/2},${centerY} ${centerX + size/4},${centerY - size/2} ${centerX - size/4},${centerY - size/2} ${centerX - size/2},${centerY} ${centerX - size/4},${centerY + size/2} ${centerX + size/4},${centerY + size/2}`}
+                points={`${size/2},${0} ${size/4},${-size/2} ${-size/4},${-size/2} ${-size/2},${0} ${-size/4},${size/2} ${size/4},${size/2}`}
                 fill={item.modifier === 'stripe' ? 'url(#stripePatternHex)' : colors.fill}
                 stroke={colors.stroke} 
                 strokeWidth="2"
-                transform={item.rotation ? `rotate(${item.rotation} ${centerX} ${centerY})` : undefined}
+                transform={item.rotation ? `rotate(${item.rotation})` : undefined}
               />
               {hexagonDotCount > 0 && Array.from({ length: hexagonDotCount }, (_, i) => {
                 // Arrange dots in a small grid inside hexagon
                 let dotX, dotY
                 if (hexagonDotCount === 1) {
-                  dotX = centerX
-                  dotY = centerY
+                  dotX = 0
+                  dotY = 0
                 } else if (hexagonDotCount === 2) {
-                  dotX = centerX + (i === 0 ? -8 : 8)
-                  dotY = centerY
+                  dotX = 0 + (i === 0 ? -8 : 8)
+                  dotY = 0
                 } else if (hexagonDotCount === 3) {
-                  dotX = centerX + (i === 1 ? -8 : i === 2 ? 8 : 0)
-                  dotY = centerY + (i === 0 ? -8 : 8)
+                  dotX = 0 + (i === 1 ? -8 : i === 2 ? 8 : 0)
+                  dotY = 0 + (i === 0 ? -8 : 8)
                 } else if (hexagonDotCount === 4) {
-                  dotX = centerX + (i % 2 === 0 ? -8 : 8)
-                  dotY = centerY + (i < 2 ? -8 : 8)
+                  dotX = 0 + (i % 2 === 0 ? -8 : 8)
+                  dotY = 0 + (i < 2 ? -8 : 8)
                 } else {
                   // For more dots, arrange in a circle pattern
                   const angle = (i * 2 * Math.PI) / hexagonDotCount
-                  dotX = centerX + Math.cos(angle) * 10
-                  dotY = centerY + Math.sin(angle) * 10
+                  dotX = 0 + Math.cos(angle) * 10
+                  dotY = 0 + Math.sin(angle) * 10
                 }
                 
                 return (
@@ -1541,8 +1515,7 @@ export default function StudentPatternReasoning() {
                   />
                 )
               })}
-            </svg>
-          </div>
+          </>
         )
     }
   }
