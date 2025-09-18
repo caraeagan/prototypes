@@ -679,7 +679,7 @@ function ExaminerPatternReasoningContent() {
                     <h3 className="text-2xl font-bold text-gray-900 mb-2">Please Wait</h3>
                     <p className="text-gray-600">The next activity will begin soon.</p>
                   </div>
-                ) : (
+                ) : question ? (
                   <>
                     <h3 className="text-xl font-bold text-gray-900 mb-6 text-center">
                       {question.question}
@@ -735,6 +735,11 @@ function ExaminerPatternReasoningContent() {
                       </div>
                     </div>
                   </>
+                ) : (
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-900 mx-auto mb-4"></div>
+                    <p className="text-gray-600">Loading question...</p>
+                  </div>
                 )}
               </div>
             </div>
@@ -814,7 +819,7 @@ function ExaminerPatternReasoningContent() {
             </div>
 
             {/* Question Details */}
-            {!currentTestState?.isWaiting && (
+            {!currentTestState?.isWaiting && question && (
               <div className="bg-stone-100 rounded-lg shadow p-4">
                 <h3 className="font-semibold mb-3">Question Analysis</h3>
                 <div className="space-y-2 text-sm">

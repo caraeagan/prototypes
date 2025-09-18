@@ -728,6 +728,226 @@ const QUESTION_GROUPS = {
           { id: "4", shape: "triangle", color: "green", rotation: 180, reflected: false, size: "medium", label: "Pointing down" }
         ],
         correctAnswer: "4"
+      },
+      {
+        id: 37,
+        ageGroup: "10-11",
+        type: "size_rotation_sequence",
+        question: "A star rotates 45° each step. Missing cell in row 1, col 3",
+        sequence: [
+          { shape: "star", color: "split", topColor: "pink", bottomColor: "blue", rotation: 0, size: "medium" },
+          { shape: "star", color: "split", topColor: "pink", bottomColor: "blue", rotation: 45, size: "medium" },
+          null, // Missing cell - should be medium star rotated 90°
+          { shape: "star", color: "split", topColor: "pink", bottomColor: "blue", rotation: 135, size: "medium" },
+          { shape: "star", color: "split", topColor: "pink", bottomColor: "blue", rotation: 180, size: "medium" }
+        ],
+        options: [
+          { id: "1", shape: "star", color: "split", topColor: "pink", bottomColor: "blue", rotation: 90, size: "medium", label: "Medium star rotated 90°" },
+          { id: "2", shape: "star", color: "split", topColor: "pink", bottomColor: "blue", rotation: 135, size: "medium", label: "Medium star rotated 135°" },
+          { id: "3", shape: "star", color: "split", topColor: "pink", bottomColor: "blue", rotation: 135, size: "medium", label: "Medium star rotated 135°" },
+          { id: "4", shape: "star", color: "split", topColor: "pink", bottomColor: "blue", rotation: 45, size: "medium", label: "Medium star rotated 45°" }
+        ],
+        correctAnswer: "1"
+      },
+      {
+        id: 38,
+        ageGroup: "10-11",
+        type: "matrix_transformation",
+        question: "Complex multi-attribute pattern: Shapes cycle (square→triangle→circle), colors shift (blue/yellow→red/green→pink/purple), sizes grow (small→medium→big), rotations increase (0°→45°→90°). Missing: position [2,2]",
+        grid: [
+          [
+            { shape: "square", color: "split", topColor: "blue", bottomColor: "yellow", rotation: 0, reflected: false, size: "small" },
+            { shape: "triangle", color: "split", topColor: "red", bottomColor: "green", rotation: 45, reflected: false, size: "medium" },
+            { shape: "circle", color: "split", topColor: "pink", bottomColor: "purple", rotation: 90, reflected: false, size: "big" }
+          ],
+          [
+            { shape: "triangle", color: "split", topColor: "red", bottomColor: "green", rotation: 45, reflected: true, size: "medium" },
+            { shape: "circle", color: "split", topColor: "pink", bottomColor: "purple", rotation: 90, reflected: true, size: "big" },
+            { shape: "square", color: "split", topColor: "blue", bottomColor: "yellow", rotation: 135, reflected: true, size: "small" }
+          ],
+          [
+            { shape: "circle", color: "split", topColor: "pink", bottomColor: "purple", rotation: 90, reflected: false, size: "big" },
+            { shape: "square", color: "split", topColor: "blue", bottomColor: "yellow", rotation: 135, reflected: false, size: "small" },
+            null // Missing cell - should be triangle with specific attributes
+          ]
+        ],
+        options: [
+          { id: "1", shape: "triangle", color: "split", topColor: "red", bottomColor: "green", rotation: 180, reflected: false, size: "medium", label: "Triangle: red/green, 180°, medium" },
+          { id: "2", shape: "triangle", color: "split", topColor: "red", bottomColor: "green", rotation: 45, reflected: true, size: "medium", label: "Triangle: red/green, 45°, reflected, medium" },
+          { id: "3", shape: "triangle", color: "split", topColor: "pink", bottomColor: "purple", rotation: 135, reflected: false, size: "big", label: "Triangle: pink/purple, 135°, big" },
+          { id: "4", shape: "triangle", color: "split", topColor: "blue", bottomColor: "yellow", rotation: 90, reflected: false, size: "small", label: "Triangle: blue/yellow, 90°, small" }
+        ],
+        correctAnswer: "1"
+      },
+      {
+        id: 39,
+        ageGroup: "10-11",
+        type: "sequence_pattern",
+        question: "Mathematical sequence: Each step shows dots equal to the sum of the previous two numbers (like Fibonacci). Pattern: 1, 1, 2, 3, 5... Missing: position 8",
+        sequence: [
+          { shape: "dots", color: "blue", rotation: 0, reflected: false, size: "medium", count: 1 },
+          { shape: "dots", color: "blue", rotation: 0, reflected: false, size: "medium", count: 1 },
+          { shape: "dots", color: "blue", rotation: 0, reflected: false, size: "medium", count: 2 },
+          { shape: "dots", color: "blue", rotation: 0, reflected: false, size: "medium", count: 3 },
+          { shape: "dots", color: "blue", rotation: 0, reflected: false, size: "medium", count: 5 },
+          { shape: "dots", color: "blue", rotation: 0, reflected: false, size: "medium", count: 8 },
+          { shape: "dots", color: "blue", rotation: 0, reflected: false, size: "medium", count: 13 },
+          null // Missing cell - should be 21 dots (8+13=21)
+        ],
+        options: [
+          { id: "1", shape: "dots", color: "blue", rotation: 0, reflected: false, size: "medium", count: 21, label: "21 dots" },
+          { id: "2", shape: "dots", color: "blue", rotation: 0, reflected: false, size: "medium", count: 14, label: "14 dots" },
+          { id: "3", shape: "dots", color: "blue", rotation: 0, reflected: false, size: "medium", count: 20, label: "20 dots" },
+          { id: "4", shape: "dots", color: "blue", rotation: 0, reflected: false, size: "medium", count: 15, label: "15 dots" }
+        ],
+        correctAnswer: "1"
+      },
+      {
+        id: 40,
+        ageGroup: "10-11",
+        type: "matrix_transformation",
+        question: "Dual-rule matrix: Rule 1 = shapes alternate between filled and outline. Rule 2 = size increases down each column. Missing: bottom-right cell",
+        grid: [
+          [
+            { shape: "star", color: "blue", style: "filled", size: "small", rotation: 0, reflected: false },
+            { shape: "circle", color: "blue", style: "outline", size: "small", rotation: 0, reflected: false },
+            { shape: "triangle", color: "blue", style: "filled", size: "small", rotation: 0, reflected: false }
+          ],
+          [
+            { shape: "circle", color: "blue", style: "outline", size: "medium", rotation: 0, reflected: false },
+            { shape: "triangle", color: "blue", style: "filled", size: "medium", rotation: 0, reflected: false },
+            { shape: "square", color: "blue", style: "outline", size: "medium", rotation: 0, reflected: false }
+          ],
+          [
+            { shape: "triangle", color: "blue", style: "filled", size: "large", rotation: 0, reflected: false },
+            { shape: "square", color: "blue", style: "outline", size: "large", rotation: 0, reflected: false },
+            null // Missing cell - should be star, filled, large
+          ]
+        ],
+        options: [
+          { id: "1", shape: "star", color: "blue", style: "filled", size: "large", rotation: 0, reflected: false, label: "Large filled star" },
+          { id: "2", shape: "circle", color: "blue", style: "outline", size: "large", rotation: 0, reflected: false, label: "Large outline circle" },
+          { id: "3", shape: "square", color: "blue", style: "filled", size: "large", rotation: 0, reflected: false, label: "Large filled square" },
+          { id: "4", shape: "star", color: "blue", style: "filled", size: "small", rotation: 0, reflected: false, label: "Small filled star" }
+        ],
+        correctAnswer: "1"
+      },
+      {
+        id: 41,
+        ageGroup: "10-11",
+        type: "sequence_pattern",
+        question: "Heart reflection sequence: Hearts alternate between facing left and facing right. Pattern: left→right→left→right... Missing: position 8",
+        sequence: [
+          { shape: "heart", color: "red", rotation: 0, reflected: false, size: "medium", direction: "left" },
+          { shape: "heart", color: "red", rotation: 0, reflected: true, size: "medium", direction: "right" },
+          { shape: "heart", color: "red", rotation: 0, reflected: false, size: "medium", direction: "left" },
+          { shape: "heart", color: "red", rotation: 0, reflected: true, size: "medium", direction: "right" },
+          { shape: "heart", color: "red", rotation: 0, reflected: false, size: "medium", direction: "left" },
+          { shape: "heart", color: "red", rotation: 0, reflected: true, size: "medium", direction: "right" },
+          { shape: "heart", color: "red", rotation: 0, reflected: false, size: "medium", direction: "left" },
+          null // Missing cell - should be heart facing right (reflected: true)
+        ],
+        options: [
+          { id: "1", shape: "heart", color: "red", rotation: 0, reflected: true, size: "medium", direction: "right", label: "Heart facing right" },
+          { id: "2", shape: "heart", color: "red", rotation: 0, reflected: false, size: "medium", direction: "left", label: "Heart facing left" },
+          { id: "3", shape: "heart", color: "blue", rotation: 0, reflected: true, size: "medium", direction: "right", label: "Blue heart facing right" },
+          { id: "4", shape: "heart", color: "red", rotation: 0, reflected: true, size: "large", direction: "right", label: "Large heart facing right" }
+        ],
+        correctAnswer: "1"
+      },
+      {
+        id: 42,
+        ageGroup: "10-11",
+        type: "matrix_transformation",
+        question: "4x4 Circle shading pattern: Each row shifts the sequence (filled→outline→left-half→right-half) one position to the right. Missing: position (2,2).",
+        grid: [
+          [
+            { shape: "circle", color: "blue", size: "medium", style: "filled", label: "Filled circle" },
+            { shape: "circle", color: "blue", size: "medium", style: "outline", label: "Outline circle" },
+            { shape: "circle", color: "split", size: "medium", topColor: "red", bottomColor: "blue", label: "Red-blue split circle" },
+            { shape: "circle", color: "split", size: "medium", topColor: "blue", bottomColor: "red", label: "Blue-red split circle" }
+          ],
+          [
+            { shape: "circle", color: "blue", size: "medium", style: "outline", label: "Outline circle" },
+            null, // Missing cell - should be red-blue split circle with 90-degree rotation
+            { shape: "circle", color: "split", size: "medium", topColor: "blue", bottomColor: "red", rotation: 90, label: "Blue-red split circle (vertical)" },
+            { shape: "circle", color: "blue", size: "medium", style: "filled", label: "Filled circle" }
+          ],
+          [
+            { shape: "circle", color: "split", size: "medium", topColor: "red", bottomColor: "blue", label: "Red-blue split circle" },
+            { shape: "circle", color: "split", size: "medium", topColor: "blue", bottomColor: "red", label: "Blue-red split circle" },
+            { shape: "circle", color: "blue", size: "medium", style: "filled", label: "Filled circle" },
+            { shape: "circle", color: "blue", size: "medium", style: "outline", label: "Outline circle" }
+          ],
+          [
+            { shape: "circle", color: "split", size: "medium", topColor: "blue", bottomColor: "red", rotation: 90, label: "Blue-red split circle (vertical)" },
+            { shape: "circle", color: "blue", size: "medium", style: "filled", label: "Filled circle" },
+            { shape: "circle", color: "blue", size: "medium", style: "outline", label: "Outline circle" },
+            { shape: "circle", color: "split", size: "medium", topColor: "red", bottomColor: "blue", rotation: 90, label: "Red-blue split circle (vertical)" }
+          ]
+        ],
+        options: [
+          { id: "1", shape: "circle", color: "split", size: "medium", topColor: "red", bottomColor: "blue", rotation: 90, label: "Red-blue split circle (vertical)" },
+          { id: "2", shape: "circle", color: "split", size: "medium", topColor: "red", bottomColor: "blue", label: "Red-blue split circle (horizontal)" },
+          { id: "3", shape: "circle", color: "blue", size: "medium", style: "outline", label: "Outline circle" },
+          { id: "4", shape: "circle", color: "split", size: "medium", topColor: "blue", bottomColor: "red", rotation: 90, label: "Blue-red split circle (vertical)" }
+        ],
+        correctAnswer: "1"
+      }
+    ]
+  },
+  "12-14": {
+    questions: [
+      {
+        id: 43,
+        ageGroup: "12-14",
+        type: "sequence_pattern",
+        question: "Dual transformation: A square rotates 90° clockwise each step, and at the same time its shading alternates between filled and outline. After: (filled square → rotated outline square → filled rotated square)… Missing: position 6",
+        sequence: [
+          { shape: "square", color: "split", topColor: "yellow", bottomColor: "purple", size: "medium", style: "filled", rotation: 0 },
+          { shape: "square", color: "split", topColor: "yellow", bottomColor: "purple", size: "medium", style: "outline", rotation: 0 },
+          { shape: "square", color: "split", topColor: "yellow", bottomColor: "purple", size: "medium", style: "filled", rotation: 90 },
+          { shape: "square", color: "split", topColor: "yellow", bottomColor: "purple", size: "medium", style: "outline", rotation: 90 },
+          { shape: "square", color: "split", topColor: "yellow", bottomColor: "purple", size: "medium", style: "filled", rotation: 180 },
+          null // Missing cell - should be outline square rotated 180°
+        ],
+        options: [
+          { id: "1", shape: "square", color: "split", topColor: "yellow", bottomColor: "purple", size: "medium", style: "outline", rotation: 180, label: "Split-color outline square rotated 180°" },
+          { id: "2", shape: "square", color: "split", topColor: "yellow", bottomColor: "purple", size: "medium", style: "outline", rotation: 0, label: "Split-color outline square not rotated" },
+          { id: "3", shape: "square", color: "split", topColor: "yellow", bottomColor: "purple", size: "medium", style: "outline", rotation: 90, label: "Split-color outline square rotated 90°" },
+          { id: "4", shape: "square", color: "split", topColor: "yellow", bottomColor: "purple", size: "medium", style: "outline", rotation: 270, label: "Split-color outline square rotated 270°" }
+        ],
+        correctAnswer: "1"
+      },
+      {
+        id: 44,
+        ageGroup: "12-14",
+        type: "matrix_transformation",
+        question: "Complex 3×3 matrix: Row rule = shapes change AND rotate 45°. Column rule = colors change AND size increases. Diagonal rule = fill/outline alternates. Missing: center cell.",
+        grid: [
+          [
+            { shape: "triangle", color: "red", size: "small", style: "filled", rotation: 0, label: "Small red filled triangle" },
+            { shape: "square", color: "red", size: "small", style: "outline", rotation: 45, label: "Small red outline square rotated 45°" },
+            { shape: "circle", color: "red", size: "small", style: "filled", rotation: 90, label: "Small red filled circle rotated 90°" }
+          ],
+          [
+            { shape: "triangle", color: "blue", size: "medium", style: "outline", rotation: 0, label: "Medium blue outline triangle" },
+            null, // Missing cell - should be medium blue filled square rotated 45°
+            { shape: "circle", color: "blue", size: "medium", style: "outline", rotation: 90, label: "Medium blue outline circle rotated 90°" }
+          ],
+          [
+            { shape: "triangle", color: "green", size: "big", style: "filled", rotation: 0, label: "Large green filled triangle" },
+            { shape: "square", color: "green", size: "big", style: "outline", rotation: 45, label: "Large green outline square rotated 45°" },
+            { shape: "circle", color: "green", size: "big", style: "filled", rotation: 90, label: "Large green filled circle rotated 90°" }
+          ]
+        ],
+        options: [
+          { id: "1", shape: "square", color: "blue", size: "medium", style: "filled", rotation: 45, label: "Medium blue filled square rotated 45°" },
+          { id: "2", shape: "square", color: "blue", size: "medium", style: "outline", rotation: 45, label: "Medium blue outline square rotated 45°" },
+          { id: "3", shape: "triangle", color: "blue", size: "medium", style: "filled", rotation: 0, label: "Medium blue filled triangle" },
+          { id: "4", shape: "circle", color: "blue", size: "medium", style: "filled", rotation: 45, label: "Medium blue filled circle rotated 45°" }
+        ],
+        correctAnswer: "1"
       }
     ]
   }
@@ -740,8 +960,229 @@ const QUESTIONS = [
   ...QUESTION_GROUPS["4.5-5"].questions,
   ...QUESTION_GROUPS["6-7"].questions,
   ...QUESTION_GROUPS["8-9"].questions,
-  ...QUESTION_GROUPS["10-11"].questions
+  ...QUESTION_GROUPS["10-11"].questions,
+  ...QUESTION_GROUPS["12-14"].questions
 ]
+
+// Function to render pure SVG shapes without tile wrapper for export - clean without borders
+const renderPureSVG = (item: any, size = 100) => {
+  if (!item) return null
+  
+  const centerX = size / 2
+  const centerY = size / 2
+  
+  // Create a modified version of renderShapeContent but without borders
+  const renderCleanShapeContent = () => {
+    const colorMap: {[key: string]: {fill: string, stroke: string}} = {
+      'red': { fill: '#DC2626', stroke: '#B91C1C' },
+      'blue': { fill: '#2563EB', stroke: '#1D4ED8' },
+      'yellow': { fill: '#EAB308', stroke: '#CA8A04' },
+      'green': { fill: '#16A34A', stroke: '#15803D' },
+      'orange': { fill: '#EA580C', stroke: '#C2410C' },
+      'purple': { fill: '#9333EA', stroke: '#7C3AED' },
+      'pink': { fill: '#EC4899', stroke: '#DB2777' },
+      'indigo': { fill: '#4F46E5', stroke: '#4338CA' },
+      'teal': { fill: '#0D9488', stroke: '#0F766E' },
+      'cyan': { fill: '#0891B2', stroke: '#0E7490' },
+      'lime': { fill: '#65A30D', stroke: '#4D7C0F' },
+      'emerald': { fill: '#059669', stroke: '#047857' },
+      'violet': { fill: '#7C3AED', stroke: '#6D28D9' },
+      'fuchsia': { fill: '#C026D3', stroke: '#A21CAF' },
+      'rose': { fill: '#E11D48', stroke: '#BE123C' },
+      'amber': { fill: '#F59E0B', stroke: '#D97706' },
+      'gray': { fill: '#6B7280', stroke: '#4B5563' },
+      'slate': { fill: '#64748B', stroke: '#475569' },
+      'zinc': { fill: '#71717A', stroke: '#52525B' },
+      'neutral': { fill: '#737373', stroke: '#525252' },
+      'stone': { fill: '#78716C', stroke: '#57534E' },
+      'sky': { fill: '#0EA5E9', stroke: '#0284C7' },
+      'emerald': { fill: '#10B981', stroke: '#059669' },
+      'lime': { fill: '#84CC16', stroke: '#65A30D' },
+      'yellow': { fill: '#EAB308', stroke: '#CA8A04' },
+      'orange': { fill: '#F97316', stroke: '#EA580C' },
+      'red': { fill: '#EF4444', stroke: '#DC2626' },
+      'pink': { fill: '#EC4899', stroke: '#DB2777' },
+      'fuchsia': { fill: '#D946EF', stroke: '#C026D3' },
+      'purple': { fill: '#A855F7', stroke: '#9333EA' },
+      'violet': { fill: '#8B5CF6', stroke: '#7C3AED' },
+      'indigo': { fill: '#6366F1', stroke: '#4F46E5' },
+      'blue': { fill: '#3B82F6', stroke: '#2563EB' },
+      'cyan': { fill: '#06B6D4', stroke: '#0891B2' },
+      'teal': { fill: '#14B8A6', stroke: '#0D9488' },
+      'green': { fill: '#22C55E', stroke: '#16A34A' },
+      'gold': { fill: '#FFD700', stroke: '#FFA500' },
+      'crimson': { fill: '#DC143C', stroke: '#B91C1C' },
+      'navy': { fill: '#000080', stroke: '#000060' },
+      'maroon': { fill: '#800000', stroke: '#600000' },
+      'turquoise': { fill: '#40E0D0', stroke: '#20C0B0' },
+      'lavender': { fill: '#E6E6FA', stroke: '#D0D0E0' },
+      'peach': { fill: '#FFCBA4', stroke: '#FF9A84' },
+      'mint': { fill: '#98FB98', stroke: '#78DB78' },
+      'aqua': { fill: '#00FFFF', stroke: '#00DFDF' }
+    }
+
+    if (!item) return null
+
+    const shapeSize = size * 0.6 // Adjust size for clean export
+    const colors = colorMap[item.color] || { fill: '#2563EB', stroke: '#1D4ED8' }
+    const rotation = item.rotation || 0
+    
+    // Only use stroke if the shape is specifically outline style
+    const strokeWidth = item.style === 'outline' ? 2 : 0
+    const stroke = item.style === 'outline' ? colors.stroke : 'none'
+    const fill = item.style === 'outline' ? 'none' : colors.fill
+
+    switch (item.shape) {
+      case 'circle':
+        return (
+          <circle 
+            cx={0} 
+            cy={0} 
+            r={shapeSize / 2}
+            fill={fill}
+            stroke={stroke}
+            strokeWidth={strokeWidth}
+            transform={item.reflected ? `scale(-1, 1)` : undefined}
+          />
+        )
+
+      case 'square':
+        return (
+          <rect 
+            x={-shapeSize / 2} 
+            y={-shapeSize / 2} 
+            width={shapeSize} 
+            height={shapeSize}
+            fill={fill}
+            stroke={stroke}
+            strokeWidth={strokeWidth}
+            rx="3"
+            transform={item.reflected ? `scale(-1, 1)` : undefined}
+          />
+        )
+
+      case 'triangle':
+        return (
+          <polygon 
+            points={`0,${-shapeSize / 2} ${shapeSize / 2},${shapeSize / 2} ${-shapeSize / 2},${shapeSize / 2}`}
+            fill={fill}
+            stroke={stroke}
+            strokeWidth={strokeWidth}
+            transform={item.reflected ? `scale(-1, 1)` : undefined}
+          />
+        )
+
+      case 'diamond':
+        return (
+          <polygon 
+            points={`0,${-shapeSize / 2} ${shapeSize / 2},0 0,${shapeSize / 2} ${-shapeSize / 2},0`}
+            fill={fill}
+            stroke={stroke}
+            strokeWidth={strokeWidth}
+            transform={item.rotation ? `rotate(${item.rotation})` : undefined}
+          />
+        )
+
+      case 'star':
+        const starSize = shapeSize / 2
+        let starPoints = ''
+        for (let i = 0; i < 10; i++) {
+          const angle = (i * Math.PI) / 5
+          const radius = i % 2 === 0 ? starSize : starSize * 0.4
+          const x = Math.cos(angle - Math.PI / 2) * radius
+          const y = Math.sin(angle - Math.PI / 2) * radius
+          starPoints += `${x},${y} `
+        }
+        return (
+          <polygon 
+            points={starPoints}
+            fill={fill}
+            stroke={stroke}
+            strokeWidth={strokeWidth}
+          />
+        )
+
+      case 'heart':
+        return (
+          <path 
+            d={`M0,${shapeSize * 0.3} C${-shapeSize * 0.5},${-shapeSize * 0.1} ${-shapeSize * 0.5},${-shapeSize * 0.5} 0,${-shapeSize * 0.2} C${shapeSize * 0.5},${-shapeSize * 0.5} ${shapeSize * 0.5},${-shapeSize * 0.1} 0,${shapeSize * 0.3}Z`}
+            fill={fill}
+            stroke={stroke}
+            strokeWidth={strokeWidth}
+          />
+        )
+
+      case 'dots':
+        const dotCount = item.count || 1
+        const dotSize = 6
+        const spacing = 12
+        return (
+          <>
+            {Array.from({ length: dotCount }, (_, i) => {
+              // Simple grid layout for dots
+              const cols = Math.ceil(Math.sqrt(dotCount))
+              const row = Math.floor(i / cols)
+              const col = i % cols
+              const gridWidth = (cols - 1) * spacing
+              const gridHeight = (Math.ceil(dotCount / cols) - 1) * spacing
+              const x = col * spacing - gridWidth / 2
+              const y = row * spacing - gridHeight / 2
+              
+              return (
+                <circle 
+                  key={i}
+                  cx={x} 
+                  cy={y} 
+                  r={dotSize / 2}
+                  fill={colors.fill}
+                  stroke="none"
+                  strokeWidth="0"
+                />
+              )
+            })}
+          </>
+        )
+
+      default:
+        return (
+          <circle 
+            cx={0} 
+            cy={0} 
+            r={shapeSize / 2}
+            fill={fill}
+            stroke={stroke}
+            strokeWidth={strokeWidth}
+          />
+        )
+    }
+  }
+  
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+      <g transform={`translate(${centerX}, ${centerY}) ${item.rotation ? `rotate(${item.rotation})` : ''}`}>
+        {renderCleanShapeContent()}
+      </g>
+    </svg>
+  )
+}
+
+// Function to export SVG
+const exportShapeAsSVG = (item: any, filename: string) => {
+  const svgElement = renderPureSVG(item, 200)
+  if (!svgElement) return
+  
+  const svgString = new XMLSerializer().serializeToString(svgElement as any)
+  const blob = new Blob([svgString], { type: 'image/svg+xml' })
+  const url = URL.createObjectURL(blob)
+  
+  const link = document.createElement('a')
+  link.href = url
+  link.download = filename
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(url)
+}
 
 export default function StudentPatternReasoning() {
   const params = useParams()
@@ -982,10 +1423,10 @@ export default function StudentPatternReasoning() {
 
     const colors = colorMap[item.color] || { fill: '#2563EB', stroke: '#1D4ED8' }
     const size = item.size === 'big' ? 50 : 
-                 item.size === 'small' ? 35 : 
+                 item.size === 'small' ? 30 : 
                  item.size === 'medium' ? 42 :
-                 item.size === 'tiny' ? 28 :
-                 item.size === 'bigger' ? 55 : 42
+                 item.size === 'tiny' ? 20 :
+                 item.size === 'bigger' ? 65 : 42
     const viewBox = 70
     let centerX = viewBox / 2
     let centerY = viewBox / 2
@@ -1043,6 +1484,47 @@ export default function StudentPatternReasoning() {
                   strokeWidth="2"
                 />
               ))}
+            </>
+          )
+        }
+        
+        // Handle split color circles
+        if (item.color === 'split' && item.topColor && item.bottomColor) {
+          const topColors = colorMap[item.topColor] || { fill: '#2563EB', stroke: '#1D4ED8' }
+          const bottomColors = colorMap[item.bottomColor] || { fill: '#DC2626', stroke: '#B91C1C' }
+          
+          const rotation = item.rotation || 0
+          
+          return (
+            <>
+              <defs>
+                <clipPath id={`circleTopHalf${rotation}`}>
+                  <rect x={-size} y={-size} width={size*2} height={size} transform={`rotate(${rotation} 0 0)`} />
+                </clipPath>
+                <clipPath id={`circleBottomHalf${rotation}`}>
+                  <rect x={-size} y="0" width={size*2} height={size} transform={`rotate(${rotation} 0 0)`} />
+                </clipPath>
+              </defs>
+              <circle 
+                cx={0} 
+                cy={0} 
+                r={size / 2}
+                fill={topColors.fill}
+                stroke={topColors.stroke} 
+                strokeWidth="2"
+                clipPath={`url(#circleTopHalf${rotation})`}
+                transform={item.reflected ? `scale(-1, 1)` : undefined}
+              />
+              <circle 
+                cx={0} 
+                cy={0} 
+                r={size / 2}
+                fill={bottomColors.fill}
+                stroke={bottomColors.stroke} 
+                strokeWidth="2"
+                clipPath={`url(#circleBottomHalf${rotation})`}
+                transform={item.reflected ? `scale(-1, 1)` : undefined}
+              />
             </>
           )
         }
@@ -1110,6 +1592,51 @@ export default function StudentPatternReasoning() {
           )
         }
         
+        // Handle split color squares
+        if (item.color === 'split' && item.topColor && item.bottomColor) {
+          const topColors = colorMap[item.topColor] || { fill: '#2563EB', stroke: '#1D4ED8' }
+          const bottomColors = colorMap[item.bottomColor] || { fill: '#DC2626', stroke: '#B91C1C' }
+          
+          const rotation = item.rotation || 0
+          
+          return (
+            <>
+              <defs>
+                <clipPath id={`squareTopHalf${rotation}`}>
+                  <rect x={-size} y={-size} width={size*2} height={size} transform={`rotate(${rotation} 0 0)`} />
+                </clipPath>
+                <clipPath id={`squareBottomHalf${rotation}`}>
+                  <rect x={-size} y="0" width={size*2} height={size} transform={`rotate(${rotation} 0 0)`} />
+                </clipPath>
+              </defs>
+              <rect 
+                x={-size / 2} 
+                y={-size / 2} 
+                width={size} 
+                height={size}
+                fill={item.style === 'outline' ? 'none' : topColors.fill}
+                stroke={topColors.stroke}
+                strokeWidth="2"
+                rx="3"
+                clipPath={`url(#squareTopHalf${rotation})`}
+                transform={item.reflected ? `scale(-1, 1)` : undefined}
+              />
+              <rect 
+                x={-size / 2} 
+                y={-size / 2} 
+                width={size} 
+                height={size}
+                fill={item.style === 'outline' ? 'none' : bottomColors.fill}
+                stroke={bottomColors.stroke}
+                strokeWidth="2"
+                rx="3"
+                clipPath={`url(#squareBottomHalf${rotation})`}
+                transform={item.reflected ? `scale(-1, 1)` : undefined}
+              />
+            </>
+          )
+        }
+        
         return (
           <>
             {item.modifier === 'stripe' && (
@@ -1165,6 +1692,41 @@ export default function StudentPatternReasoning() {
           )
         }
         
+        // Handle split color triangles
+        if (item.color === 'split' && item.topColor && item.bottomColor) {
+          const topColors = colorMap[item.topColor] || { fill: '#2563EB', stroke: '#1D4ED8' }
+          const bottomColors = colorMap[item.bottomColor] || { fill: '#DC2626', stroke: '#B91C1C' }
+          
+          return (
+            <>
+              <defs>
+                <clipPath id={`triangleTopHalf${rotation}`}>
+                  <rect x={-size*1.5} y={-size} width={size*3} height={size} transform={`rotate(${rotation} 0 0)`} />
+                </clipPath>
+                <clipPath id={`triangleBottomHalf${rotation}`}>
+                  <rect x={-size*1.5} y="0" width={size*3} height={size} transform={`rotate(${rotation} 0 0)`} />
+                </clipPath>
+              </defs>
+              <polygon 
+                points={`0,${-size / 2} ${size / 2},${size / 2} ${-size / 2},${size / 2}`}
+                fill={topColors.fill}
+                stroke={topColors.stroke} 
+                strokeWidth="2"
+                clipPath={`url(#triangleTopHalf${rotation})`}
+                transform={item.reflected ? `scale(-1, 1)` : undefined}
+              />
+              <polygon 
+                points={`0,${-size / 2} ${size / 2},${size / 2} ${-size / 2},${size / 2}`}
+                fill={bottomColors.fill}
+                stroke={bottomColors.stroke} 
+                strokeWidth="2"
+                clipPath={`url(#triangleBottomHalf${rotation})`}
+                transform={item.reflected ? `scale(-1, 1)` : undefined}
+              />
+            </>
+          )
+        }
+        
         return (
           <>
             {item.modifier === 'stripe' && (
@@ -1180,7 +1742,7 @@ export default function StudentPatternReasoning() {
               fill={item.style === 'outline' ? 'none' : (item.modifier === 'stripe' ? 'url(#stripePattern)' : colors.fill)} 
               stroke={colors.stroke} 
               strokeWidth="2"
-              transform={item.reflected ? `rotate(${rotation}) scale(-1, 1)` : `rotate(${rotation})`}
+              transform={item.reflected ? `scale(-1, 1)` : undefined}
             />
             {item.modifier === 'dot' && (
               <circle
@@ -1188,7 +1750,7 @@ export default function StudentPatternReasoning() {
                 cy={0}
                 r={size / 8}
                 fill="black"
-                transform={item.reflected ? `rotate(${rotation}) scale(-1, 1)` : `rotate(${rotation})`}
+                transform={item.reflected ? `scale(-1, 1)` : undefined}
               />
             )}
           </>
@@ -1235,6 +1797,55 @@ export default function StudentPatternReasoning() {
 
       case 'star':
         const starCount = item.count || 1
+        
+        // Handle split color for single star
+        if (starCount === 1 && item.color === 'split' && item.topColor && item.bottomColor) {
+          const topColors = colorMap[item.topColor] || { fill: '#2563EB', stroke: '#1D4ED8' }
+          const bottomColors = colorMap[item.bottomColor] || { fill: '#DC2626', stroke: '#B91C1C' }
+          
+          const starSize = size / 2
+          const innerRadius = starSize * 0.4
+          
+          // Create two overlapping star halves with clipping masks
+          let starPoints = ''
+          for (let j = 0; j < 10; j++) {
+            const angle = (j * Math.PI) / 5
+            const radius = j % 2 === 0 ? starSize : innerRadius
+            const x = Math.cos(angle - Math.PI / 2) * radius
+            const y = Math.sin(angle - Math.PI / 2) * radius
+            starPoints += `${x},${y} `
+          }
+          
+          const rotation = item.rotation || 0
+          
+          return (
+            <>
+              <defs>
+                <clipPath id={`leftHalf${item.size}${rotation}`}>
+                  <rect x={-starSize * 1.5} y={-starSize * 1.5} width={starSize * 1.5} height={starSize * 3} transform={`rotate(${rotation} 0 0)`} />
+                </clipPath>
+                <clipPath id={`rightHalf${item.size}${rotation}`}>
+                  <rect x="0" y={-starSize * 1.5} width={starSize * 1.5} height={starSize * 3} transform={`rotate(${rotation} 0 0)`} />
+                </clipPath>
+              </defs>
+              <polygon 
+                points={starPoints}
+                fill={topColors.fill} 
+                stroke={colors.stroke} 
+                strokeWidth="1"
+                clipPath={`url(#leftHalf${item.size}${rotation})`}
+              />
+              <polygon 
+                points={starPoints}
+                fill={bottomColors.fill} 
+                stroke={colors.stroke} 
+                strokeWidth="1"
+                clipPath={`url(#rightHalf${item.size}${rotation})`}
+              />
+            </>
+          )
+        }
+        
         // Much more aggressive adaptive sizing for better fit
         let adaptiveStarSize, adaptiveSpacing
         
@@ -1601,17 +2212,44 @@ export default function StudentPatternReasoning() {
                   <div className="grid grid-cols-2 gap-4">
                     {/* Top-left */}
                     <div className="flex flex-col items-center">
-                      {renderSVGTile(question.sequence[0])}
+                      <div className="relative group">
+                        {renderSVGTile(question.sequence[0])}
+                        <button
+                          onClick={() => exportShapeAsSVG(question.sequence[0], `pattern_q${currentQuestion + 1}_matrix_topleft.svg`)}
+                          className="absolute -top-1 -right-1 bg-blue-600 text-white text-xs px-1.5 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-blue-700"
+                          title="Export as SVG"
+                        >
+                          ↓
+                        </button>
+                      </div>
                     </div>
                     
                     {/* Top-right */}
                     <div className="flex flex-col items-center">
-                      {renderSVGTile(question.sequence[1])}
+                      <div className="relative group">
+                        {renderSVGTile(question.sequence[1])}
+                        <button
+                          onClick={() => exportShapeAsSVG(question.sequence[1], `pattern_q${currentQuestion + 1}_matrix_topright.svg`)}
+                          className="absolute -top-1 -right-1 bg-blue-600 text-white text-xs px-1.5 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-blue-700"
+                          title="Export as SVG"
+                        >
+                          ↓
+                        </button>
+                      </div>
                     </div>
                     
                     {/* Bottom-left */}
                     <div className="flex flex-col items-center">
-                      {renderSVGTile(question.sequence[2])}
+                      <div className="relative group">
+                        {renderSVGTile(question.sequence[2])}
+                        <button
+                          onClick={() => exportShapeAsSVG(question.sequence[2], `pattern_q${currentQuestion + 1}_matrix_bottomleft.svg`)}
+                          className="absolute -top-1 -right-1 bg-blue-600 text-white text-xs px-1.5 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-blue-700"
+                          title="Export as SVG"
+                        >
+                          ↓
+                        </button>
+                      </div>
                     </div>
                     
                     {/* Bottom-right (question mark) */}
@@ -1630,16 +2268,27 @@ export default function StudentPatternReasoning() {
                   <div className="grid grid-cols-3 gap-3">
                     {question.sequence.map((item: any, index: number) => (
                       <div key={index} className="flex flex-col items-center">
-                        {renderSVGTile(
-                          item === null ? (
-                            answers[currentQuestion]?.answer 
-                              ? question.options.find((opt: any) => opt.id === answers[currentQuestion].answer) 
-                              : null
-                          ) : item,
-                          item === null && !answers[currentQuestion]?.answer,
-                          false,
-                          'small'
-                        )}
+                        <div className="relative group">
+                          {renderSVGTile(
+                            item === null ? (
+                              answers[currentQuestion]?.answer 
+                                ? question.options.find((opt: any) => opt.id === answers[currentQuestion].answer) 
+                                : null
+                            ) : item,
+                            item === null && !answers[currentQuestion]?.answer,
+                            false,
+                            'small'
+                          )}
+                          {item !== null && (
+                            <button
+                              onClick={() => exportShapeAsSVG(item, `pattern_q${currentQuestion + 1}_matrix3x3_${index + 1}.svg`)}
+                              className="absolute -top-1 -right-1 bg-blue-600 text-white text-xs px-1 py-0.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-blue-700"
+                              title="Export as SVG"
+                            >
+                              ↓
+                            </button>
+                          )}
+                        </div>
                       </div>
                     ))}
                     {/* Add the missing cell for bottom-right if not already present */}
@@ -1657,30 +2306,58 @@ export default function StudentPatternReasoning() {
                     )}
                   </div>
                 </div>
+              ) : question.type === 'matrix_transformation' ? (
+                <div className="flex justify-center mb-4">
+                  <div className={`grid gap-4 ${question.grid.length === 4 ? 'grid-cols-4' : 'grid-cols-3'}`}>
+                    {question.grid.map((row: any[], rowIndex: number) =>
+                      row.map((item: any, colIndex: number) => (
+                        <div key={`${rowIndex}-${colIndex}`} className="flex flex-col items-center p-2">
+                          <div className="relative group">
+                            {renderSVGTile(
+                              item === null ? (
+                                answers[currentQuestion]?.answer 
+                                  ? question.options.find((opt: any) => opt.id === answers[currentQuestion].answer) 
+                                  : null
+                              ) : item,
+                              item === null && !answers[currentQuestion]?.answer,
+                              false,
+                              question.grid.length === 4 ? 'small' : 'medium'
+                            )}
+                            {item !== null && (
+                              <button
+                                onClick={() => exportShapeAsSVG(item, `pattern_q${currentQuestion + 1}_grid_r${rowIndex + 1}c${colIndex + 1}.svg`)}
+                                className="absolute -top-1 -right-1 bg-blue-600 text-white text-xs px-1 py-0.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-blue-700"
+                                title="Export as SVG"
+                              >
+                                ↓
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
               ) : (
                 /* Regular sequence display */
                 <div className="flex justify-center items-center mb-4 gap-6">
-                  {question.sequence.map((step: any, index) => (
+                  {question.sequence && question.sequence.map((step: any, index) => (
                     <div key={index} className="flex flex-col items-center">
-                      <div className="mb-2">
+                      <div className="mb-2 relative group">
                         {renderSVGTile(step)}
+                        {/* Export button - appears on hover */}
+                        <button
+                          onClick={() => exportShapeAsSVG(step, `pattern_q${currentQuestion + 1}_step${index + 1}.svg`)}
+                          className="absolute -top-1 -right-1 bg-blue-600 text-white text-xs px-1.5 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-blue-700"
+                          title="Export as SVG"
+                        >
+                          ↓
+                        </button>
                       </div>
                       <p className="text-lg font-bold text-gray-900">{index + 1}</p>
                     </div>
                   ))}
                   
-                  {/* Fourth tile with question mark */}
-                  <div className="flex flex-col items-center">
-                    <div className="mb-2">
-                      {renderSVGTile(
-                        answers[currentQuestion]?.answer 
-                          ? question.options.find((opt: any) => opt.id === answers[currentQuestion].answer) 
-                          : null,
-                        !answers[currentQuestion]?.answer
-                      )}
-                    </div>
-                    <p className="text-lg font-bold text-gray-900">4</p>
-                  </div>
                 </div>
               )}
             </div>
@@ -1694,12 +2371,22 @@ export default function StudentPatternReasoning() {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-2xl mx-auto">
                   {question.options.map((option: any) => (
                     <div key={option.id} className="flex flex-col items-center">
-                      <button
-                        onClick={() => handleAnswer(option.id)}
-                        className="transition-all mb-2 hover:scale-105"
-                      >
-                        {renderSVGTile(option, false, answers[currentQuestion]?.answer === option.id)}
-                      </button>
+                      <div className="relative group">
+                        <button
+                          onClick={() => handleAnswer(option.id)}
+                          className="transition-all mb-2 hover:scale-105"
+                        >
+                          {renderSVGTile(option, false, answers[currentQuestion]?.answer === option.id)}
+                        </button>
+                        {/* Export button - appears on hover */}
+                        <button
+                          onClick={() => exportShapeAsSVG(option, `pattern_q${currentQuestion + 1}_option${option.id}.svg`)}
+                          className="absolute -top-1 -right-1 bg-blue-600 text-white text-xs px-1.5 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-blue-700"
+                          title="Export as SVG"
+                        >
+                          ↓
+                        </button>
+                      </div>
                       <p className="text-lg font-bold text-gray-900">{option.id}</p>
                     </div>
                   ))}
