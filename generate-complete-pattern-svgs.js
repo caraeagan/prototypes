@@ -1098,31 +1098,31 @@ const QUESTION_GROUPS = {
         id: 50,
         ageGroup: "15+",
         type: "matrix_transformation",
-        question: "A 3×3 grid of diamonds shows color, pointing direction, and outline thickness patterns. Question: What goes in position (3,2)?",
+        question: "Look at this 3×3 pattern. What goes in the missing cell?",
         grid: [
           [
-            { shape: "diamond", color: "red", rotation: 0, size: "medium", strokeWidth: 1, direction: "up" },      // Pos (1,1): Red, Up, Thin
-            { shape: "diamond", color: "red", rotation: 90, size: "medium", strokeWidth: 3, direction: "right" },  // Pos (1,2): Red, Right, Thick
-            { shape: "diamond", color: "red", rotation: 180, size: "medium", strokeWidth: 1, direction: "down" }   // Pos (1,3): Red, Down, Thin
+            { shape: "diamond", color: "red", rotation: 0, strokeWidth: 1, size: "small" },      // Small red up, thin
+            { shape: "diamond", color: "blue", rotation: 45, strokeWidth: 2, size: "small" },    // Small blue right-up, medium 
+            { shape: "diamond", color: "green", rotation: 90, strokeWidth: 3, size: "small" }    // Small green right, thick
           ],
           [
-            { shape: "diamond", color: "green", rotation: 0, size: "medium", strokeWidth: 3, direction: "up" },    // Pos (2,1): Green, Up, Thick
-            { shape: "diamond", color: "green", rotation: 90, size: "medium", strokeWidth: 1, direction: "right" }, // Pos (2,2): Green, Right, Thin
-            { shape: "diamond", color: "green", rotation: 180, size: "medium", strokeWidth: 3, direction: "down" } // Pos (2,3): Green, Down, Thick
+            { shape: "diamond", color: "red", rotation: 90, strokeWidth: 2, size: "medium" },    // Medium red right, medium
+            { shape: "diamond", color: "blue", rotation: 135, strokeWidth: 3, size: "medium" },  // Medium blue right-down, thick
+            null                                                                                  // Missing: Medium green down, thin → should be green, 180°, stroke 1
           ],
           [
-            { shape: "diamond", color: "purple", rotation: 0, size: "medium", strokeWidth: 1, direction: "up" },   // Pos (3,1): Purple, Up, Thin
-            null, // Pos (3,2): Missing - should be Purple, Right, Thick
-            { shape: "diamond", color: "purple", rotation: 180, size: "medium", strokeWidth: 1, direction: "down" } // Pos (3,3): Purple, Down, Thin
+            { shape: "diamond", color: "red", rotation: 180, strokeWidth: 3, size: "big" },      // Big red down, thick
+            { shape: "diamond", color: "blue", rotation: 225, strokeWidth: 1, size: "big" },     // Big blue left-down, thin
+            { shape: "diamond", color: "green", rotation: 270, strokeWidth: 2, size: "big" }     // Big green left, medium
           ]
         ],
         options: [
-          { id: "A", shape: "diamond", color: "purple", rotation: 90, size: "medium", strokeWidth: 1, direction: "right", label: "Purple Right, Thin" },
-          { id: "B", shape: "diamond", color: "purple", rotation: 90, size: "medium", strokeWidth: 3, direction: "right", label: "Purple Right, Thick" },
-          { id: "C", shape: "diamond", color: "green", rotation: 90, size: "medium", strokeWidth: 3, direction: "right", label: "Green Right, Thick" },
-          { id: "D", shape: "diamond", color: "red", rotation: 90, size: "medium", strokeWidth: 1, direction: "right", label: "Red Right, Thin" }
+          { id: "A", shape: "diamond", color: "green", rotation: 180, strokeWidth: 1, size: "medium", label: "Green diamond pointing down, thin outline, medium size" },
+          { id: "B", shape: "diamond", color: "blue", rotation: 180, strokeWidth: 1, size: "medium", label: "Blue diamond pointing down, thin outline, medium size" },
+          { id: "C", shape: "diamond", color: "green", rotation: 135, strokeWidth: 1, size: "medium", label: "Green diamond pointing right-down, thin outline, medium size" },
+          { id: "D", shape: "diamond", color: "green", rotation: 180, strokeWidth: 2, size: "medium", label: "Green diamond pointing down, medium outline, medium size" }
         ],
-        correctAnswer: "B"
+        correctAnswer: "A"
       }
     ]
   }
