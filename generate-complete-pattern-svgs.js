@@ -1090,6 +1090,41 @@ const QUESTION_GROUPS = {
         correctAnswer: "B"
       }
     ]
+  },
+  "15+": {
+    title: "Ages 15+",
+    questions: [
+      {
+        id: 50,
+        ageGroup: "15+",
+        type: "matrix_transformation",
+        question: "A 3×3 grid of diamonds shows color, pointing direction, and outline thickness patterns. Question: What goes in position (3,2)?",
+        grid: [
+          [
+            { shape: "diamond", color: "red", rotation: 0, size: "medium", strokeWidth: 1, direction: "up" },      // Pos (1,1): Red, Up, Thin
+            { shape: "diamond", color: "red", rotation: 90, size: "medium", strokeWidth: 3, direction: "right" },  // Pos (1,2): Red, Right, Thick
+            { shape: "diamond", color: "red", rotation: 180, size: "medium", strokeWidth: 1, direction: "down" }   // Pos (1,3): Red, Down, Thin
+          ],
+          [
+            { shape: "diamond", color: "green", rotation: 0, size: "medium", strokeWidth: 3, direction: "up" },    // Pos (2,1): Green, Up, Thick
+            { shape: "diamond", color: "green", rotation: 90, size: "medium", strokeWidth: 1, direction: "right" }, // Pos (2,2): Green, Right, Thin
+            { shape: "diamond", color: "green", rotation: 180, size: "medium", strokeWidth: 3, direction: "down" } // Pos (2,3): Green, Down, Thick
+          ],
+          [
+            { shape: "diamond", color: "purple", rotation: 0, size: "medium", strokeWidth: 1, direction: "up" },   // Pos (3,1): Purple, Up, Thin
+            null, // Pos (3,2): Missing - should be Purple, Right, Thick
+            { shape: "diamond", color: "purple", rotation: 180, size: "medium", strokeWidth: 1, direction: "down" } // Pos (3,3): Purple, Down, Thin
+          ]
+        ],
+        options: [
+          { id: "A", shape: "diamond", color: "purple", rotation: 90, size: "medium", strokeWidth: 1, direction: "right", label: "Purple Right, Thin" },
+          { id: "B", shape: "diamond", color: "purple", rotation: 90, size: "medium", strokeWidth: 3, direction: "right", label: "Purple Right, Thick" },
+          { id: "C", shape: "diamond", color: "green", rotation: 90, size: "medium", strokeWidth: 3, direction: "right", label: "Green Right, Thick" },
+          { id: "D", shape: "diamond", color: "red", rotation: 90, size: "medium", strokeWidth: 1, direction: "right", label: "Red Right, Thin" }
+        ],
+        correctAnswer: "B"
+      }
+    ]
   }
 };
 
@@ -1101,7 +1136,8 @@ const QUESTIONS = [
   ...QUESTION_GROUPS["6-7"].questions,
   ...QUESTION_GROUPS["8-9"].questions,
   ...QUESTION_GROUPS["10-11"].questions,
-  ...QUESTION_GROUPS["12-14"].questions
+  ...QUESTION_GROUPS["12-14"].questions,
+  ...QUESTION_GROUPS["15+"].questions
 ];
 
 console.log(`📊 Total questions found: ${QUESTIONS.length}`);
@@ -1420,19 +1456,21 @@ function generateTriangleContent(item, colors, size, centerX, centerY) {
 }
 
 function generateDiamondContent(item, colors, size, centerX, centerY) {
+  const strokeWidth = item.strokeWidth || 2;
+  
   if (item.color === 'split' && item.topColor && item.bottomColor) {
     const topColors = colorMap[item.topColor] || { fill: '#2563EB', stroke: '#1D4ED8' };
     const bottomColors = colorMap[item.bottomColor] || { fill: '#DC2626', stroke: '#B91C1C' };
     const rotation = item.rotation || 0;
     
     return `<g transform="rotate(${rotation} ${centerX} ${centerY})">
-      <polygon points="${centerX},${centerY - size/2} ${centerX + size/2},${centerY} ${centerX},${centerY} ${centerX - size/2},${centerY}" fill="${topColors.fill}" stroke="${colors.stroke}" stroke-width="2"/>
-      <polygon points="${centerX - size/2},${centerY} ${centerX},${centerY} ${centerX + size/2},${centerY} ${centerX},${centerY + size/2}" fill="${bottomColors.fill}" stroke="${colors.stroke}" stroke-width="2"/>
+      <polygon points="${centerX},${centerY - size/2} ${centerX + size/2},${centerY} ${centerX},${centerY} ${centerX - size/2},${centerY}" fill="${topColors.fill}" stroke="${colors.stroke}" stroke-width="${strokeWidth}"/>
+      <polygon points="${centerX - size/2},${centerY} ${centerX},${centerY} ${centerX + size/2},${centerY} ${centerX},${centerY + size/2}" fill="${bottomColors.fill}" stroke="${colors.stroke}" stroke-width="${strokeWidth}"/>
     </g>`;
   }
   
   const rotation = item.rotation || 0;
-  return `<polygon points="${centerX},${centerY - size/2} ${centerX + size/2},${centerY} ${centerX},${centerY + size/2} ${centerX - size/2},${centerY}" fill="${colors.fill}" stroke="${colors.stroke}" stroke-width="2" transform="rotate(${rotation} ${centerX} ${centerY})"/>`;
+  return `<polygon points="${centerX},${centerY - size/2} ${centerX + size/2},${centerY} ${centerX},${centerY + size/2} ${centerX - size/2},${centerY}" fill="${colors.fill}" stroke="${colors.stroke}" stroke-width="${strokeWidth}" transform="rotate(${rotation} ${centerX} ${centerY})"/>`;
 }
 
 function generateStarContent(item, colors, size, centerX, centerY) {

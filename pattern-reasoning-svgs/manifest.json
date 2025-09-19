@@ -2998,5 +2998,83 @@
     "type": "question_mark",
     "filename": "q_49_question_mark.svg",
     "description": "Question mark placeholder"
+  },
+  {
+    "question": 50,
+    "type": "sequence",
+    "filename": "q_50_grid_r1c1_medium_red_diamond_up_stroke1.svg",
+    "description": "medium_red_diamond_up_stroke1"
+  },
+  {
+    "question": 50,
+    "type": "sequence",
+    "filename": "q_50_grid_r1c2_medium_red_diamond_rot90_right_stroke3.svg",
+    "description": "medium_red_diamond_rot90_right_stroke3"
+  },
+  {
+    "question": 50,
+    "type": "sequence",
+    "filename": "q_50_grid_r1c3_medium_red_diamond_rot180_down_stroke1.svg",
+    "description": "medium_red_diamond_rot180_down_stroke1"
+  },
+  {
+    "question": 50,
+    "type": "sequence",
+    "filename": "q_50_grid_r2c1_medium_green_diamond_up_stroke3.svg",
+    "description": "medium_green_diamond_up_stroke3"
+  },
+  {
+    "question": 50,
+    "type": "sequence",
+    "filename": "q_50_grid_r2c2_medium_green_diamond_rot90_right_stroke1.svg",
+    "description": "medium_green_diamond_rot90_right_stroke1"
+  },
+  {
+    "question": 50,
+    "type": "sequence",
+    "filename": "q_50_grid_r2c3_medium_green_diamond_rot180_down_stroke3.svg",
+    "description": "medium_green_diamond_rot180_down_stroke3"
+  },
+  {
+    "question": 50,
+    "type": "sequence",
+    "filename": "q_50_grid_r3c1_medium_purple_diamond_up_stroke1.svg",
+    "description": "medium_purple_diamond_up_stroke1"
+  },
+  {
+    "question": 50,
+    "type": "sequence",
+    "filename": "q_50_grid_r3c3_medium_purple_diamond_rot180_down_stroke1.svg",
+    "description": "medium_purple_diamond_rot180_down_stroke1"
+  },
+  {
+    "question": 50,
+    "type": "option",
+    "filename": "q_50_option_A_medium_purple_diamond_rot90_right_stroke1.svg",
+    "description": "Purple Right, Thin"
+  },
+  {
+    "question": 50,
+    "type": "option",
+    "filename": "q_50_option_B_medium_purple_diamond_rot90_right_stroke3.svg",
+    "description": "Purple Right, Thick"
+  },
+  {
+    "question": 50,
+    "type": "option",
+    "filename": "q_50_option_C_medium_green_diamond_rot90_right_stroke3.svg",
+    "description": "Green Right, Thick"
+  },
+  {
+    "question": 50,
+    "type": "option",
+    "filename": "q_50_option_D_medium_red_diamond_rot90_right_stroke1.svg",
+    "description": "Red Right, Thin"
+  },
+  {
+    "question": 50,
+    "type": "question_mark",
+    "filename": "q_50_question_mark.svg",
+    "description": "Question mark placeholder"
   }
 ]

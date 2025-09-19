@@ -1057,7 +1057,7 @@ const QUESTION_GROUPS = {
       },
       {
         id: 49,
-        ageGroup: "12-14",
+        ageGroup: "15+",
         type: "matrix_transformation",
         question: "A 3×4 grid shows 12 arrows with color, direction, and thickness patterns. Question: What goes in position 8?",
         grid: [
@@ -1089,6 +1089,40 @@ const QUESTION_GROUPS = {
         correctAnswer: "B"
       }
     ]
+  },
+  "15+": {
+    questions: [
+      {
+        id: 50,
+        ageGroup: "15+",
+        type: "matrix_transformation",
+        question: "A 3×3 grid of diamonds shows color, pointing direction, and outline thickness patterns. Question: What goes in position (3,2)?",
+        grid: [
+          [
+            { shape: "diamond", color: "red", rotation: 0, strokeWidth: 1, size: "medium" },        // (1,1): Red Up, Thin
+            { shape: "diamond", color: "red", rotation: 90, strokeWidth: 3, size: "medium" },       // (1,2): Red Right, Thick
+            { shape: "diamond", color: "red", rotation: 180, strokeWidth: 1, size: "medium" }       // (1,3): Red Down, Thin
+          ],
+          [
+            { shape: "diamond", color: "green", rotation: 0, strokeWidth: 3, size: "medium" },      // (2,1): Green Up, Thick
+            { shape: "diamond", color: "green", rotation: 90, strokeWidth: 1, size: "medium" },     // (2,2): Green Right, Thin
+            { shape: "diamond", color: "green", rotation: 180, strokeWidth: 3, size: "medium" }     // (2,3): Green Down, Thick
+          ],
+          [
+            { shape: "diamond", color: "purple", rotation: 0, strokeWidth: 1, size: "medium" },     // (3,1): Purple Up, Thin
+            null,                                                                                     // (3,2): Missing - Purple Right, Thick
+            { shape: "diamond", color: "purple", rotation: 180, strokeWidth: 1, size: "medium" }    // (3,3): Purple Down, Thin
+          ]
+        ],
+        options: [
+          { id: "A", shape: "diamond", color: "purple", rotation: 270, strokeWidth: 1, size: "medium", label: "Purple Left, Thin" },
+          { id: "B", shape: "diamond", color: "purple", rotation: 90, strokeWidth: 3, size: "medium", label: "Purple Right, Thick" },
+          { id: "C", shape: "diamond", color: "blue", rotation: 90, strokeWidth: 3, size: "medium", label: "Blue Right, Thick" },
+          { id: "D", shape: "diamond", color: "purple", rotation: 0, strokeWidth: 3, size: "medium", label: "Purple Up, Thick" }
+        ],
+        correctAnswer: "B"
+      }
+    ]
   }
 }
 
@@ -1100,7 +1134,8 @@ const QUESTIONS = [
   ...QUESTION_GROUPS["6-7"].questions,
   ...QUESTION_GROUPS["8-9"].questions,
   ...QUESTION_GROUPS["10-11"].questions,
-  ...QUESTION_GROUPS["12-14"].questions
+  ...QUESTION_GROUPS["12-14"].questions,
+  ...QUESTION_GROUPS["15+"].questions
 ]
 
 // Function to render pure SVG shapes without tile wrapper for export - clean without borders
