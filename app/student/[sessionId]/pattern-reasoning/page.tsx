@@ -951,22 +951,142 @@ const QUESTION_GROUPS = {
         id: 45,
         ageGroup: "12-14",
         type: "sequence_pattern",
-        question: "Multi-dimensional transformation: Each step, the pentagon rotates 72° and changes color in the sequence red → blue → green → yellow → purple. Missing: position 6",
+        question: "A sequence of yellow hearts changes in two ways at once: Orientation flips left/right every step, and Size alternates Small ↔ Large. Step 1: Yellow heart, Left, Small. Step 2: Yellow heart, Right, Large. Question: What will Step 8 look like?",
         sequence: [
-          { shape: "pentagon", color: "red", rotation: 0, size: "medium" },
-          { shape: "pentagon", color: "blue", rotation: 72, size: "medium" },
-          { shape: "pentagon", color: "green", rotation: 144, size: "medium" },
-          { shape: "pentagon", color: "yellow", rotation: 216, size: "medium" },
-          { shape: "pentagon", color: "purple", rotation: 288, size: "medium" },
-          null // Missing cell - should be red pentagon rotated 360° (0°)
+          { shape: "heart", color: "yellow", reflected: false, size: "small", direction: "left" },
+          { shape: "heart", color: "yellow", reflected: true, size: "big", direction: "right" },
+          { shape: "heart", color: "yellow", reflected: false, size: "small", direction: "left" },
+          { shape: "heart", color: "yellow", reflected: true, size: "big", direction: "right" },
+          { shape: "heart", color: "yellow", reflected: true, size: "small", direction: "right" }, // Second cycle: flips to Right
+          { shape: "heart", color: "yellow", reflected: false, size: "big", direction: "left" }, // flips to Left
+          { shape: "heart", color: "yellow", reflected: true, size: "small", direction: "right" }, // flips to Right
+          null  // Step 8: Yellow heart, Left, Large (flips to Left)
         ],
         options: [
-          { id: "1", shape: "pentagon", color: "red", rotation: 0, size: "medium", label: "Red pentagon rotated 0°" },
-          { id: "2", shape: "pentagon", color: "orange", rotation: 0, size: "medium", label: "Orange pentagon rotated 0°" },
-          { id: "3", shape: "pentagon", color: "red", rotation: 72, size: "medium", label: "Red pentagon rotated 72°" },
-          { id: "4", shape: "pentagon", color: "purple", rotation: 0, size: "medium", label: "Purple pentagon rotated 0°" }
+          { id: "1", shape: "heart", color: "yellow", reflected: false, size: "big", direction: "left", label: "Yellow heart, Left, Large" },
+          { id: "2", shape: "heart", color: "yellow", reflected: true, size: "small", direction: "right", label: "Yellow heart, Right, Small" },
+          { id: "3", shape: "heart", color: "yellow", reflected: false, size: "small", direction: "left", label: "Yellow heart, Left, Small" },
+          { id: "4", shape: "heart", color: "yellow", reflected: true, size: "big", direction: "right", label: "Yellow heart, Right, Large" }
         ],
         correctAnswer: "1"
+      },
+      {
+        id: 46,
+        ageGroup: "12-14",
+        type: "sequence_pattern",
+        question: "A sequence of yellow triangles changes in two ways at once: First 4 steps rotate counter-clockwise (0°, 90°, 180°, 270°), then next 4 rotate clockwise (270°, 180°, 90°, 0°). Size cycles in groups of 2: Big, Big, Small, Small, Medium, Medium, then repeats. Question: What will Step 8 look like?",
+        sequence: [
+          { shape: "triangle", color: "yellow", rotation: 0, size: "big" },      // Step 1: Yellow, 0°, Big
+          { shape: "triangle", color: "yellow", rotation: 90, size: "big" },     // Step 2: Yellow, 90°, Big  
+          { shape: "triangle", color: "yellow", rotation: 180, size: "small" },  // Step 3: Yellow, 180°, Small
+          { shape: "triangle", color: "yellow", rotation: 270, size: "small" },  // Step 4: Yellow, 270°, Small
+          { shape: "triangle", color: "yellow", rotation: 180, size: "medium" }, // Step 5: Yellow, 180°, Medium (clockwise starts)
+          { shape: "triangle", color: "yellow", rotation: 90, size: "medium" },  // Step 6: Yellow, 90°, Medium
+          { shape: "triangle", color: "yellow", rotation: 0, size: "big" },      // Step 7: Yellow, 0°, Big (size cycle repeats)
+          null  // Step 8: Yellow, 270°, Big (clockwise continues, size cycle continues)
+        ],
+        options: [
+          { id: "1", shape: "triangle", color: "yellow", rotation: 270, size: "big", label: "Yellow triangle, 270°, Big" },
+          { id: "2", shape: "triangle", color: "yellow", rotation: 180, size: "big", label: "Yellow triangle, 180°, Big" },
+          { id: "3", shape: "triangle", color: "yellow", rotation: 90, size: "small", label: "Yellow triangle, 90°, Small" },
+          { id: "4", shape: "triangle", color: "yellow", rotation: 0, size: "medium", label: "Yellow triangle, 0°, Medium" }
+        ],
+        correctAnswer: "1"
+      },
+      {
+        id: 47,
+        ageGroup: "12-14",
+        type: "matrix_transformation",
+        question: "A 3×4 grid shows 12 hearts. The sequence changes like this: Normally, hearts flip across the vertical axis and cycle Red → Blue → Green → Red… But on every 4th step, the orientation does not flip, and the color skips forward by two places. Question: What goes in position 12?",
+        grid: [
+          [
+            { shape: "heart", color: "red", reflected: false, size: "medium", direction: "left" },   // Pos 1: Red, Left (normal)
+            { shape: "heart", color: "blue", reflected: true, size: "medium", direction: "right" },  // Pos 2: Blue, Right (normal flip)
+            { shape: "heart", color: "green", reflected: false, size: "medium", direction: "left" }, // Pos 3: Green, Left (normal flip)
+            { shape: "heart", color: "blue", reflected: false, size: "medium", direction: "left" }    // Pos 4: Special rule - Blue (skip 2: G→R→B→G, so G+2=B), Left (no flip)
+          ],
+          [
+            { shape: "heart", color: "green", reflected: true, size: "medium", direction: "right" }, // Pos 5: Green, Right (normal from pos 4 Blue)
+            { shape: "heart", color: "red", reflected: false, size: "medium", direction: "left" },   // Pos 6: Red, Left (normal)
+            { shape: "heart", color: "blue", reflected: true, size: "medium", direction: "right" },  // Pos 7: Blue, Right (normal)
+            { shape: "heart", color: "red", reflected: true, size: "medium", direction: "right" }    // Pos 8: Special rule - Red (skip 2: B→G→R→B, so B+2=R), Right (no flip from pos 7)
+          ],
+          [
+            { shape: "heart", color: "green", reflected: false, size: "medium", direction: "left" },  // Pos 9: Green, Left (normal from pos 8 Red)
+            { shape: "heart", color: "blue", reflected: true, size: "medium", direction: "right" },   // Pos 10: Blue, Right (normal)
+            { shape: "heart", color: "green", reflected: false, size: "medium", direction: "left" },  // Pos 11: Green, Left (normal)
+            null // Pos 12: Special rule - Red (skip 2: G→R→B→G, so G+2=B), Left (no flip from pos 11)
+          ]
+        ],
+        options: [
+          { id: "1", shape: "heart", color: "blue", reflected: false, size: "medium", direction: "left", label: "Blue heart, Left" },
+          { id: "2", shape: "heart", color: "red", reflected: false, size: "medium", direction: "left", label: "Red heart, Left" },
+          { id: "3", shape: "heart", color: "green", reflected: true, size: "medium", direction: "right", label: "Green heart, Right" },
+          { id: "4", shape: "heart", color: "blue", reflected: true, size: "medium", direction: "right", label: "Blue heart, Right" }
+        ],
+        correctAnswer: "1"
+      },
+      {
+        id: 48,
+        ageGroup: "12-14",
+        type: "matrix_transformation",
+        question: "A 2×5 grid shows 10 stars. Odd positions follow Rule A; even positions follow Rule B. Rule A (odd): Red/Blue stars rotate 90° clockwise each step (0°→90°→180°→270°→0°...); Rule B (even): Different colored stars rotate 90° counter-clockwise each step (0°→270°→180°→90°→0°...) and cycle colors Green/Orange → Purple/Yellow → Pink/Black. Question: What goes in position 10?",
+        grid: [
+          [
+            { shape: "star", color: "split", topColor: "red", bottomColor: "blue", rotation: 0, size: "medium" },         // Pos 1: Red/Blue, 0° (Rule A: start)
+            { shape: "star", color: "split", topColor: "green", bottomColor: "orange", rotation: 0, size: "medium" },     // Pos 2: Green/Orange, 0° (Rule B: start)
+            { shape: "star", color: "split", topColor: "red", bottomColor: "blue", rotation: 90, size: "medium" },        // Pos 3: Red/Blue, 90° (Rule A: +90° clockwise)
+            { shape: "star", color: "split", topColor: "purple", bottomColor: "yellow", rotation: 270, size: "medium" },  // Pos 4: Purple/Yellow, 270° (Rule B: -90° counter-clockwise)
+            { shape: "star", color: "split", topColor: "red", bottomColor: "blue", rotation: 180, size: "medium" }        // Pos 5: Red/Blue, 180° (Rule A: +90° clockwise)
+          ],
+          [
+            { shape: "star", color: "split", topColor: "pink", bottomColor: "black", rotation: 180, size: "medium" },     // Pos 6: Pink/Black, 180° (Rule B: -90° counter-clockwise)
+            { shape: "star", color: "split", topColor: "red", bottomColor: "blue", rotation: 270, size: "medium" },       // Pos 7: Red/Blue, 270° (Rule A: +90° clockwise)
+            { shape: "star", color: "split", topColor: "green", bottomColor: "orange", rotation: 90, size: "medium" },    // Pos 8: Green/Orange, 90° (Rule B: -90° counter-clockwise, cycle repeats)
+            { shape: "star", color: "split", topColor: "red", bottomColor: "blue", rotation: 0, size: "medium" },         // Pos 9: Red/Blue, 0° (Rule A: +90° clockwise, back to 0°)
+            null // Pos 10: Purple/Yellow, 0° (Rule B: -90° counter-clockwise, back to 0°, next color)
+          ]
+        ],
+        options: [
+          { id: "1", shape: "star", color: "split", topColor: "purple", bottomColor: "yellow", rotation: 0, size: "medium", label: "Purple/Yellow star, 0°" },
+          { id: "2", shape: "star", color: "split", topColor: "red", bottomColor: "pink", rotation: 0, size: "medium", label: "Red/Pink star, 0°" },
+          { id: "3", shape: "star", color: "split", topColor: "pink", bottomColor: "black", rotation: 0, size: "medium", label: "Pink/Black star, 0°" },
+          { id: "4", shape: "star", color: "split", topColor: "purple", bottomColor: "yellow", rotation: 270, size: "medium", label: "Purple/Yellow star, 270°" }
+        ],
+        correctAnswer: "1"
+      },
+      {
+        id: 49,
+        ageGroup: "12-14",
+        type: "matrix_transformation",
+        question: "A 3×4 grid shows 12 arrows with color, direction, and thickness patterns. Question: What goes in position 8?",
+        grid: [
+          [
+            { shape: "arrow", color: "red", reflected: false, size: "small", direction: "left", strokeWidth: 1 },     // Pos 1: Red arrow, Left, Thin
+            { shape: "arrow", color: "blue", reflected: true, size: "small", direction: "right", strokeWidth: 3 },   // Pos 2: Blue arrow, Right, Thick  
+            { shape: "arrow", color: "green", reflected: false, size: "small", direction: "left", strokeWidth: 3 },  // Pos 3: Green arrow, Left, Thick
+            { shape: "arrow", color: "red", reflected: true, size: "small", direction: "right", strokeWidth: 1 }     // Pos 4: Red arrow, Right, Thin
+          ],
+          [
+            { shape: "arrow", color: "blue", reflected: false, size: "small", direction: "left", strokeWidth: 1 },   // Pos 5: Blue arrow, Left, Thin
+            { shape: "arrow", color: "green", reflected: true, size: "small", direction: "right", strokeWidth: 3 },  // Pos 6: Green arrow, Right, Thick
+            { shape: "arrow", color: "red", reflected: false, size: "small", direction: "left", strokeWidth: 3 },    // Pos 7: Red arrow, Left, Thick
+            null // Pos 8: Missing - Blue arrow, Right, Thick
+          ],
+          [
+            { shape: "arrow", color: "green", reflected: false, size: "small", direction: "left", strokeWidth: 1 },  // Pos 9: Green arrow, Left, Thin
+            { shape: "arrow", color: "red", reflected: true, size: "small", direction: "right", strokeWidth: 3 },    // Pos 10: Red arrow, Right, Thick
+            { shape: "arrow", color: "blue", reflected: false, size: "small", direction: "left", strokeWidth: 3 },   // Pos 11: Blue arrow, Left, Thick
+            { shape: "arrow", color: "green", reflected: true, size: "small", direction: "right", strokeWidth: 1 }   // Pos 12: Green arrow, Right, Thin
+          ]
+        ],
+        options: [
+          { id: "A", shape: "arrow", color: "blue", reflected: true, size: "small", direction: "right", strokeWidth: 1, label: "Blue arrow, Right, Thin" },
+          { id: "B", shape: "arrow", color: "blue", reflected: true, size: "small", direction: "right", strokeWidth: 3, label: "Blue arrow, Right, Thick" },
+          { id: "C", shape: "arrow", color: "green", reflected: true, size: "small", direction: "right", strokeWidth: 1, label: "Green arrow, Right, Thin" },
+          { id: "D", shape: "arrow", color: "blue", reflected: false, size: "small", direction: "left", strokeWidth: 1, label: "Blue arrow, Left, Thin" }
+        ],
+        correctAnswer: "B"
       }
     ]
   }
@@ -2112,6 +2232,22 @@ export default function StudentPatternReasoning() {
           </>
         )
 
+      case 'arrow':
+        const arrowStrokeWidth = item.strokeWidth === 1 ? 0.01 : item.strokeWidth === 3 ? 5 : 2
+        const arrowSize = size * 1.2 // Make arrows 20% larger
+        // Create longer arrow path pointing right, then rotate/reflect as needed
+        const arrowPath = `M ${-arrowSize/1.5} ${-arrowSize/6} L ${arrowSize/3} ${-arrowSize/6} L ${arrowSize/3} ${-arrowSize/3} L ${arrowSize/1.5} 0 L ${arrowSize/3} ${arrowSize/3} L ${arrowSize/3} ${arrowSize/6} L ${-arrowSize/1.5} ${arrowSize/6} Z`
+        
+        return (
+          <path 
+            d={arrowPath}
+            fill={colors.fill}
+            stroke={colors.stroke} 
+            strokeWidth={arrowStrokeWidth}
+            transform={item.reflected ? `scale(-1, 1)` : undefined}
+          />
+        )
+
       default:
         return (
           <>
@@ -2359,7 +2495,7 @@ export default function StudentPatternReasoning() {
                 </div>
               ) : question.type === 'matrix_transformation' ? (
                 <div className="flex justify-center mb-4">
-                  <div className={`grid gap-4 ${question.grid.length === 4 ? 'grid-cols-4' : 'grid-cols-3'}`}>
+                  <div className={`grid gap-4 ${question.grid[0]?.length === 5 ? 'grid-cols-5' : question.grid[0]?.length === 4 ? 'grid-cols-4' : 'grid-cols-3'}`}>
                     {question.grid.map((row: any[], rowIndex: number) =>
                       row.map((item: any, colIndex: number) => (
                         <div key={`${rowIndex}-${colIndex}`} className="flex flex-col items-center p-2">
