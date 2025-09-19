@@ -1,6 +1,0 @@
-<svg width="96" height="96" xmlns="http://www.w3.org/2000/svg">
-    <rect x="1" y="1" width="94" height="94" rx="12" ry="12" fill="#FFFFFF" stroke="#D1D5DB" stroke-width="2" stroke-dasharray=""/>
-    <g transform="translate(48, 48)">
-      <circle cx="0" cy="0" r="21" fill="#16A34A" stroke="#15803D" stroke-width="2" transform=""/>
-    </g>
-  </svg>
