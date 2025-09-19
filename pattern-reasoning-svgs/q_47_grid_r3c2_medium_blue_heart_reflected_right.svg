@@ -1,0 +1,6 @@
+<svg width="96" height="96" xmlns="http://www.w3.org/2000/svg">
+    <rect x="1" y="1" width="94" height="94" rx="12" ry="12" fill="#FFFFFF" stroke="#D1D5DB" stroke-width="2" stroke-dasharray=""/>
+    <g transform="translate(48, 48)">
+      <path d="M0,12.6 C-21,-4.2 -21,-21 0,-8.4 C21,-21 21,-4.2 0,12.6Z" fill="#2563EB" stroke="#1D4ED8" stroke-width="2" transform="rotate(90 0 0) scale(-1, 1)"/>
+    </g>
+  </svg>

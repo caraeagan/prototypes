@@ -1,0 +1,3002 @@
+[
+  {
+    "question": 1,
+    "type": "sequence",
+    "filename": "q_01_sequence_1_red_circle.svg",
+    "description": "Red circle"
+  },
+  {
+    "question": 1,
+    "type": "sequence",
+    "filename": "q_01_sequence_2_red_circle.svg",
+    "description": "Red circle"
+  },
+  {
+    "question": 1,
+    "type": "option",
+    "filename": "q_01_option_1_blue_circle.svg",
+    "description": "Blue circle"
+  },
+  {
+    "question": 1,
+    "type": "option",
+    "filename": "q_01_option_2_yellow_circle.svg",
+    "description": "Yellow circle"
+  },
+  {
+    "question": 1,
+    "type": "option",
+    "filename": "q_01_option_3_green_circle.svg",
+    "description": "Green circle"
+  },
+  {
+    "question": 1,
+    "type": "option",
+    "filename": "q_01_option_4_red_circle.svg",
+    "description": "Red circle"
+  },
+  {
+    "question": 1,
+    "type": "question_mark",
+    "filename": "q_01_question_mark.svg",
+    "description": "Question mark placeholder"
+  },
+  {
+    "question": 2,
+    "type": "sequence",
+    "filename": "q_02_sequence_1_blue_square.svg",
+    "description": "Blue square"
+  },
+  {
+    "question": 2,
+    "type": "sequence",
+    "filename": "q_02_sequence_2_blue_square.svg",
+    "description": "Blue square"
+  },
+  {
+    "question": 2,
+    "type": "option",
+    "filename": "q_02_option_1_yellow_square.svg",
+    "description": "Yellow square"
+  },
+  {
+    "question": 2,
+    "type": "option",
+    "filename": "q_02_option_2_blue_square.svg",
+    "description": "Blue square"
+  },
+  {
+    "question": 2,
+    "type": "option",
+    "filename": "q_02_option_3_red_square.svg",
+    "description": "Red square"
+  },
+  {
+    "question": 2,
+    "type": "option",
+    "filename": "q_02_option_4_green_square.svg",
+    "description": "Green square"
+  },
+  {
+    "question": 2,
+    "type": "question_mark",
+    "filename": "q_02_question_mark.svg",
+    "description": "Question mark placeholder"
+  },
+  {
+    "question": 3,
+    "type": "sequence",
+    "filename": "q_03_sequence_1_yellow_diamond.svg",
+    "description": "Yellow diamond"
+  },
+  {
+    "question": 3,
+    "type": "sequence",
+    "filename": "q_03_sequence_2_yellow_diamond.svg",
+    "description": "Yellow diamond"
+  },
+  {
+    "question": 3,
+    "type": "option",
+    "filename": "q_03_option_1_red_diamond.svg",
+    "description": "Red diamond"
+  },
+  {
+    "question": 3,
+    "type": "option",
+    "filename": "q_03_option_2_blue_diamond.svg",
+    "description": "Blue diamond"
+  },
+  {
+    "question": 3,
+    "type": "option",
+    "filename": "q_03_option_3_yellow_diamond.svg",
+    "description": "Yellow diamond"
+  },
+  {
+    "question": 3,
+    "type": "option",
+    "filename": "q_03_option_4_green_diamond.svg",
+    "description": "Green diamond"
+  },
+  {
+    "question": 3,
+    "type": "question_mark",
+    "filename": "q_03_question_mark.svg",
+    "description": "Question mark placeholder"
+  },
+  {
+    "question": 4,
+    "type": "sequence",
+    "filename": "q_04_sequence_1_coral_circle.svg",
+    "description": "Circle"
+  },
+  {
+    "question": 4,
+    "type": "sequence",
+    "filename": "q_04_sequence_2_coral_circle.svg",
+    "description": "Circle"
+  },
+  {
+    "question": 4,
+    "type": "option",
+    "filename": "q_04_option_1_turquoise_square.svg",
+    "description": "Square"
+  },
+  {
+    "question": 4,
+    "type": "option",
+    "filename": "q_04_option_2_lavender_triangle.svg",
+    "description": "Triangle"
+  },
+  {
+    "question": 4,
+    "type": "option",
+    "filename": "q_04_option_3_mint_star.svg",
+    "description": "Star"
+  },
+  {
+    "question": 4,
+    "type": "option",
+    "filename": "q_04_option_4_coral_circle.svg",
+    "description": "Circle"
+  },
+  {
+    "question": 4,
+    "type": "question_mark",
+    "filename": "q_04_question_mark.svg",
+    "description": "Question mark placeholder"
+  },
+  {
+    "question": 5,
+    "type": "sequence",
+    "filename": "q_05_sequence_1_peach_square.svg",
+    "description": "Square"
+  },
+  {
+    "question": 5,
+    "type": "sequence",
+    "filename": "q_05_sequence_2_peach_square.svg",
+    "description": "Square"
+  },
+  {
+    "question": 5,
+    "type": "option",
+    "filename": "q_05_option_1_navy_circle.svg",
+    "description": "Circle"
+  },
+  {
+    "question": 5,
+    "type": "option",
+    "filename": "q_05_option_2_maroon_triangle.svg",
+    "description": "Triangle"
+  },
+  {
+    "question": 5,
+    "type": "option",
+    "filename": "q_05_option_3_peach_square.svg",
+    "description": "Square"
+  },
+  {
+    "question": 5,
+    "type": "option",
+    "filename": "q_05_option_4_aqua_star.svg",
+    "description": "Star"
+  },
+  {
+    "question": 5,
+    "type": "question_mark",
+    "filename": "q_05_question_mark.svg",
+    "description": "Question mark placeholder"
+  },
+  {
+    "question": 6,
+    "type": "sequence",
+    "filename": "q_06_sequence_1_indigo_triangle.svg",
+    "description": "Triangle"
+  },
+  {
+    "question": 6,
+    "type": "sequence",
+    "filename": "q_06_sequence_2_indigo_triangle.svg",
+    "description": "Triangle"
+  },
+  {
+    "question": 6,
+    "type": "option",
+    "filename": "q_06_option_1_indigo_triangle.svg",
+    "description": "Triangle"
+  },
+  {
+    "question": 6,
+    "type": "option",
+    "filename": "q_06_option_2_fuchsia_circle.svg",
+    "description": "Circle"
+  },
+  {
+    "question": 6,
+    "type": "option",
+    "filename": "q_06_option_3_sky_square.svg",
+    "description": "Square"
+  },
+  {
+    "question": 6,
+    "type": "option",
+    "filename": "q_06_option_4_slate_star.svg",
+    "description": "Star"
+  },
+  {
+    "question": 6,
+    "type": "question_mark",
+    "filename": "q_06_question_mark.svg",
+    "description": "Question mark placeholder"
+  },
+  {
+    "question": 7,
+    "type": "sequence",
+    "filename": "q_07_sequence_1_yellow_star.svg",
+    "description": "Star"
+  },
+  {
+    "question": 7,
+    "type": "sequence",
+    "filename": "q_07_sequence_2_yellow_star.svg",
+    "description": "Star"
+  },
+  {
+    "question": 7,
+    "type": "option",
+    "filename": "q_07_option_1_pink_heart.svg",
+    "description": "Heart"
+  },
+  {
+    "question": 7,
+    "type": "option",
+    "filename": "q_07_option_2_blue_circle.svg",
+    "description": "Circle"
+  },
+  {
+    "question": 7,
+    "type": "option",
+    "filename": "q_07_option_3_yellow_star.svg",
+    "description": "Star"
+  },
+  {
+    "question": 7,
+    "type": "option",
+    "filename": "q_07_option_4_green_square.svg",
+    "description": "Square"
+  },
+  {
+    "question": 7,
+    "type": "question_mark",
+    "filename": "q_07_question_mark.svg",
+    "description": "Question mark placeholder"
+  },
+  {
+    "question": 8,
+    "type": "sequence",
+    "filename": "q_08_sequence_1_emerald_circle.svg",
+    "description": "Circle"
+  },
+  {
+    "question": 8,
+    "type": "sequence",
+    "filename": "q_08_sequence_2_purple_square.svg",
+    "description": "Square"
+  },
+  {
+    "question": 8,
+    "type": "sequence",
+    "filename": "q_08_sequence_3_emerald_circle.svg",
+    "description": "Circle"
+  },
+  {
+    "question": 8,
+    "type": "option",
+    "filename": "q_08_option_1_emerald_circle.svg",
+    "description": "Circle"
+  },
+  {
+    "question": 8,
+    "type": "option",
+    "filename": "q_08_option_2_purple_square.svg",
+    "description": "Square"
+  },
+  {
+    "question": 8,
+    "type": "option",
+    "filename": "q_08_option_3_orange_triangle.svg",
+    "description": "Triangle"
+  },
+  {
+    "question": 8,
+    "type": "option",
+    "filename": "q_08_option_4_gold_star.svg",
+    "description": "Star"
+  },
+  {
+    "question": 8,
+    "type": "question_mark",
+    "filename": "q_08_question_mark.svg",
+    "description": "Question mark placeholder"
+  },
+  {
+    "question": 9,
+    "type": "sequence",
+    "filename": "q_09_sequence_1_big_teal_circle.svg",
+    "description": "Big circle"
+  },
+  {
+    "question": 9,
+    "type": "sequence",
+    "filename": "q_09_sequence_2_small_teal_circle.svg",
+    "description": "Small circle"
+  },
+  {
+    "question": 9,
+    "type": "sequence",
+    "filename": "q_09_sequence_3_big_teal_circle.svg",
+    "description": "Big circle"
+  },
+  {
+    "question": 9,
+    "type": "option",
+    "filename": "q_09_option_1_big_red_square.svg",
+    "description": "Big square"
+  },
+  {
+    "question": 9,
+    "type": "option",
+    "filename": "q_09_option_2_small_teal_circle.svg",
+    "description": "Small circle"
+  },
+  {
+    "question": 9,
+    "type": "option",
+    "filename": "q_09_option_3_small_gold_star.svg",
+    "description": "Small star"
+  },
+  {
+    "question": 9,
+    "type": "option",
+    "filename": "q_09_option_4_pink_triangle.svg",
+    "description": "Triangle"
+  },
+  {
+    "question": 9,
+    "type": "question_mark",
+    "filename": "q_09_question_mark.svg",
+    "description": "Question mark placeholder"
+  },
+  {
+    "question": 10,
+    "type": "sequence",
+    "filename": "q_10_sequence_1_coral_triangle.svg",
+    "description": "Triangle"
+  },
+  {
+    "question": 10,
+    "type": "sequence",
+    "filename": "q_10_sequence_2_lime_circle.svg",
+    "description": "Circle"
+  },
+  {
+    "question": 10,
+    "type": "sequence",
+    "filename": "q_10_sequence_3_coral_triangle.svg",
+    "description": "Triangle"
+  },
+  {
+    "question": 10,
+    "type": "option",
+    "filename": "q_10_option_1_lime_circle.svg",
+    "description": "Circle"
+  },
+  {
+    "question": 10,
+    "type": "option",
+    "filename": "q_10_option_2_violet_square.svg",
+    "description": "Square"
+  },
+  {
+    "question": 10,
+    "type": "option",
+    "filename": "q_10_option_3_amber_star.svg",
+    "description": "Star"
+  },
+  {
+    "question": 10,
+    "type": "option",
+    "filename": "q_10_option_4_rose_heart.svg",
+    "description": "Heart"
+  },
+  {
+    "question": 10,
+    "type": "question_mark",
+    "filename": "q_10_question_mark.svg",
+    "description": "Question mark placeholder"
+  },
+  {
+    "question": 11,
+    "type": "sequence",
+    "filename": "q_11_sequence_1_big_navy_square.svg",
+    "description": "Big square"
+  },
+  {
+    "question": 11,
+    "type": "sequence",
+    "filename": "q_11_sequence_2_small_navy_square.svg",
+    "description": "Small square"
+  },
+  {
+    "question": 11,
+    "type": "sequence",
+    "filename": "q_11_sequence_3_big_navy_square.svg",
+    "description": "Big square"
+  },
+  {
+    "question": 11,
+    "type": "option",
+    "filename": "q_11_option_1_small_cyan_circle.svg",
+    "description": "Small circle"
+  },
+  {
+    "question": 11,
+    "type": "option",
+    "filename": "q_11_option_2_small_navy_square.svg",
+    "description": "Small square"
+  },
+  {
+    "question": 11,
+    "type": "option",
+    "filename": "q_11_option_3_maroon_triangle.svg",
+    "description": "Triangle"
+  },
+  {
+    "question": 11,
+    "type": "option",
+    "filename": "q_11_option_4_fuchsia_heart.svg",
+    "description": "Heart"
+  },
+  {
+    "question": 11,
+    "type": "question_mark",
+    "filename": "q_11_question_mark.svg",
+    "description": "Question mark placeholder"
+  },
+  {
+    "question": 12,
+    "type": "sequence",
+    "filename": "q_12_sequence_1_gold_star.svg",
+    "description": "Star"
+  },
+  {
+    "question": 12,
+    "type": "sequence",
+    "filename": "q_12_sequence_2_crimson_heart.svg",
+    "description": "Heart"
+  },
+  {
+    "question": 12,
+    "type": "sequence",
+    "filename": "q_12_sequence_3_gold_star.svg",
+    "description": "Star"
+  },
+  {
+    "question": 12,
+    "type": "sequence",
+    "filename": "q_12_sequence_4_crimson_heart.svg",
+    "description": "Heart"
+  },
+  {
+    "question": 12,
+    "type": "option",
+    "filename": "q_12_option_1_sky_circle.svg",
+    "description": "Circle"
+  },
+  {
+    "question": 12,
+    "type": "option",
+    "filename": "q_12_option_2_emerald_square.svg",
+    "description": "Square"
+  },
+  {
+    "question": 12,
+    "type": "option",
+    "filename": "q_12_option_3_gold_star.svg",
+    "description": "Star"
+  },
+  {
+    "question": 12,
+    "type": "option",
+    "filename": "q_12_option_4_slate_triangle.svg",
+    "description": "Triangle"
+  },
+  {
+    "question": 12,
+    "type": "question_mark",
+    "filename": "q_12_question_mark.svg",
+    "description": "Question mark placeholder"
+  },
+  {
+    "question": 13,
+    "type": "sequence",
+    "filename": "q_13_sequence_1_big_violet_triangle.svg",
+    "description": "Big triangle"
+  },
+  {
+    "question": 13,
+    "type": "sequence",
+    "filename": "q_13_sequence_2_small_violet_triangle.svg",
+    "description": "Small triangle"
+  },
+  {
+    "question": 13,
+    "type": "sequence",
+    "filename": "q_13_sequence_3_big_violet_triangle.svg",
+    "description": "Big triangle"
+  },
+  {
+    "question": 13,
+    "type": "sequence",
+    "filename": "q_13_sequence_4_small_violet_triangle.svg",
+    "description": "Small triangle"
+  },
+  {
+    "question": 13,
+    "type": "option",
+    "filename": "q_13_option_1_aqua_circle.svg",
+    "description": "Circle"
+  },
+  {
+    "question": 13,
+    "type": "option",
+    "filename": "q_13_option_2_big_violet_triangle.svg",
+    "description": "Big triangle"
+  },
+  {
+    "question": 13,
+    "type": "option",
+    "filename": "q_13_option_3_peach_square.svg",
+    "description": "Square"
+  },
+  {
+    "question": 13,
+    "type": "option",
+    "filename": "q_13_option_4_mint_star.svg",
+    "description": "Star"
+  },
+  {
+    "question": 13,
+    "type": "question_mark",
+    "filename": "q_13_question_mark.svg",
+    "description": "Question mark placeholder"
+  },
+  {
+    "question": 14,
+    "type": "sequence",
+    "filename": "q_14_sequence_1_turquoise_circle.svg",
+    "description": "Circle"
+  },
+  {
+    "question": 14,
+    "type": "sequence",
+    "filename": "q_14_sequence_2_lavender_triangle.svg",
+    "description": "Triangle"
+  },
+  {
+    "question": 14,
+    "type": "sequence",
+    "filename": "q_14_sequence_3_turquoise_circle.svg",
+    "description": "Circle"
+  },
+  {
+    "question": 14,
+    "type": "sequence",
+    "filename": "q_14_sequence_4_lavender_triangle.svg",
+    "description": "Triangle"
+  },
+  {
+    "question": 14,
+    "type": "option",
+    "filename": "q_14_option_1_rose_heart.svg",
+    "description": "Heart"
+  },
+  {
+    "question": 14,
+    "type": "option",
+    "filename": "q_14_option_2_amber_square.svg",
+    "description": "Square"
+  },
+  {
+    "question": 14,
+    "type": "option",
+    "filename": "q_14_option_3_turquoise_circle.svg",
+    "description": "Circle"
+  },
+  {
+    "question": 14,
+    "type": "option",
+    "filename": "q_14_option_4_gold_star.svg",
+    "description": "Star"
+  },
+  {
+    "question": 14,
+    "type": "question_mark",
+    "filename": "q_14_question_mark.svg",
+    "description": "Question mark placeholder"
+  },
+  {
+    "question": 15,
+    "type": "sequence",
+    "filename": "q_15_sequence_1_green_circle.svg",
+    "description": "Circle"
+  },
+  {
+    "question": 15,
+    "type": "sequence",
+    "filename": "q_15_sequence_2_purple_square.svg",
+    "description": "Square"
+  },
+  {
+    "question": 15,
+    "type": "sequence",
+    "filename": "q_15_sequence_3_orange_triangle.svg",
+    "description": "Triangle"
+  },
+  {
+    "question": 15,
+    "type": "sequence",
+    "filename": "q_15_sequence_4_green_circle.svg",
+    "description": "Circle"
+  },
+  {
+    "question": 15,
+    "type": "sequence",
+    "filename": "q_15_sequence_5_purple_square.svg",
+    "description": "Square"
+  },
+  {
+    "question": 15,
+    "type": "option",
+    "filename": "q_15_option_1_orange_triangle.svg",
+    "description": "Triangle"
+  },
+  {
+    "question": 15,
+    "type": "option",
+    "filename": "q_15_option_2_green_circle.svg",
+    "description": "Circle"
+  },
+  {
+    "question": 15,
+    "type": "option",
+    "filename": "q_15_option_3_yellow_star.svg",
+    "description": "Star"
+  },
+  {
+    "question": 15,
+    "type": "option",
+    "filename": "q_15_option_4_purple_square.svg",
+    "description": "Square"
+  },
+  {
+    "question": 15,
+    "type": "question_mark",
+    "filename": "q_15_question_mark.svg",
+    "description": "Question mark placeholder"
+  },
+  {
+    "question": 16,
+    "type": "sequence",
+    "filename": "q_16_sequence_1_red_dots.svg",
+    "description": "1 dot"
+  },
+  {
+    "question": 16,
+    "type": "sequence",
+    "filename": "q_16_sequence_2_red_dots_x2.svg",
+    "description": "2 dots"
+  },
+  {
+    "question": 16,
+    "type": "sequence",
+    "filename": "q_16_sequence_3_red_dots_x3.svg",
+    "description": "3 dots"
+  },
+  {
+    "question": 16,
+    "type": "sequence",
+    "filename": "q_16_sequence_4_red_dots_x4.svg",
+    "description": "4 dots"
+  },
+  {
+    "question": 16,
+    "type": "option",
+    "filename": "q_16_option_1_red_dots_x5.svg",
+    "description": "5 dots"
+  },
+  {
+    "question": 16,
+    "type": "option",
+    "filename": "q_16_option_2_red_dots_x6.svg",
+    "description": "6 dots"
+  },
+  {
+    "question": 16,
+    "type": "option",
+    "filename": "q_16_option_3_red_dots_x2.svg",
+    "description": "2 dots"
+  },
+  {
+    "question": 16,
+    "type": "option",
+    "filename": "q_16_option_4_red_dots.svg",
+    "description": "1 dot"
+  },
+  {
+    "question": 16,
+    "type": "question_mark",
+    "filename": "q_16_question_mark.svg",
+    "description": "Question mark placeholder"
+  },
+  {
+    "question": 17,
+    "type": "sequence",
+    "filename": "q_17_sequence_1_teal_square.svg",
+    "description": "Square"
+  },
+  {
+    "question": 17,
+    "type": "sequence",
+    "filename": "q_17_sequence_2_pink_triangle.svg",
+    "description": "Triangle"
+  },
+  {
+    "question": 17,
+    "type": "sequence",
+    "filename": "q_17_sequence_3_lime_circle.svg",
+    "description": "Circle"
+  },
+  {
+    "question": 17,
+    "type": "sequence",
+    "filename": "q_17_sequence_4_teal_square.svg",
+    "description": "Square"
+  },
+  {
+    "question": 17,
+    "type": "sequence",
+    "filename": "q_17_sequence_5_pink_triangle.svg",
+    "description": "Triangle"
+  },
+  {
+    "question": 17,
+    "type": "option",
+    "filename": "q_17_option_1_lime_circle.svg",
+    "description": "Circle"
+  },
+  {
+    "question": 17,
+    "type": "option",
+    "filename": "q_17_option_2_gold_star.svg",
+    "description": "Star"
+  },
+  {
+    "question": 17,
+    "type": "option",
+    "filename": "q_17_option_3_teal_square.svg",
+    "description": "Square"
+  },
+  {
+    "question": 17,
+    "type": "option",
+    "filename": "q_17_option_4_crimson_heart.svg",
+    "description": "Heart"
+  },
+  {
+    "question": 17,
+    "type": "question_mark",
+    "filename": "q_17_question_mark.svg",
+    "description": "Question mark placeholder"
+  },
+  {
+    "question": 18,
+    "type": "sequence",
+    "filename": "q_18_sequence_1_big_coral_circle.svg",
+    "description": "Big circle"
+  },
+  {
+    "question": 18,
+    "type": "sequence",
+    "filename": "q_18_sequence_2_medium_coral_circle.svg",
+    "description": "Medium circle"
+  },
+  {
+    "question": 18,
+    "type": "sequence",
+    "filename": "q_18_sequence_3_small_coral_circle.svg",
+    "description": "Small circle"
+  },
+  {
+    "question": 18,
+    "type": "option",
+    "filename": "q_18_option_1_tiny_coral_circle.svg",
+    "description": "Tiny circle"
+  },
+  {
+    "question": 18,
+    "type": "option",
+    "filename": "q_18_option_2_navy_square.svg",
+    "description": "Square"
+  },
+  {
+    "question": 18,
+    "type": "option",
+    "filename": "q_18_option_3_emerald_triangle.svg",
+    "description": "Triangle"
+  },
+  {
+    "question": 18,
+    "type": "option",
+    "filename": "q_18_option_4_big_maroon_circle.svg",
+    "description": "Big square"
+  },
+  {
+    "question": 18,
+    "type": "question_mark",
+    "filename": "q_18_question_mark.svg",
+    "description": "Question mark placeholder"
+  },
+  {
+    "question": 19,
+    "type": "sequence",
+    "filename": "q_19_sequence_1_violet_triangle.svg",
+    "description": "Triangle"
+  },
+  {
+    "question": 19,
+    "type": "sequence",
+    "filename": "q_19_sequence_2_amber_star.svg",
+    "description": "Star"
+  },
+  {
+    "question": 19,
+    "type": "sequence",
+    "filename": "q_19_sequence_3_rose_heart.svg",
+    "description": "Heart"
+  },
+  {
+    "question": 19,
+    "type": "sequence",
+    "filename": "q_19_sequence_4_violet_triangle.svg",
+    "description": "Triangle"
+  },
+  {
+    "question": 19,
+    "type": "sequence",
+    "filename": "q_19_sequence_5_amber_star.svg",
+    "description": "Star"
+  },
+  {
+    "question": 19,
+    "type": "option",
+    "filename": "q_19_option_1_rose_heart.svg",
+    "description": "Heart"
+  },
+  {
+    "question": 19,
+    "type": "option",
+    "filename": "q_19_option_2_cyan_circle.svg",
+    "description": "Circle"
+  },
+  {
+    "question": 19,
+    "type": "option",
+    "filename": "q_19_option_3_emerald_square.svg",
+    "description": "Square"
+  },
+  {
+    "question": 19,
+    "type": "option",
+    "filename": "q_19_option_4_violet_triangle.svg",
+    "description": "Triangle"
+  },
+  {
+    "question": 19,
+    "type": "question_mark",
+    "filename": "q_19_question_mark.svg",
+    "description": "Question mark placeholder"
+  },
+  {
+    "question": 20,
+    "type": "sequence",
+    "filename": "q_20_sequence_1_gold_stars.svg",
+    "description": "1 star"
+  },
+  {
+    "question": 20,
+    "type": "sequence",
+    "filename": "q_20_sequence_2_gold_stars_x2.svg",
+    "description": "2 stars"
+  },
+  {
+    "question": 20,
+    "type": "sequence",
+    "filename": "q_20_sequence_3_gold_stars_x3.svg",
+    "description": "3 stars"
+  },
+  {
+    "question": 20,
+    "type": "option",
+    "filename": "q_20_option_1_gold_stars_x4.svg",
+    "description": "4 stars"
+  },
+  {
+    "question": 20,
+    "type": "option",
+    "filename": "q_20_option_2_gold_stars_x5.svg",
+    "description": "5 stars"
+  },
+  {
+    "question": 20,
+    "type": "option",
+    "filename": "q_20_option_3_gold_stars_x2.svg",
+    "description": "2 stars"
+  },
+  {
+    "question": 20,
+    "type": "option",
+    "filename": "q_20_option_4_gold_stars.svg",
+    "description": "1 star"
+  },
+  {
+    "question": 20,
+    "type": "question_mark",
+    "filename": "q_20_question_mark.svg",
+    "description": "Question mark placeholder"
+  },
+  {
+    "question": 21,
+    "type": "sequence",
+    "filename": "q_21_sequence_1_small_mint_square.svg",
+    "description": "Small square"
+  },
+  {
+    "question": 21,
+    "type": "sequence",
+    "filename": "q_21_sequence_2_medium_mint_square.svg",
+    "description": "Medium square"
+  },
+  {
+    "question": 21,
+    "type": "sequence",
+    "filename": "q_21_sequence_3_big_mint_square.svg",
+    "description": "Big square"
+  },
+  {
+    "question": 21,
+    "type": "option",
+    "filename": "q_21_option_1_tiny_cyan_circle.svg",
+    "description": "Tiny circle"
+  },
+  {
+    "question": 21,
+    "type": "option",
+    "filename": "q_21_option_2_fuchsia_triangle.svg",
+    "description": "Triangle"
+  },
+  {
+    "question": 21,
+    "type": "option",
+    "filename": "q_21_option_3_bigger_mint_square.svg",
+    "description": "Bigger square"
+  },
+  {
+    "question": 21,
+    "type": "option",
+    "filename": "q_21_option_4_crimson_star.svg",
+    "description": "Star"
+  },
+  {
+    "question": 21,
+    "type": "question_mark",
+    "filename": "q_21_question_mark.svg",
+    "description": "Question mark placeholder"
+  },
+  {
+    "question": 22,
+    "type": "sequence",
+    "filename": "q_22_sequence_1_blue_triangle.svg",
+    "description": "Triangle (pointing up)"
+  },
+  {
+    "question": 22,
+    "type": "sequence",
+    "filename": "q_22_sequence_2_blue_triangle_rot90.svg",
+    "description": "Triangle (pointing right)"
+  },
+  {
+    "question": 22,
+    "type": "sequence",
+    "filename": "q_22_sequence_3_blue_triangle_rot180.svg",
+    "description": "Triangle (pointing down)"
+  },
+  {
+    "question": 22,
+    "type": "sequence",
+    "filename": "q_22_sequence_4_blue_triangle_rot270.svg",
+    "description": "Triangle (pointing left)"
+  },
+  {
+    "question": 22,
+    "type": "option",
+    "filename": "q_22_option_1_blue_triangle.svg",
+    "description": "Triangle (pointing up)"
+  },
+  {
+    "question": 22,
+    "type": "option",
+    "filename": "q_22_option_2_blue_triangle_rot180.svg",
+    "description": "Triangle (pointing down)"
+  },
+  {
+    "question": 22,
+    "type": "option",
+    "filename": "q_22_option_3_blue_triangle_rot270.svg",
+    "description": "Triangle (pointing left)"
+  },
+  {
+    "question": 22,
+    "type": "option",
+    "filename": "q_22_option_4_blue_triangle_rot90.svg",
+    "description": "Triangle (pointing right)"
+  },
+  {
+    "question": 22,
+    "type": "question_mark",
+    "filename": "q_22_question_mark.svg",
+    "description": "Question mark placeholder"
+  },
+  {
+    "question": 23,
+    "type": "sequence",
+    "filename": "q_23_sequence_1_red_circle.svg",
+    "description": "Red circle"
+  },
+  {
+    "question": 23,
+    "type": "sequence",
+    "filename": "q_23_sequence_2_blue_circle.svg",
+    "description": "Blue circle"
+  },
+  {
+    "question": 23,
+    "type": "sequence",
+    "filename": "q_23_sequence_3_red_circle.svg",
+    "description": "Red circle"
+  },
+  {
+    "question": 23,
+    "type": "sequence",
+    "filename": "q_23_sequence_4_blue_circle.svg",
+    "description": "Blue circle"
+  },
+  {
+    "question": 23,
+    "type": "option",
+    "filename": "q_23_option_1_green_circle.svg",
+    "description": "Green circle"
+  },
+  {
+    "question": 23,
+    "type": "option",
+    "filename": "q_23_option_2_yellow_circle.svg",
+    "description": "Yellow circle"
+  },
+  {
+    "question": 23,
+    "type": "option",
+    "filename": "q_23_option_3_red_circle.svg",
+    "description": "Red circle"
+  },
+  {
+    "question": 23,
+    "type": "option",
+    "filename": "q_23_option_4_purple_circle.svg",
+    "description": "Purple circle"
+  },
+  {
+    "question": 23,
+    "type": "question_mark",
+    "filename": "q_23_question_mark.svg",
+    "description": "Question mark placeholder"
+  },
+  {
+    "question": 24,
+    "type": "sequence",
+    "filename": "q_24_sequence_1_gold_stars.svg",
+    "description": "1 star"
+  },
+  {
+    "question": 24,
+    "type": "sequence",
+    "filename": "q_24_sequence_2_gold_stars_x2.svg",
+    "description": "2 stars"
+  },
+  {
+    "question": 24,
+    "type": "sequence",
+    "filename": "q_24_sequence_3_gold_stars_x3.svg",
+    "description": "3 stars"
+  },
+  {
+    "question": 24,
+    "type": "option",
+    "filename": "q_24_option_1_gold_stars_x5.svg",
+    "description": "5 stars"
+  },
+  {
+    "question": 24,
+    "type": "option",
+    "filename": "q_24_option_2_gold_stars_x2.svg",
+    "description": "2 stars"
+  },
+  {
+    "question": 24,
+    "type": "option",
+    "filename": "q_24_option_3_gold_stars_x4.svg",
+    "description": "4 stars"
+  },
+  {
+    "question": 24,
+    "type": "option",
+    "filename": "q_24_option_4_gold_stars.svg",
+    "description": "1 star"
+  },
+  {
+    "question": 24,
+    "type": "question_mark",
+    "filename": "q_24_question_mark.svg",
+    "description": "Question mark placeholder"
+  },
+  {
+    "question": 25,
+    "type": "sequence",
+    "filename": "q_25_sequence_1_small_purple_square.svg",
+    "description": "Small square"
+  },
+  {
+    "question": 25,
+    "type": "sequence",
+    "filename": "q_25_sequence_2_medium_purple_square.svg",
+    "description": "Medium square"
+  },
+  {
+    "question": 25,
+    "type": "sequence",
+    "filename": "q_25_sequence_3_big_purple_square.svg",
+    "description": "Big square"
+  },
+  {
+    "question": 25,
+    "type": "option",
+    "filename": "q_25_option_1_small_orange_circle.svg",
+    "description": "Small circle"
+  },
+  {
+    "question": 25,
+    "type": "option",
+    "filename": "q_25_option_2_medium_green_triangle.svg",
+    "description": "Medium triangle"
+  },
+  {
+    "question": 25,
+    "type": "option",
+    "filename": "q_25_option_3_bigger_purple_square.svg",
+    "description": "Bigger square"
+  },
+  {
+    "question": 25,
+    "type": "option",
+    "filename": "q_25_option_4_big_yellow_star.svg",
+    "description": "Big star"
+  },
+  {
+    "question": 25,
+    "type": "question_mark",
+    "filename": "q_25_question_mark.svg",
+    "description": "Question mark placeholder"
+  },
+  {
+    "question": 26,
+    "type": "sequence",
+    "filename": "q_26_sequence_1_yellow_blue_circle_dot.svg",
+    "description": "Split-color circle with dot at top"
+  },
+  {
+    "question": 26,
+    "type": "sequence",
+    "filename": "q_26_sequence_2_yellow_blue_circle_rot270_dot.svg",
+    "description": "Split-color circle with dot at left"
+  },
+  {
+    "question": 26,
+    "type": "sequence",
+    "filename": "q_26_sequence_3_yellow_blue_circle_rot180_dot.svg",
+    "description": "Split-color circle with dot at bottom"
+  },
+  {
+    "question": 26,
+    "type": "sequence",
+    "filename": "q_26_sequence_4_yellow_blue_circle_rot90_dot.svg",
+    "description": "Split-color circle with dot at right"
+  },
+  {
+    "question": 26,
+    "type": "option",
+    "filename": "q_26_option_1_yellow_blue_circle_dot.svg",
+    "description": "Dot at top"
+  },
+  {
+    "question": 26,
+    "type": "option",
+    "filename": "q_26_option_2_yellow_blue_circle_rot90_dot.svg",
+    "description": "Dot at right"
+  },
+  {
+    "question": 26,
+    "type": "option",
+    "filename": "q_26_option_3_yellow_blue_circle_rot180_dot.svg",
+    "description": "Dot at bottom"
+  },
+  {
+    "question": 26,
+    "type": "option",
+    "filename": "q_26_option_4_yellow_blue_circle_rot270_dot.svg",
+    "description": "Dot at left"
+  },
+  {
+    "question": 26,
+    "type": "question_mark",
+    "filename": "q_26_question_mark.svg",
+    "description": "Question mark placeholder"
+  },
+  {
+    "question": 27,
+    "type": "sequence",
+    "filename": "q_27_sequence_1_blue_circle.svg",
+    "description": "Circle"
+  },
+  {
+    "question": 27,
+    "type": "sequence",
+    "filename": "q_27_sequence_2_red_triangle.svg",
+    "description": "Triangle"
+  },
+  {
+    "question": 27,
+    "type": "sequence",
+    "filename": "q_27_sequence_3_blue_circle_dot.svg",
+    "description": "Circle + dot"
+  },
+  {
+    "question": 27,
+    "type": "option",
+    "filename": "q_27_option_1_red_triangle_stripe.svg",
+    "description": "Triangle + stripe"
+  },
+  {
+    "question": 27,
+    "type": "option",
+    "filename": "q_27_option_2_bigger_red_triangle.svg",
+    "description": "Triangle (bigger)"
+  },
+  {
+    "question": 27,
+    "type": "option",
+    "filename": "q_27_option_3_red_triangle_dot.svg",
+    "description": "Triangle + dot"
+  },
+  {
+    "question": 27,
+    "type": "option",
+    "filename": "q_27_option_4_red_triangle_rot90.svg",
+    "description": "Triangle (rotated)"
+  },
+  {
+    "question": 27,
+    "type": "question_mark",
+    "filename": "q_27_question_mark.svg",
+    "description": "Question mark placeholder"
+  },
+  {
+    "question": 28,
+    "type": "sequence",
+    "filename": "q_28_sequence_1_small_gold_star.svg",
+    "description": "Small star"
+  },
+  {
+    "question": 28,
+    "type": "sequence",
+    "filename": "q_28_sequence_2_medium_gold_star.svg",
+    "description": "Medium star"
+  },
+  {
+    "question": 28,
+    "type": "sequence",
+    "filename": "q_28_sequence_3_small_pink_heart.svg",
+    "description": "Small heart"
+  },
+  {
+    "question": 28,
+    "type": "option",
+    "filename": "q_28_option_1_small_pink_heart.svg",
+    "description": "Small heart"
+  },
+  {
+    "question": 28,
+    "type": "option",
+    "filename": "q_28_option_2_small_green_triangle.svg",
+    "description": "Small triangle"
+  },
+  {
+    "question": 28,
+    "type": "option",
+    "filename": "q_28_option_3_medium_pink_heart.svg",
+    "description": "Medium heart"
+  },
+  {
+    "question": 28,
+    "type": "option",
+    "filename": "q_28_option_4_medium_blue_circle.svg",
+    "description": "Medium circle"
+  },
+  {
+    "question": 28,
+    "type": "question_mark",
+    "filename": "q_28_question_mark.svg",
+    "description": "Question mark placeholder"
+  },
+  {
+    "question": 29,
+    "type": "sequence",
+    "filename": "q_29_sequence_1_small_red_circle.svg",
+    "description": "Red small circle"
+  },
+  {
+    "question": 29,
+    "type": "sequence",
+    "filename": "q_29_sequence_2_small_blue_circle.svg",
+    "description": "Blue small circle"
+  },
+  {
+    "question": 29,
+    "type": "sequence",
+    "filename": "q_29_sequence_3_small_green_circle.svg",
+    "description": "Green small circle"
+  },
+  {
+    "question": 29,
+    "type": "sequence",
+    "filename": "q_29_sequence_4_medium_red_circle.svg",
+    "description": "Red medium circle"
+  },
+  {
+    "question": 29,
+    "type": "sequence",
+    "filename": "q_29_sequence_5_medium_blue_circle.svg",
+    "description": "Blue medium circle"
+  },
+  {
+    "question": 29,
+    "type": "sequence",
+    "filename": "q_29_sequence_6_medium_green_circle.svg",
+    "description": "Green medium circle"
+  },
+  {
+    "question": 29,
+    "type": "sequence",
+    "filename": "q_29_sequence_7_big_red_circle.svg",
+    "description": "Red large circle"
+  },
+  {
+    "question": 29,
+    "type": "sequence",
+    "filename": "q_29_sequence_8_big_blue_circle.svg",
+    "description": "Blue large circle"
+  },
+  {
+    "question": 29,
+    "type": "option",
+    "filename": "q_29_option_1_small_red_circle.svg",
+    "description": "Red small circle"
+  },
+  {
+    "question": 29,
+    "type": "option",
+    "filename": "q_29_option_2_big_blue_square.svg",
+    "description": "Blue large square"
+  },
+  {
+    "question": 29,
+    "type": "option",
+    "filename": "q_29_option_3_big_green_circle.svg",
+    "description": "Green large circle"
+  },
+  {
+    "question": 29,
+    "type": "option",
+    "filename": "q_29_option_4_medium_green_circle.svg",
+    "description": "Green medium circle"
+  },
+  {
+    "question": 29,
+    "type": "question_mark",
+    "filename": "q_29_question_mark.svg",
+    "description": "Question mark placeholder"
+  },
+  {
+    "question": 30,
+    "type": "sequence",
+    "filename": "q_30_sequence_1_yellow_triangle.svg",
+    "description": "Yellow triangle"
+  },
+  {
+    "question": 30,
+    "type": "sequence",
+    "filename": "q_30_sequence_2_orange_triangle.svg",
+    "description": "Orange triangle"
+  },
+  {
+    "question": 30,
+    "type": "sequence",
+    "filename": "q_30_sequence_3_red_triangle.svg",
+    "description": "Red triangle"
+  },
+  {
+    "question": 30,
+    "type": "sequence",
+    "filename": "q_30_sequence_4_yellow_square.svg",
+    "description": "Yellow square"
+  },
+  {
+    "question": 30,
+    "type": "sequence",
+    "filename": "q_30_sequence_5_orange_square.svg",
+    "description": "Orange square"
+  },
+  {
+    "question": 30,
+    "type": "sequence",
+    "filename": "q_30_sequence_6_red_square.svg",
+    "description": "Red square"
+  },
+  {
+    "question": 30,
+    "type": "sequence",
+    "filename": "q_30_sequence_7_yellow_circle.svg",
+    "description": "Yellow circle"
+  },
+  {
+    "question": 30,
+    "type": "sequence",
+    "filename": "q_30_sequence_8_red_circle.svg",
+    "description": "Red circle"
+  },
+  {
+    "question": 30,
+    "type": "option",
+    "filename": "q_30_option_1_yellow_circle.svg",
+    "description": "Yellow circle"
+  },
+  {
+    "question": 30,
+    "type": "option",
+    "filename": "q_30_option_2_red_triangle.svg",
+    "description": "Red triangle"
+  },
+  {
+    "question": 30,
+    "type": "option",
+    "filename": "q_30_option_3_orange_circle.svg",
+    "description": "Orange circle"
+  },
+  {
+    "question": 30,
+    "type": "option",
+    "filename": "q_30_option_4_red_square.svg",
+    "description": "Red square"
+  },
+  {
+    "question": 30,
+    "type": "question_mark",
+    "filename": "q_30_question_mark.svg",
+    "description": "Question mark placeholder"
+  },
+  {
+    "question": 31,
+    "type": "sequence",
+    "filename": "q_31_sequence_1_small_gold_star.svg",
+    "description": "Small star"
+  },
+  {
+    "question": 31,
+    "type": "sequence",
+    "filename": "q_31_sequence_2_small_pink_heart.svg",
+    "description": "Small heart"
+  },
+  {
+    "question": 31,
+    "type": "sequence",
+    "filename": "q_31_sequence_3_small_purple_diamond.svg",
+    "description": "Small diamond"
+  },
+  {
+    "question": 31,
+    "type": "sequence",
+    "filename": "q_31_sequence_4_medium_gold_star.svg",
+    "description": "Medium star"
+  },
+  {
+    "question": 31,
+    "type": "sequence",
+    "filename": "q_31_sequence_5_medium_pink_heart.svg",
+    "description": "Medium heart"
+  },
+  {
+    "question": 31,
+    "type": "sequence",
+    "filename": "q_31_sequence_6_medium_purple_diamond.svg",
+    "description": "Medium diamond"
+  },
+  {
+    "question": 31,
+    "type": "sequence",
+    "filename": "q_31_sequence_7_big_gold_star.svg",
+    "description": "Large star"
+  },
+  {
+    "question": 31,
+    "type": "sequence",
+    "filename": "q_31_sequence_8_big_pink_heart.svg",
+    "description": "Large heart"
+  },
+  {
+    "question": 31,
+    "type": "option",
+    "filename": "q_31_option_1_big_purple_diamond.svg",
+    "description": "Large diamond"
+  },
+  {
+    "question": 31,
+    "type": "option",
+    "filename": "q_31_option_2_big_gold_star.svg",
+    "description": "Large star"
+  },
+  {
+    "question": 31,
+    "type": "option",
+    "filename": "q_31_option_3_medium_pink_heart.svg",
+    "description": "Medium heart"
+  },
+  {
+    "question": 31,
+    "type": "option",
+    "filename": "q_31_option_4_small_purple_diamond.svg",
+    "description": "Small diamond"
+  },
+  {
+    "question": 31,
+    "type": "question_mark",
+    "filename": "q_31_question_mark.svg",
+    "description": "Question mark placeholder"
+  },
+  {
+    "question": 32,
+    "type": "sequence",
+    "filename": "q_32_sequence_1_blue_circle_solid.svg",
+    "description": "Solid blue circle"
+  },
+  {
+    "question": 32,
+    "type": "sequence",
+    "filename": "q_32_sequence_2_purple_circle_solid.svg",
+    "description": "Solid purple circle"
+  },
+  {
+    "question": 32,
+    "type": "sequence",
+    "filename": "q_32_sequence_3_pink_circle_solid.svg",
+    "description": "Solid pink circle"
+  },
+  {
+    "question": 32,
+    "type": "sequence",
+    "filename": "q_32_sequence_4_blue_triangle_outline.svg",
+    "description": "Outline blue triangle"
+  },
+  {
+    "question": 32,
+    "type": "sequence",
+    "filename": "q_32_sequence_5_purple_triangle_outline.svg",
+    "description": "Outline purple triangle"
+  },
+  {
+    "question": 32,
+    "type": "sequence",
+    "filename": "q_32_sequence_6_pink_triangle_outline.svg",
+    "description": "Outline pink triangle"
+  },
+  {
+    "question": 32,
+    "type": "sequence",
+    "filename": "q_32_sequence_7_purple_square_stripe.svg",
+    "description": "Striped purple square"
+  },
+  {
+    "question": 32,
+    "type": "sequence",
+    "filename": "q_32_sequence_8_pink_square_stripe.svg",
+    "description": "Striped pink square"
+  },
+  {
+    "question": 32,
+    "type": "option",
+    "filename": "q_32_option_1_purple_circle_stripe.svg",
+    "description": "Striped purple circle"
+  },
+  {
+    "question": 32,
+    "type": "option",
+    "filename": "q_32_option_2_purple_square_stripe.svg",
+    "description": "Purple striped square with red border"
+  },
+  {
+    "question": 32,
+    "type": "option",
+    "filename": "q_32_option_3_blue_square_stripe.svg",
+    "description": "Striped blue square"
+  },
+  {
+    "question": 32,
+    "type": "option",
+    "filename": "q_32_option_4_purple_square_horizontal-stripe.svg",
+    "description": "Purple horizontal striped square with red border"
+  },
+  {
+    "question": 32,
+    "type": "question_mark",
+    "filename": "q_32_question_mark.svg",
+    "description": "Question mark placeholder"
+  },
+  {
+    "question": 33,
+    "type": "sequence",
+    "filename": "q_33_sequence_1_blue_circle.svg",
+    "description": "1 circle"
+  },
+  {
+    "question": 33,
+    "type": "sequence",
+    "filename": "q_33_sequence_2_blue_circle_x2.svg",
+    "description": "2 circles"
+  },
+  {
+    "question": 33,
+    "type": "sequence",
+    "filename": "q_33_sequence_3_blue_circle_x3.svg",
+    "description": "3 circles"
+  },
+  {
+    "question": 33,
+    "type": "sequence",
+    "filename": "q_33_sequence_4_green_triangle.svg",
+    "description": "1 triangle"
+  },
+  {
+    "question": 33,
+    "type": "sequence",
+    "filename": "q_33_sequence_5_green_triangle_x2.svg",
+    "description": "2 triangles"
+  },
+  {
+    "question": 33,
+    "type": "sequence",
+    "filename": "q_33_sequence_6_green_triangle_x3.svg",
+    "description": "3 triangles"
+  },
+  {
+    "question": 33,
+    "type": "sequence",
+    "filename": "q_33_sequence_7_red_square.svg",
+    "description": "1 square"
+  },
+  {
+    "question": 33,
+    "type": "sequence",
+    "filename": "q_33_sequence_8_red_square_x3.svg",
+    "description": "3 squares"
+  },
+  {
+    "question": 33,
+    "type": "option",
+    "filename": "q_33_option_1_green_triangle_x2.svg",
+    "description": "2 triangles"
+  },
+  {
+    "question": 33,
+    "type": "option",
+    "filename": "q_33_option_2_blue_circle_x3.svg",
+    "description": "3 circles"
+  },
+  {
+    "question": 33,
+    "type": "option",
+    "filename": "q_33_option_3_red_square_x2.svg",
+    "description": "2 squares"
+  },
+  {
+    "question": 33,
+    "type": "option",
+    "filename": "q_33_option_4_red_square.svg",
+    "description": "1 square"
+  },
+  {
+    "question": 33,
+    "type": "question_mark",
+    "filename": "q_33_question_mark.svg",
+    "description": "Question mark placeholder"
+  },
+  {
+    "question": 34,
+    "type": "sequence",
+    "filename": "q_34_sequence_1_small_purple_pink_square.svg",
+    "description": "Small split square"
+  },
+  {
+    "question": 34,
+    "type": "sequence",
+    "filename": "q_34_sequence_2_small_purple_pink_square_rot90.svg",
+    "description": "Small rotated split square"
+  },
+  {
+    "question": 34,
+    "type": "sequence",
+    "filename": "q_34_sequence_3_small_purple_pink_square_rot180.svg",
+    "description": "Small rotated split square"
+  },
+  {
+    "question": 34,
+    "type": "sequence",
+    "filename": "q_34_sequence_4_medium_orange_yellow_triangle.svg",
+    "description": "Medium split triangle"
+  },
+  {
+    "question": 34,
+    "type": "sequence",
+    "filename": "q_34_sequence_5_medium_orange_yellow_triangle_rot180.svg",
+    "description": "Medium rotated split triangle"
+  },
+  {
+    "question": 34,
+    "type": "sequence",
+    "filename": "q_34_sequence_6_big_teal_blue_star.svg",
+    "description": "Large split star"
+  },
+  {
+    "question": 34,
+    "type": "sequence",
+    "filename": "q_34_sequence_7_big_teal_blue_star_rot90.svg",
+    "description": "Large rotated split star"
+  },
+  {
+    "question": 34,
+    "type": "sequence",
+    "filename": "q_34_sequence_8_big_teal_blue_star_rot180.svg",
+    "description": "Large rotated split star"
+  },
+  {
+    "question": 34,
+    "type": "option",
+    "filename": "q_34_option_1_medium_orange_yellow_triangle.svg",
+    "description": "Medium triangle (0°)"
+  },
+  {
+    "question": 34,
+    "type": "option",
+    "filename": "q_34_option_2_medium_orange_yellow_triangle_rot90.svg",
+    "description": "Medium triangle (90°)"
+  },
+  {
+    "question": 34,
+    "type": "option",
+    "filename": "q_34_option_3_medium_orange_yellow_triangle_rot180.svg",
+    "description": "Medium triangle (180°)"
+  },
+  {
+    "question": 34,
+    "type": "option",
+    "filename": "q_34_option_4_medium_orange_yellow_triangle_rot270.svg",
+    "description": "Medium triangle (270°)"
+  },
+  {
+    "question": 34,
+    "type": "question_mark",
+    "filename": "q_34_question_mark.svg",
+    "description": "Question mark placeholder"
+  },
+  {
+    "question": 35,
+    "type": "sequence",
+    "filename": "q_35_sequence_1_medium_blue_red_diamond.svg",
+    "description": "medium_blue_red_diamond"
+  },
+  {
+    "question": 35,
+    "type": "sequence",
+    "filename": "q_35_sequence_2_medium_blue_red_diamond_rot90.svg",
+    "description": "medium_blue_red_diamond_rot90"
+  },
+  {
+    "question": 35,
+    "type": "sequence",
+    "filename": "q_35_sequence_3_medium_blue_red_diamond_rot180.svg",
+    "description": "medium_blue_red_diamond_rot180"
+  },
+  {
+    "question": 35,
+    "type": "option",
+    "filename": "q_35_option_1_medium_blue_red_diamond_rot270.svg",
+    "description": "Left"
+  },
+  {
+    "question": 35,
+    "type": "option",
+    "filename": "q_35_option_2_medium_blue_red_diamond.svg",
+    "description": "Up"
+  },
+  {
+    "question": 35,
+    "type": "option",
+    "filename": "q_35_option_3_medium_blue_red_diamond_rot90.svg",
+    "description": "Right"
+  },
+  {
+    "question": 35,
+    "type": "option",
+    "filename": "q_35_option_4_medium_blue_red_diamond_rot180.svg",
+    "description": "Down"
+  },
+  {
+    "question": 35,
+    "type": "question_mark",
+    "filename": "q_35_question_mark.svg",
+    "description": "Question mark placeholder"
+  },
+  {
+    "question": 36,
+    "type": "sequence",
+    "filename": "q_36_sequence_1_medium_green_triangle.svg",
+    "description": "medium_green_triangle"
+  },
+  {
+    "question": 36,
+    "type": "sequence",
+    "filename": "q_36_sequence_2_medium_green_triangle_rot90.svg",
+    "description": "medium_green_triangle_rot90"
+  },
+  {
+    "question": 36,
+    "type": "sequence",
+    "filename": "q_36_sequence_3_medium_green_triangle_rot270.svg",
+    "description": "medium_green_triangle_rot270"
+  },
+  {
+    "question": 36,
+    "type": "sequence",
+    "filename": "q_36_sequence_4_medium_green_triangle_rot180.svg",
+    "description": "medium_green_triangle_rot180"
+  },
+  {
+    "question": 36,
+    "type": "sequence",
+    "filename": "q_36_sequence_5_medium_green_triangle.svg",
+    "description": "medium_green_triangle"
+  },
+  {
+    "question": 36,
+    "type": "sequence",
+    "filename": "q_36_sequence_6_medium_green_triangle_rot90.svg",
+    "description": "medium_green_triangle_rot90"
+  },
+  {
+    "question": 36,
+    "type": "sequence",
+    "filename": "q_36_sequence_7_medium_green_triangle_rot270.svg",
+    "description": "medium_green_triangle_rot270"
+  },
+  {
+    "question": 36,
+    "type": "option",
+    "filename": "q_36_option_1_medium_green_triangle.svg",
+    "description": "Pointing up"
+  },
+  {
+    "question": 36,
+    "type": "option",
+    "filename": "q_36_option_2_medium_green_triangle_rot270.svg",
+    "description": "Pointing right"
+  },
+  {
+    "question": 36,
+    "type": "option",
+    "filename": "q_36_option_3_medium_green_triangle_rot270_reflected.svg",
+    "description": "Pointing left"
+  },
+  {
+    "question": 36,
+    "type": "option",
+    "filename": "q_36_option_4_medium_green_triangle_rot180.svg",
+    "description": "Pointing down"
+  },
+  {
+    "question": 36,
+    "type": "question_mark",
+    "filename": "q_36_question_mark.svg",
+    "description": "Question mark placeholder"
+  },
+  {
+    "question": 37,
+    "type": "sequence",
+    "filename": "q_37_sequence_1_medium_pink_blue_star.svg",
+    "description": "medium_pink_blue_star"
+  },
+  {
+    "question": 37,
+    "type": "sequence",
+    "filename": "q_37_sequence_2_medium_pink_blue_star_rot45.svg",
+    "description": "medium_pink_blue_star_rot45"
+  },
+  {
+    "question": 37,
+    "type": "sequence",
+    "filename": "q_37_sequence_3_medium_pink_blue_star_rot135.svg",
+    "description": "medium_pink_blue_star_rot135"
+  },
+  {
+    "question": 37,
+    "type": "sequence",
+    "filename": "q_37_sequence_4_medium_pink_blue_star_rot180.svg",
+    "description": "medium_pink_blue_star_rot180"
+  },
+  {
+    "question": 37,
+    "type": "option",
+    "filename": "q_37_option_1_medium_pink_blue_star_rot90.svg",
+    "description": "Medium star rotated 90°"
+  },
+  {
+    "question": 37,
+    "type": "option",
+    "filename": "q_37_option_2_medium_pink_blue_star_rot135.svg",
+    "description": "Medium star rotated 135°"
+  },
+  {
+    "question": 37,
+    "type": "option",
+    "filename": "q_37_option_3_medium_pink_blue_star_rot135.svg",
+    "description": "Medium star rotated 135°"
+  },
+  {
+    "question": 37,
+    "type": "option",
+    "filename": "q_37_option_4_medium_pink_blue_star_rot45.svg",
+    "description": "Medium star rotated 45°"
+  },
+  {
+    "question": 37,
+    "type": "question_mark",
+    "filename": "q_37_question_mark.svg",
+    "description": "Question mark placeholder"
+  },
+  {
+    "question": 38,
+    "type": "sequence",
+    "filename": "q_38_grid_r1c1_small_blue_yellow_square.svg",
+    "description": "small_blue_yellow_square"
+  },
+  {
+    "question": 38,
+    "type": "sequence",
+    "filename": "q_38_grid_r1c2_medium_red_green_triangle_rot45.svg",
+    "description": "medium_red_green_triangle_rot45"
+  },
+  {
+    "question": 38,
+    "type": "sequence",
+    "filename": "q_38_grid_r1c3_big_pink_purple_circle_rot90.svg",
+    "description": "big_pink_purple_circle_rot90"
+  },
+  {
+    "question": 38,
+    "type": "sequence",
+    "filename": "q_38_grid_r2c1_medium_red_green_triangle_rot45_reflected.svg",
+    "description": "medium_red_green_triangle_rot45_reflected"
+  },
+  {
+    "question": 38,
+    "type": "sequence",
+    "filename": "q_38_grid_r2c2_big_pink_purple_circle_rot90_reflected.svg",
+    "description": "big_pink_purple_circle_rot90_reflected"
+  },
+  {
+    "question": 38,
+    "type": "sequence",
+    "filename": "q_38_grid_r2c3_small_blue_yellow_square_rot135_reflected.svg",
+    "description": "small_blue_yellow_square_rot135_reflected"
+  },
+  {
+    "question": 38,
+    "type": "sequence",
+    "filename": "q_38_grid_r3c1_big_pink_purple_circle_rot90.svg",
+    "description": "big_pink_purple_circle_rot90"
+  },
+  {
+    "question": 38,
+    "type": "sequence",
+    "filename": "q_38_grid_r3c2_small_blue_yellow_square_rot135.svg",
+    "description": "small_blue_yellow_square_rot135"
+  },
+  {
+    "question": 38,
+    "type": "option",
+    "filename": "q_38_option_1_medium_red_green_triangle_rot180.svg",
+    "description": "Triangle: red/green, 180°, medium"
+  },
+  {
+    "question": 38,
+    "type": "option",
+    "filename": "q_38_option_2_medium_red_green_triangle_rot45_reflected.svg",
+    "description": "Triangle: red/green, 45°, reflected, medium"
+  },
+  {
+    "question": 38,
+    "type": "option",
+    "filename": "q_38_option_3_big_red_green_triangle_rot135.svg",
+    "description": "Triangle: red/green, 135°, big"
+  },
+  {
+    "question": 38,
+    "type": "option",
+    "filename": "q_38_option_4_small_red_green_triangle_rot90.svg",
+    "description": "Triangle: red/green, 90°, small"
+  },
+  {
+    "question": 38,
+    "type": "question_mark",
+    "filename": "q_38_question_mark.svg",
+    "description": "Question mark placeholder"
+  },
+  {
+    "question": 39,
+    "type": "sequence",
+    "filename": "q_39_sequence_1_medium_blue_dots.svg",
+    "description": "medium_blue_dots"
+  },
+  {
+    "question": 39,
+    "type": "sequence",
+    "filename": "q_39_sequence_2_medium_blue_dots.svg",
+    "description": "medium_blue_dots"
+  },
+  {
+    "question": 39,
+    "type": "sequence",
+    "filename": "q_39_sequence_3_medium_blue_dots_x2.svg",
+    "description": "medium_blue_dots_x2"
+  },
+  {
+    "question": 39,
+    "type": "sequence",
+    "filename": "q_39_sequence_4_medium_blue_dots_x3.svg",
+    "description": "medium_blue_dots_x3"
+  },
+  {
+    "question": 39,
+    "type": "sequence",
+    "filename": "q_39_sequence_5_medium_blue_dots_x5.svg",
+    "description": "medium_blue_dots_x5"
+  },
+  {
+    "question": 39,
+    "type": "sequence",
+    "filename": "q_39_sequence_6_medium_blue_dots_x8.svg",
+    "description": "medium_blue_dots_x8"
+  },
+  {
+    "question": 39,
+    "type": "sequence",
+    "filename": "q_39_sequence_7_medium_blue_dots_x13.svg",
+    "description": "medium_blue_dots_x13"
+  },
+  {
+    "question": 39,
+    "type": "option",
+    "filename": "q_39_option_1_medium_blue_dots_x21.svg",
+    "description": "21 dots"
+  },
+  {
+    "question": 39,
+    "type": "option",
+    "filename": "q_39_option_2_medium_blue_dots_x14.svg",
+    "description": "14 dots"
+  },
+  {
+    "question": 39,
+    "type": "option",
+    "filename": "q_39_option_3_medium_blue_dots_x20.svg",
+    "description": "20 dots"
+  },
+  {
+    "question": 39,
+    "type": "option",
+    "filename": "q_39_option_4_medium_blue_dots_x15.svg",
+    "description": "15 dots"
+  },
+  {
+    "question": 39,
+    "type": "question_mark",
+    "filename": "q_39_question_mark.svg",
+    "description": "Question mark placeholder"
+  },
+  {
+    "question": 40,
+    "type": "sequence",
+    "filename": "q_40_grid_r1c1_small_blue_star_filled.svg",
+    "description": "small_blue_star_filled"
+  },
+  {
+    "question": 40,
+    "type": "sequence",
+    "filename": "q_40_grid_r1c2_small_blue_circle_outline.svg",
+    "description": "small_blue_circle_outline"
+  },
+  {
+    "question": 40,
+    "type": "sequence",
+    "filename": "q_40_grid_r1c3_small_blue_triangle_filled.svg",
+    "description": "small_blue_triangle_filled"
+  },
+  {
+    "question": 40,
+    "type": "sequence",
+    "filename": "q_40_grid_r2c1_medium_blue_circle_outline.svg",
+    "description": "medium_blue_circle_outline"
+  },
+  {
+    "question": 40,
+    "type": "sequence",
+    "filename": "q_40_grid_r2c2_medium_blue_triangle_filled.svg",
+    "description": "medium_blue_triangle_filled"
+  },
+  {
+    "question": 40,
+    "type": "sequence",
+    "filename": "q_40_grid_r2c3_medium_blue_square_outline.svg",
+    "description": "medium_blue_square_outline"
+  },
+  {
+    "question": 40,
+    "type": "sequence",
+    "filename": "q_40_grid_r3c1_big_blue_triangle_filled.svg",
+    "description": "big_blue_triangle_filled"
+  },
+  {
+    "question": 40,
+    "type": "sequence",
+    "filename": "q_40_grid_r3c2_big_blue_square_outline.svg",
+    "description": "big_blue_square_outline"
+  },
+  {
+    "question": 40,
+    "type": "option",
+    "filename": "q_40_option_1_big_blue_star_filled.svg",
+    "description": "Large filled star"
+  },
+  {
+    "question": 40,
+    "type": "option",
+    "filename": "q_40_option_2_big_blue_circle_outline.svg",
+    "description": "Large outline circle"
+  },
+  {
+    "question": 40,
+    "type": "option",
+    "filename": "q_40_option_3_big_blue_square_filled.svg",
+    "description": "Large filled square"
+  },
+  {
+    "question": 40,
+    "type": "option",
+    "filename": "q_40_option_4_small_blue_star_filled.svg",
+    "description": "Small filled star"
+  },
+  {
+    "question": 40,
+    "type": "question_mark",
+    "filename": "q_40_question_mark.svg",
+    "description": "Question mark placeholder"
+  },
+  {
+    "question": 41,
+    "type": "sequence",
+    "filename": "q_41_sequence_1_medium_red_heart_left.svg",
+    "description": "medium_red_heart_left"
+  },
+  {
+    "question": 41,
+    "type": "sequence",
+    "filename": "q_41_sequence_2_medium_red_heart_reflected_right.svg",
+    "description": "medium_red_heart_reflected_right"
+  },
+  {
+    "question": 41,
+    "type": "sequence",
+    "filename": "q_41_sequence_3_medium_red_heart_left.svg",
+    "description": "medium_red_heart_left"
+  },
+  {
+    "question": 41,
+    "type": "sequence",
+    "filename": "q_41_sequence_4_medium_red_heart_reflected_right.svg",
+    "description": "medium_red_heart_reflected_right"
+  },
+  {
+    "question": 41,
+    "type": "sequence",
+    "filename": "q_41_sequence_5_medium_red_heart_left.svg",
+    "description": "medium_red_heart_left"
+  },
+  {
+    "question": 41,
+    "type": "sequence",
+    "filename": "q_41_sequence_6_medium_red_heart_reflected_right.svg",
+    "description": "medium_red_heart_reflected_right"
+  },
+  {
+    "question": 41,
+    "type": "sequence",
+    "filename": "q_41_sequence_7_medium_red_heart_left.svg",
+    "description": "medium_red_heart_left"
+  },
+  {
+    "question": 41,
+    "type": "option",
+    "filename": "q_41_option_1_medium_red_heart_reflected_right.svg",
+    "description": "Heart facing right"
+  },
+  {
+    "question": 41,
+    "type": "option",
+    "filename": "q_41_option_2_medium_red_heart_left.svg",
+    "description": "Heart facing left"
+  },
+  {
+    "question": 41,
+    "type": "option",
+    "filename": "q_41_option_3_medium_blue_heart_reflected_right.svg",
+    "description": "Blue heart facing right"
+  },
+  {
+    "question": 41,
+    "type": "option",
+    "filename": "q_41_option_4_big_red_heart_reflected_right.svg",
+    "description": "Large heart facing right"
+  },
+  {
+    "question": 41,
+    "type": "question_mark",
+    "filename": "q_41_question_mark.svg",
+    "description": "Question mark placeholder"
+  },
+  {
+    "question": 42,
+    "type": "sequence",
+    "filename": "q_42_grid_r1c1_medium_blue_circle_filled.svg",
+    "description": "Filled circle"
+  },
+  {
+    "question": 42,
+    "type": "sequence",
+    "filename": "q_42_grid_r1c2_medium_blue_circle_outline.svg",
+    "description": "Outline circle"
+  },
+  {
+    "question": 42,
+    "type": "sequence",
+    "filename": "q_42_grid_r1c3_medium_red_blue_circle.svg",
+    "description": "Red-blue split circle"
+  },
+  {
+    "question": 42,
+    "type": "sequence",
+    "filename": "q_42_grid_r1c4_medium_blue_red_circle.svg",
+    "description": "Blue-red split circle"
+  },
+  {
+    "question": 42,
+    "type": "sequence",
+    "filename": "q_42_grid_r2c1_medium_blue_circle_outline.svg",
+    "description": "Outline circle"
+  },
+  {
+    "question": 42,
+    "type": "sequence",
+    "filename": "q_42_grid_r2c3_medium_blue_red_circle_rot90.svg",
+    "description": "Blue-red split circle (vertical)"
+  },
+  {
+    "question": 42,
+    "type": "sequence",
+    "filename": "q_42_grid_r2c4_medium_blue_circle_filled.svg",
+    "description": "Filled circle"
+  },
+  {
+    "question": 42,
+    "type": "sequence",
+    "filename": "q_42_grid_r3c1_medium_red_blue_circle.svg",
+    "description": "Red-blue split circle"
+  },
+  {
+    "question": 42,
+    "type": "sequence",
+    "filename": "q_42_grid_r3c2_medium_blue_red_circle.svg",
+    "description": "Blue-red split circle"
+  },
+  {
+    "question": 42,
+    "type": "sequence",
+    "filename": "q_42_grid_r3c3_medium_blue_circle_filled.svg",
+    "description": "Filled circle"
+  },
+  {
+    "question": 42,
+    "type": "sequence",
+    "filename": "q_42_grid_r3c4_medium_blue_circle_outline.svg",
+    "description": "Outline circle"
+  },
+  {
+    "question": 42,
+    "type": "sequence",
+    "filename": "q_42_grid_r4c1_medium_blue_red_circle_rot90.svg",
+    "description": "Blue-red split circle (vertical)"
+  },
+  {
+    "question": 42,
+    "type": "sequence",
+    "filename": "q_42_grid_r4c2_medium_blue_circle_filled.svg",
+    "description": "Filled circle"
+  },
+  {
+    "question": 42,
+    "type": "sequence",
+    "filename": "q_42_grid_r4c3_medium_blue_circle_outline.svg",
+    "description": "Outline circle"
+  },
+  {
+    "question": 42,
+    "type": "sequence",
+    "filename": "q_42_grid_r4c4_medium_red_blue_circle_rot90.svg",
+    "description": "Red-blue split circle (vertical)"
+  },
+  {
+    "question": 42,
+    "type": "option",
+    "filename": "q_42_option_1_medium_red_blue_circle_rot90.svg",
+    "description": "Red-blue split circle (vertical)"
+  },
+  {
+    "question": 42,
+    "type": "option",
+    "filename": "q_42_option_2_medium_red_blue_circle.svg",
+    "description": "Red-blue split circle (horizontal)"
+  },
+  {
+    "question": 42,
+    "type": "option",
+    "filename": "q_42_option_3_medium_blue_circle_outline.svg",
+    "description": "Outline circle"
+  },
+  {
+    "question": 42,
+    "type": "option",
+    "filename": "q_42_option_4_medium_blue_red_circle_rot90.svg",
+    "description": "Blue-red split circle (vertical)"
+  },
+  {
+    "question": 42,
+    "type": "question_mark",
+    "filename": "q_42_question_mark.svg",
+    "description": "Question mark placeholder"
+  },
+  {
+    "question": 43,
+    "type": "sequence",
+    "filename": "q_43_sequence_1_medium_yellow_purple_square_filled.svg",
+    "description": "medium_yellow_purple_square_filled"
+  },
+  {
+    "question": 43,
+    "type": "sequence",
+    "filename": "q_43_sequence_2_medium_yellow_purple_square_outline.svg",
+    "description": "medium_yellow_purple_square_outline"
+  },
+  {
+    "question": 43,
+    "type": "sequence",
+    "filename": "q_43_sequence_3_medium_yellow_purple_square_rot90_filled.svg",
+    "description": "medium_yellow_purple_square_rot90_filled"
+  },
+  {
+    "question": 43,
+    "type": "sequence",
+    "filename": "q_43_sequence_4_medium_yellow_purple_square_rot90_outline.svg",
+    "description": "medium_yellow_purple_square_rot90_outline"
+  },
+  {
+    "question": 43,
+    "type": "sequence",
+    "filename": "q_43_sequence_5_medium_yellow_purple_square_rot180_filled.svg",
+    "description": "medium_yellow_purple_square_rot180_filled"
+  },
+  {
+    "question": 43,
+    "type": "option",
+    "filename": "q_43_option_1_medium_yellow_purple_square_rot180_outline.svg",
+    "description": "Split-color outline square rotated 180°"
+  },
+  {
+    "question": 43,
+    "type": "option",
+    "filename": "q_43_option_2_medium_yellow_purple_square_outline.svg",
+    "description": "Split-color outline square not rotated"
+  },
+  {
+    "question": 43,
+    "type": "option",
+    "filename": "q_43_option_3_medium_yellow_purple_square_rot90_outline.svg",
+    "description": "Split-color outline square rotated 90°"
+  },
+  {
+    "question": 43,
+    "type": "option",
+    "filename": "q_43_option_4_medium_yellow_purple_square_rot270_outline.svg",
+    "description": "Split-color outline square rotated 270°"
+  },
+  {
+    "question": 43,
+    "type": "question_mark",
+    "filename": "q_43_question_mark.svg",
+    "description": "Question mark placeholder"
+  },
+  {
+    "question": 44,
+    "type": "sequence",
+    "filename": "q_44_grid_r1c1_small_red_triangle_filled.svg",
+    "description": "Small red filled triangle"
+  },
+  {
+    "question": 44,
+    "type": "sequence",
+    "filename": "q_44_grid_r1c2_small_red_square_rot45_outline.svg",
+    "description": "Small red outline square rotated 45°"
+  },
+  {
+    "question": 44,
+    "type": "sequence",
+    "filename": "q_44_grid_r1c3_small_red_circle_rot90_filled.svg",
+    "description": "Small red filled circle rotated 90°"
+  },
+  {
+    "question": 44,
+    "type": "sequence",
+    "filename": "q_44_grid_r2c1_medium_blue_triangle_outline.svg",
+    "description": "Medium blue outline triangle"
+  },
+  {
+    "question": 44,
+    "type": "sequence",
+    "filename": "q_44_grid_r2c3_medium_blue_circle_rot90_outline.svg",
+    "description": "Medium blue outline circle rotated 90°"
+  },
+  {
+    "question": 44,
+    "type": "sequence",
+    "filename": "q_44_grid_r3c1_big_green_triangle_filled.svg",
+    "description": "Large green filled triangle"
+  },
+  {
+    "question": 44,
+    "type": "sequence",
+    "filename": "q_44_grid_r3c2_big_green_square_rot45_outline.svg",
+    "description": "Large green outline square rotated 45°"
+  },
+  {
+    "question": 44,
+    "type": "sequence",
+    "filename": "q_44_grid_r3c3_big_green_circle_rot90_filled.svg",
+    "description": "Large green filled circle rotated 90°"
+  },
+  {
+    "question": 44,
+    "type": "option",
+    "filename": "q_44_option_1_medium_blue_square_rot45_filled.svg",
+    "description": "Medium blue filled square rotated 45°"
+  },
+  {
+    "question": 44,
+    "type": "option",
+    "filename": "q_44_option_2_medium_blue_square_rot45_outline.svg",
+    "description": "Medium blue outline square rotated 45°"
+  },
+  {
+    "question": 44,
+    "type": "option",
+    "filename": "q_44_option_3_medium_blue_triangle_filled.svg",
+    "description": "Medium blue filled triangle"
+  },
+  {
+    "question": 44,
+    "type": "option",
+    "filename": "q_44_option_4_medium_blue_circle_rot45_filled.svg",
+    "description": "Medium blue filled circle rotated 45°"
+  },
+  {
+    "question": 44,
+    "type": "question_mark",
+    "filename": "q_44_question_mark.svg",
+    "description": "Question mark placeholder"
+  },
+  {
+    "question": 45,
+    "type": "sequence",
+    "filename": "q_45_sequence_1_small_yellow_heart_left.svg",
+    "description": "small_yellow_heart_left"
+  },
+  {
+    "question": 45,
+    "type": "sequence",
+    "filename": "q_45_sequence_2_big_yellow_heart_reflected_right.svg",
+    "description": "big_yellow_heart_reflected_right"
+  },
+  {
+    "question": 45,
+    "type": "sequence",
+    "filename": "q_45_sequence_3_small_yellow_heart_left.svg",
+    "description": "small_yellow_heart_left"
+  },
+  {
+    "question": 45,
+    "type": "sequence",
+    "filename": "q_45_sequence_4_big_yellow_heart_reflected_right.svg",
+    "description": "big_yellow_heart_reflected_right"
+  },
+  {
+    "question": 45,
+    "type": "sequence",
+    "filename": "q_45_sequence_5_small_yellow_heart_reflected_right.svg",
+    "description": "small_yellow_heart_reflected_right"
+  },
+  {
+    "question": 45,
+    "type": "sequence",
+    "filename": "q_45_sequence_6_big_yellow_heart_left.svg",
+    "description": "big_yellow_heart_left"
+  },
+  {
+    "question": 45,
+    "type": "sequence",
+    "filename": "q_45_sequence_7_small_yellow_heart_reflected_right.svg",
+    "description": "small_yellow_heart_reflected_right"
+  },
+  {
+    "question": 45,
+    "type": "option",
+    "filename": "q_45_option_1_big_yellow_heart_left.svg",
+    "description": "Yellow heart, Left, Large"
+  },
+  {
+    "question": 45,
+    "type": "option",
+    "filename": "q_45_option_2_small_yellow_heart_reflected_right.svg",
+    "description": "Yellow heart, Right, Small"
+  },
+  {
+    "question": 45,
+    "type": "option",
+    "filename": "q_45_option_3_small_yellow_heart_left.svg",
+    "description": "Yellow heart, Left, Small"
+  },
+  {
+    "question": 45,
+    "type": "option",
+    "filename": "q_45_option_4_big_yellow_heart_reflected_right.svg",
+    "description": "Yellow heart, Right, Large"
+  },
+  {
+    "question": 45,
+    "type": "question_mark",
+    "filename": "q_45_question_mark.svg",
+    "description": "Question mark placeholder"
+  },
+  {
+    "question": 46,
+    "type": "sequence",
+    "filename": "q_46_sequence_1_big_yellow_triangle.svg",
+    "description": "big_yellow_triangle"
+  },
+  {
+    "question": 46,
+    "type": "sequence",
+    "filename": "q_46_sequence_2_big_yellow_triangle_rot90.svg",
+    "description": "big_yellow_triangle_rot90"
+  },
+  {
+    "question": 46,
+    "type": "sequence",
+    "filename": "q_46_sequence_3_small_yellow_triangle_rot180.svg",
+    "description": "small_yellow_triangle_rot180"
+  },
+  {
+    "question": 46,
+    "type": "sequence",
+    "filename": "q_46_sequence_4_small_yellow_triangle_rot270.svg",
+    "description": "small_yellow_triangle_rot270"
+  },
+  {
+    "question": 46,
+    "type": "sequence",
+    "filename": "q_46_sequence_5_medium_yellow_triangle_rot180.svg",
+    "description": "medium_yellow_triangle_rot180"
+  },
+  {
+    "question": 46,
+    "type": "sequence",
+    "filename": "q_46_sequence_6_medium_yellow_triangle_rot90.svg",
+    "description": "medium_yellow_triangle_rot90"
+  },
+  {
+    "question": 46,
+    "type": "sequence",
+    "filename": "q_46_sequence_7_big_yellow_triangle.svg",
+    "description": "big_yellow_triangle"
+  },
+  {
+    "question": 46,
+    "type": "option",
+    "filename": "q_46_option_1_big_yellow_triangle_rot270.svg",
+    "description": "Yellow triangle, 270°, Big"
+  },
+  {
+    "question": 46,
+    "type": "option",
+    "filename": "q_46_option_2_big_yellow_triangle_rot180.svg",
+    "description": "Yellow triangle, 180°, Big"
+  },
+  {
+    "question": 46,
+    "type": "option",
+    "filename": "q_46_option_3_small_yellow_triangle_rot90.svg",
+    "description": "Yellow triangle, 90°, Small"
+  },
+  {
+    "question": 46,
+    "type": "option",
+    "filename": "q_46_option_4_medium_yellow_triangle.svg",
+    "description": "Yellow triangle, 0°, Medium"
+  },
+  {
+    "question": 46,
+    "type": "question_mark",
+    "filename": "q_46_question_mark.svg",
+    "description": "Question mark placeholder"
+  },
+  {
+    "question": 47,
+    "type": "sequence",
+    "filename": "q_47_grid_r1c1_medium_red_heart_left.svg",
+    "description": "medium_red_heart_left"
+  },
+  {
+    "question": 47,
+    "type": "sequence",
+    "filename": "q_47_grid_r1c2_medium_blue_heart_reflected_right.svg",
+    "description": "medium_blue_heart_reflected_right"
+  },
+  {
+    "question": 47,
+    "type": "sequence",
+    "filename": "q_47_grid_r1c3_medium_green_heart_left.svg",
+    "description": "medium_green_heart_left"
+  },
+  {
+    "question": 47,
+    "type": "sequence",
+    "filename": "q_47_grid_r1c4_medium_blue_heart_left.svg",
+    "description": "medium_blue_heart_left"
+  },
+  {
+    "question": 47,
+    "type": "sequence",
+    "filename": "q_47_grid_r2c1_medium_green_heart_reflected_right.svg",
+    "description": "medium_green_heart_reflected_right"
+  },
+  {
+    "question": 47,
+    "type": "sequence",
+    "filename": "q_47_grid_r2c2_medium_red_heart_left.svg",
+    "description": "medium_red_heart_left"
+  },
+  {
+    "question": 47,
+    "type": "sequence",
+    "filename": "q_47_grid_r2c3_medium_blue_heart_reflected_right.svg",
+    "description": "medium_blue_heart_reflected_right"
+  },
+  {
+    "question": 47,
+    "type": "sequence",
+    "filename": "q_47_grid_r2c4_medium_red_heart_reflected_right.svg",
+    "description": "medium_red_heart_reflected_right"
+  },
+  {
+    "question": 47,
+    "type": "sequence",
+    "filename": "q_47_grid_r3c1_medium_green_heart_left.svg",
+    "description": "medium_green_heart_left"
+  },
+  {
+    "question": 47,
+    "type": "sequence",
+    "filename": "q_47_grid_r3c2_medium_blue_heart_reflected_right.svg",
+    "description": "medium_blue_heart_reflected_right"
+  },
+  {
+    "question": 47,
+    "type": "sequence",
+    "filename": "q_47_grid_r3c3_medium_green_heart_left.svg",
+    "description": "medium_green_heart_left"
+  },
+  {
+    "question": 47,
+    "type": "option",
+    "filename": "q_47_option_1_medium_blue_heart_left.svg",
+    "description": "Blue heart, Left"
+  },
+  {
+    "question": 47,
+    "type": "option",
+    "filename": "q_47_option_2_medium_red_heart_left.svg",
+    "description": "Red heart, Left"
+  },
+  {
+    "question": 47,
+    "type": "option",
+    "filename": "q_47_option_3_medium_green_heart_reflected_right.svg",
+    "description": "Green heart, Right"
+  },
+  {
+    "question": 47,
+    "type": "option",
+    "filename": "q_47_option_4_medium_blue_heart_reflected_right.svg",
+    "description": "Blue heart, Right"
+  },
+  {
+    "question": 47,
+    "type": "question_mark",
+    "filename": "q_47_question_mark.svg",
+    "description": "Question mark placeholder"
+  },
+  {
+    "question": 48,
+    "type": "sequence",
+    "filename": "q_48_grid_r1c1_medium_red_blue_star.svg",
+    "description": "medium_red_blue_star"
+  },
+  {
+    "question": 48,
+    "type": "sequence",
+    "filename": "q_48_grid_r1c2_medium_green_orange_star.svg",
+    "description": "medium_green_orange_star"
+  },
+  {
+    "question": 48,
+    "type": "sequence",
+    "filename": "q_48_grid_r1c3_medium_red_blue_star_rot90.svg",
+    "description": "medium_red_blue_star_rot90"
+  },
+  {
+    "question": 48,
+    "type": "sequence",
+    "filename": "q_48_grid_r1c4_medium_purple_yellow_star_rot270.svg",
+    "description": "medium_purple_yellow_star_rot270"
+  },
+  {
+    "question": 48,
+    "type": "sequence",
+    "filename": "q_48_grid_r1c5_medium_red_blue_star_rot180.svg",
+    "description": "medium_red_blue_star_rot180"
+  },
+  {
+    "question": 48,
+    "type": "sequence",
+    "filename": "q_48_grid_r2c1_medium_pink_black_star_rot180.svg",
+    "description": "medium_pink_black_star_rot180"
+  },
+  {
+    "question": 48,
+    "type": "sequence",
+    "filename": "q_48_grid_r2c2_medium_red_blue_star_rot270.svg",
+    "description": "medium_red_blue_star_rot270"
+  },
+  {
+    "question": 48,
+    "type": "sequence",
+    "filename": "q_48_grid_r2c3_medium_green_orange_star_rot90.svg",
+    "description": "medium_green_orange_star_rot90"
+  },
+  {
+    "question": 48,
+    "type": "sequence",
+    "filename": "q_48_grid_r2c4_medium_red_blue_star.svg",
+    "description": "medium_red_blue_star"
+  },
+  {
+    "question": 48,
+    "type": "option",
+    "filename": "q_48_option_1_medium_purple_yellow_star.svg",
+    "description": "Purple/Yellow star, 0°"
+  },
+  {
+    "question": 48,
+    "type": "option",
+    "filename": "q_48_option_2_medium_red_pink_star.svg",
+    "description": "Red/Pink star, 0°"
+  },
+  {
+    "question": 48,
+    "type": "option",
+    "filename": "q_48_option_3_medium_pink_black_star.svg",
+    "description": "Pink/Black star, 0°"
+  },
+  {
+    "question": 48,
+    "type": "option",
+    "filename": "q_48_option_4_medium_purple_yellow_star_rot270.svg",
+    "description": "Purple/Yellow star, 270°"
+  },
+  {
+    "question": 48,
+    "type": "question_mark",
+    "filename": "q_48_question_mark.svg",
+    "description": "Question mark placeholder"
+  },
+  {
+    "question": 49,
+    "type": "sequence",
+    "filename": "q_49_grid_r1c1_small_red_arrow_left_stroke1.svg",
+    "description": "small_red_arrow_left_stroke1"
+  },
+  {
+    "question": 49,
+    "type": "sequence",
+    "filename": "q_49_grid_r1c2_small_blue_arrow_reflected_right_stroke3.svg",
+    "description": "small_blue_arrow_reflected_right_stroke3"
+  },
+  {
+    "question": 49,
+    "type": "sequence",
+    "filename": "q_49_grid_r1c3_small_green_arrow_left_stroke3.svg",
+    "description": "small_green_arrow_left_stroke3"
+  },
+  {
+    "question": 49,
+    "type": "sequence",
+    "filename": "q_49_grid_r1c4_small_red_arrow_reflected_right_stroke1.svg",
+    "description": "small_red_arrow_reflected_right_stroke1"
+  },
+  {
+    "question": 49,
+    "type": "sequence",
+    "filename": "q_49_grid_r2c1_small_blue_arrow_left_stroke1.svg",
+    "description": "small_blue_arrow_left_stroke1"
+  },
+  {
+    "question": 49,
+    "type": "sequence",
+    "filename": "q_49_grid_r2c2_small_green_arrow_reflected_right_stroke3.svg",
+    "description": "small_green_arrow_reflected_right_stroke3"
+  },
+  {
+    "question": 49,
+    "type": "sequence",
+    "filename": "q_49_grid_r2c3_small_red_arrow_left_stroke3.svg",
+    "description": "small_red_arrow_left_stroke3"
+  },
+  {
+    "question": 49,
+    "type": "sequence",
+    "filename": "q_49_grid_r3c1_small_green_arrow_left_stroke1.svg",
+    "description": "small_green_arrow_left_stroke1"
+  },
+  {
+    "question": 49,
+    "type": "sequence",
+    "filename": "q_49_grid_r3c2_small_red_arrow_reflected_right_stroke3.svg",
+    "description": "small_red_arrow_reflected_right_stroke3"
+  },
+  {
+    "question": 49,
+    "type": "sequence",
+    "filename": "q_49_grid_r3c3_small_blue_arrow_left_stroke3.svg",
+    "description": "small_blue_arrow_left_stroke3"
+  },
+  {
+    "question": 49,
+    "type": "sequence",
+    "filename": "q_49_grid_r3c4_small_green_arrow_reflected_right_stroke1.svg",
+    "description": "small_green_arrow_reflected_right_stroke1"
+  },
+  {
+    "question": 49,
+    "type": "option",
+    "filename": "q_49_option_A_small_blue_arrow_reflected_right_stroke1.svg",
+    "description": "Blue arrow, Right, Thin"
+  },
+  {
+    "question": 49,
+    "type": "option",
+    "filename": "q_49_option_B_small_blue_arrow_reflected_right_stroke3.svg",
+    "description": "Blue arrow, Right, Thick"
+  },
+  {
+    "question": 49,
+    "type": "option",
+    "filename": "q_49_option_C_small_green_arrow_reflected_right_stroke1.svg",
+    "description": "Green arrow, Right, Thin"
+  },
+  {
+    "question": 49,
+    "type": "option",
+    "filename": "q_49_option_D_small_blue_arrow_left_stroke1.svg",
+    "description": "Blue arrow, Left, Thin"
+  },
+  {
+    "question": 49,
+    "type": "question_mark",
+    "filename": "q_49_question_mark.svg",
+    "description": "Question mark placeholder"
+  }
+]
