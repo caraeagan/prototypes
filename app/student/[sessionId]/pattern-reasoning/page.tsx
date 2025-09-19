@@ -1096,29 +1096,29 @@ const QUESTION_GROUPS = {
         id: 50,
         ageGroup: "15+",
         type: "matrix_transformation",
-        question: "Advanced pattern with multiple rules operating simultaneously. What goes in the missing cell?",
+        question: "Colors pass from one diamond to the next in sequence. What goes in the missing cell?",
         grid: [
           [
-            { shape: "diamond", color: "split", topColor: "red", bottomColor: "blue", rotation: 0, strokeWidth: 1, size: "small" },     // Position (1,1): Red/Blue split, up, thin, small
-            { shape: "diamond", color: "green", rotation: 45, strokeWidth: 2, size: "small" },                                          // Position (1,2): Green solid, northeast, medium stroke, small
-            { shape: "diamond", color: "split", topColor: "yellow", bottomColor: "purple", rotation: 90, strokeWidth: 1, size: "small" } // Position (1,3): Yellow/Purple split, right, thin, small
+            { shape: "diamond", color: "split", topColor: "red", bottomColor: "blue", rotation: 0, strokeWidth: 1, size: "small" },     // Red/Blue → Blue passes to (1,2)
+            { shape: "diamond", color: "split", topColor: "blue", bottomColor: "green", rotation: 45, strokeWidth: 2, size: "small" },  // Blue/Green → Green passes to (1,3)
+            { shape: "diamond", color: "split", topColor: "green", bottomColor: "yellow", rotation: 90, strokeWidth: 3, size: "small" } // Green/Yellow
           ],
           [
-            { shape: "diamond", color: "blue", rotation: 90, strokeWidth: 2, size: "medium" },                                          // Position (2,1): Blue solid, right, medium stroke, medium
-            { shape: "diamond", color: "split", topColor: "orange", bottomColor: "cyan", rotation: 135, strokeWidth: 3, size: "medium" }, // Position (2,2): Orange/Cyan split, southeast, thick, medium
-            null                                                                                                                         // Position (2,3): Missing - should be Red solid, 180°, medium stroke, medium
+            { shape: "diamond", color: "split", topColor: "yellow", bottomColor: "orange", rotation: 135, strokeWidth: 1, size: "medium" }, // Yellow/Orange → Orange passes to (2,2)
+            { shape: "diamond", color: "split", topColor: "orange", bottomColor: "purple", rotation: 180, strokeWidth: 2, size: "medium" }, // Orange/Purple → Purple passes to (2,3)
+            null                                                                                                                             // Missing: Purple/? → ? should be Pink (next in sequence)
           ],
           [
-            { shape: "diamond", color: "split", topColor: "purple", bottomColor: "green", rotation: 180, strokeWidth: 1, size: "big" }, // Position (3,1): Purple/Green split, down, thin, big  
-            { shape: "diamond", color: "pink", rotation: 225, strokeWidth: 2, size: "big" },                                           // Position (3,2): Pink solid, southwest, medium stroke, big
-            { shape: "diamond", color: "split", topColor: "navy", bottomColor: "lime", rotation: 270, strokeWidth: 3, size: "big" }    // Position (3,3): Navy/Lime split, left, thick, big
+            { shape: "diamond", color: "split", topColor: "pink", bottomColor: "cyan", rotation: 225, strokeWidth: 3, size: "big" },    // Pink/Cyan → Cyan passes to (3,2)
+            { shape: "diamond", color: "split", topColor: "cyan", bottomColor: "navy", rotation: 270, strokeWidth: 1, size: "big" },    // Cyan/Navy → Navy passes to (3,3)  
+            { shape: "diamond", color: "split", topColor: "navy", bottomColor: "lime", rotation: 315, strokeWidth: 2, size: "big" }     // Navy/Lime
           ]
         ],
         options: [
-          { id: "A", shape: "diamond", color: "red", rotation: 180, strokeWidth: 2, size: "medium", label: "Red solid diamond, pointing down, medium stroke" },
-          { id: "B", shape: "diamond", color: "split", topColor: "red", bottomColor: "blue", rotation: 180, strokeWidth: 2, size: "medium", label: "Red/Blue split diamond, pointing down, medium stroke" },
-          { id: "C", shape: "diamond", color: "red", rotation: 135, strokeWidth: 2, size: "medium", label: "Red solid diamond, pointing southeast, medium stroke" },
-          { id: "D", shape: "diamond", color: "blue", rotation: 180, strokeWidth: 2, size: "medium", label: "Blue solid diamond, pointing down, medium stroke" }
+          { id: "A", shape: "diamond", color: "split", topColor: "purple", bottomColor: "pink", rotation: 225, strokeWidth: 3, size: "medium", label: "Purple/Pink split diamond" },
+          { id: "B", shape: "diamond", color: "split", topColor: "orange", bottomColor: "pink", rotation: 225, strokeWidth: 3, size: "medium", label: "Orange/Pink split diamond" },
+          { id: "C", shape: "diamond", color: "split", topColor: "purple", bottomColor: "cyan", rotation: 225, strokeWidth: 3, size: "medium", label: "Purple/Cyan split diamond" },
+          { id: "D", shape: "diamond", color: "split", topColor: "purple", bottomColor: "pink", rotation: 180, strokeWidth: 3, size: "medium", label: "Purple/Pink split diamond, different rotation" }
         ],
         correctAnswer: "A"
       }
