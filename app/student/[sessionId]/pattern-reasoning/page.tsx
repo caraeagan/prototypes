@@ -415,16 +415,15 @@ const QUESTION_GROUPS = {
           { shape: "triangle", rotation: 0, color: "blue", label: "Triangle (pointing up)" },
           { shape: "triangle", rotation: 90, color: "blue", label: "Triangle (pointing right)" },
           { shape: "triangle", rotation: 180, color: "blue", label: "Triangle (pointing down)" },
-          { shape: "triangle", rotation: 0, color: "blue", label: "Triangle (pointing up)" },
-          { shape: "triangle", rotation: 90, color: "blue", label: "Triangle (pointing right)" }
+          { shape: "triangle", rotation: 270, color: "blue", label: "Triangle (pointing left)" }
         ],
         options: [
-          { id: "1", shape: "triangle", rotation: 270, color: "blue", label: "Triangle (pointing left)" },
+          { id: "1", shape: "triangle", rotation: 0, color: "blue", label: "Triangle (pointing up)" },
           { id: "2", shape: "triangle", rotation: 180, color: "blue", label: "Triangle (pointing down)" },
-          { id: "3", shape: "triangle", rotation: 0, color: "blue", label: "Triangle (pointing up)" },
+          { id: "3", shape: "triangle", rotation: 270, color: "blue", label: "Triangle (pointing left)" },
           { id: "4", shape: "triangle", rotation: 90, color: "blue", label: "Triangle (pointing right)" }
         ],
-        correctAnswer: "2"
+        correctAnswer: "1"
       },
       {
         id: 23,
@@ -484,22 +483,21 @@ const QUESTION_GROUPS = {
       {
         id: 26,
         ageGroup: "6-7",
-        type: "position_pattern",
+        type: "rotation_split_color_pattern",
         question: "What comes next in the pattern?",
         sequence: [
-          { shape: "circle", position: "left", color: "teal", label: "Circle on the left" },
-          { shape: "circle", position: "middle", color: "teal", label: "Circle in the middle" },
-          { shape: "circle", position: "right", color: "teal", label: "Circle on the right" },
-          { shape: "circle", position: "left", color: "teal", label: "Circle on the left" },
-          { shape: "circle", position: "middle", color: "teal", label: "Circle in the middle" }
+          { shape: "circle", color: "split", topColor: "yellow", bottomColor: "blue", modifier: "dot", rotation: 0, label: "Split-color circle with dot at top" },
+          { shape: "circle", color: "split", topColor: "yellow", bottomColor: "blue", modifier: "dot", rotation: 270, label: "Split-color circle with dot at left" },
+          { shape: "circle", color: "split", topColor: "yellow", bottomColor: "blue", modifier: "dot", rotation: 180, label: "Split-color circle with dot at bottom" },
+          { shape: "circle", color: "split", topColor: "yellow", bottomColor: "blue", modifier: "dot", rotation: 90, label: "Split-color circle with dot at right" }
         ],
         options: [
-          { id: "1", shape: "circle", position: "left", color: "teal", label: "Left" },
-          { id: "2", shape: "circle", position: "right", color: "teal", label: "Right" },
-          { id: "3", shape: "circle", position: "middle", color: "teal", label: "Middle" },
-          { id: "4", shape: "circle", position: "nowhere", color: "gray", label: "Nowhere" }
+          { id: "1", shape: "circle", color: "split", topColor: "yellow", bottomColor: "blue", modifier: "dot", rotation: 0, label: "Dot at top" },
+          { id: "2", shape: "circle", color: "split", topColor: "yellow", bottomColor: "blue", modifier: "dot", rotation: 90, label: "Dot at right" },
+          { id: "3", shape: "circle", color: "split", topColor: "yellow", bottomColor: "blue", modifier: "dot", rotation: 180, label: "Dot at bottom" },
+          { id: "4", shape: "circle", color: "split", topColor: "yellow", bottomColor: "blue", modifier: "dot", rotation: 270, label: "Dot at left" }
         ],
-        correctAnswer: "2"
+        correctAnswer: "1"
       },
       {
         id: 27,
@@ -530,7 +528,7 @@ const QUESTION_GROUPS = {
           { shape: "heart", size: "small", color: "pink", label: "Small heart" }
         ],
         options: [
-          { id: "1", shape: "heart", size: "big", color: "pink", label: "Large heart" },
+          { id: "1", shape: "heart", size: "small", color: "pink", label: "Small heart" },
           { id: "2", shape: "triangle", size: "small", color: "green", label: "Small triangle" },
           { id: "3", shape: "heart", size: "medium", color: "pink", label: "Medium heart" },
           { id: "4", shape: "circle", size: "medium", color: "blue", label: "Medium circle" }
@@ -630,9 +628,9 @@ const QUESTION_GROUPS = {
         ],
         options: [
           { id: "1", shape: "circle", color: "purple", modifier: "stripe", label: "Striped purple circle" },
-          { id: "2", shape: "triangle", color: "pink", modifier: "stripe", label: "Striped pink triangle" },
+          { id: "2", shape: "square", color: "purple", modifier: "stripe", stroke: "red", label: "Purple striped square with red border" },
           { id: "3", shape: "square", color: "blue", modifier: "stripe", label: "Striped blue square" },
-          { id: "4", shape: "star", color: "blue", style: "outline", label: "Outline blue star" }
+          { id: "4", shape: "square", color: "purple", modifier: "horizontal-stripe", stroke: "red", label: "Purple horizontal striped square with red border" }
         ],
         correctAnswer: "3"
       },
@@ -666,21 +664,21 @@ const QUESTION_GROUPS = {
         type: "matrix_3x3_pattern", 
         question: "What goes in the middle-right cell?",
         sequence: [
-          { shape: "square", size: "small", rotation: 0, color: "purple", label: "Small square" },
-          { shape: "square", size: "small", rotation: 90, color: "purple", label: "Small rotated square" },
-          { shape: "square", size: "small", rotation: 180, color: "purple", label: "Small rotated square" },
-          { shape: "triangle", size: "medium", rotation: 0, color: "orange", label: "Medium triangle" },
+          { shape: "square", size: "small", rotation: 0, color: "split", topColor: "purple", bottomColor: "pink", label: "Small split square" },
+          { shape: "square", size: "small", rotation: 90, color: "split", topColor: "purple", bottomColor: "pink", label: "Small rotated split square" },
+          { shape: "square", size: "small", rotation: 180, color: "split", topColor: "purple", bottomColor: "pink", label: "Small rotated split square" },
+          { shape: "triangle", size: "medium", rotation: 0, color: "split", topColor: "orange", bottomColor: "yellow", label: "Medium split triangle" },
           null,
-          { shape: "triangle", size: "medium", rotation: 180, color: "orange", label: "Medium rotated triangle" },
-          { shape: "star", size: "big", rotation: 0, color: "teal", label: "Large star" },
-          { shape: "star", size: "big", rotation: 90, color: "teal", label: "Large rotated star" },
-          { shape: "star", size: "big", rotation: 180, color: "teal", label: "Large rotated star" }
+          { shape: "triangle", size: "medium", rotation: 180, color: "split", topColor: "orange", bottomColor: "yellow", label: "Medium rotated split triangle" },
+          { shape: "star", size: "big", rotation: 0, color: "split", topColor: "teal", bottomColor: "blue", label: "Large split star" },
+          { shape: "star", size: "big", rotation: 90, color: "split", topColor: "teal", bottomColor: "blue", label: "Large rotated split star" },
+          { shape: "star", size: "big", rotation: 180, color: "split", topColor: "teal", bottomColor: "blue", label: "Large rotated split star" }
         ],
         options: [
-          { id: "1", shape: "circle", size: "big", color: "yellow", label: "Large circle" },
-          { id: "2", shape: "triangle", size: "medium", rotation: 90, color: "orange", label: "Medium rotated triangle" },
-          { id: "3", shape: "star", size: "medium", color: "teal", label: "Medium star" },
-          { id: "4", shape: "square", size: "small", color: "purple", label: "Small square" }
+          { id: "1", shape: "triangle", size: "medium", rotation: 0, color: "split", topColor: "orange", bottomColor: "yellow", label: "Medium triangle (0°)" },
+          { id: "2", shape: "triangle", size: "medium", rotation: 90, color: "split", topColor: "orange", bottomColor: "yellow", label: "Medium triangle (90°)" },
+          { id: "3", shape: "triangle", size: "medium", rotation: 180, color: "split", topColor: "orange", bottomColor: "yellow", label: "Medium triangle (180°)" },
+          { id: "4", shape: "triangle", size: "medium", rotation: 270, color: "split", topColor: "orange", bottomColor: "yellow", label: "Medium triangle (270°)" }
         ],
         correctAnswer: "2"
       }
@@ -774,8 +772,8 @@ const QUESTION_GROUPS = {
         options: [
           { id: "1", shape: "triangle", color: "split", topColor: "red", bottomColor: "green", rotation: 180, reflected: false, size: "medium", label: "Triangle: red/green, 180°, medium" },
           { id: "2", shape: "triangle", color: "split", topColor: "red", bottomColor: "green", rotation: 45, reflected: true, size: "medium", label: "Triangle: red/green, 45°, reflected, medium" },
-          { id: "3", shape: "triangle", color: "split", topColor: "pink", bottomColor: "purple", rotation: 135, reflected: false, size: "big", label: "Triangle: pink/purple, 135°, big" },
-          { id: "4", shape: "triangle", color: "split", topColor: "blue", bottomColor: "yellow", rotation: 90, reflected: false, size: "small", label: "Triangle: blue/yellow, 90°, small" }
+          { id: "3", shape: "triangle", color: "split", topColor: "red", bottomColor: "green", rotation: 135, reflected: false, size: "big", label: "Triangle: red/green, 135°, big" },
+          { id: "4", shape: "triangle", color: "split", topColor: "red", bottomColor: "green", rotation: 90, reflected: false, size: "small", label: "Triangle: red/green, 90°, small" }
         ],
         correctAnswer: "1"
       },
@@ -948,6 +946,27 @@ const QUESTION_GROUPS = {
           { id: "4", shape: "circle", color: "blue", size: "medium", style: "filled", rotation: 45, label: "Medium blue filled circle rotated 45°" }
         ],
         correctAnswer: "1"
+      },
+      {
+        id: 45,
+        ageGroup: "12-14",
+        type: "sequence_pattern",
+        question: "Multi-dimensional transformation: Each step, the pentagon rotates 72° and changes color in the sequence red → blue → green → yellow → purple. Missing: position 6",
+        sequence: [
+          { shape: "pentagon", color: "red", rotation: 0, size: "medium" },
+          { shape: "pentagon", color: "blue", rotation: 72, size: "medium" },
+          { shape: "pentagon", color: "green", rotation: 144, size: "medium" },
+          { shape: "pentagon", color: "yellow", rotation: 216, size: "medium" },
+          { shape: "pentagon", color: "purple", rotation: 288, size: "medium" },
+          null // Missing cell - should be red pentagon rotated 360° (0°)
+        ],
+        options: [
+          { id: "1", shape: "pentagon", color: "red", rotation: 0, size: "medium", label: "Red pentagon rotated 0°" },
+          { id: "2", shape: "pentagon", color: "orange", rotation: 0, size: "medium", label: "Orange pentagon rotated 0°" },
+          { id: "3", shape: "pentagon", color: "red", rotation: 72, size: "medium", label: "Red pentagon rotated 72°" },
+          { id: "4", shape: "pentagon", color: "purple", rotation: 0, size: "medium", label: "Purple pentagon rotated 0°" }
+        ],
+        correctAnswer: "1"
       }
     ]
   }
@@ -1047,28 +1066,44 @@ const renderPureSVG = (item: any, size = 100) => {
         )
 
       case 'square':
+        const squareCustomStroke = item.stroke ? (colorMap[item.stroke]?.stroke || item.stroke) : stroke
         return (
-          <rect 
-            x={-shapeSize / 2} 
-            y={-shapeSize / 2} 
-            width={shapeSize} 
-            height={shapeSize}
-            fill={fill}
-            stroke={stroke}
-            strokeWidth={strokeWidth}
-            rx="3"
-            transform={item.reflected ? `scale(-1, 1)` : undefined}
-          />
+          <>
+            {(item.modifier === 'stripe' || item.modifier === 'horizontal-stripe') && (
+              <defs>
+                <pattern id={`pureStripePatternSquare_${item.modifier || 'stripe'}`} patternUnits="userSpaceOnUse" width="4" height="4">
+                  <rect width="4" height="4" fill={colors.fill}/>
+                  {item.modifier === 'horizontal-stripe' ? (
+                    <rect width="4" height="2" fill="black"/>
+                  ) : (
+                    <rect width="2" height="4" fill="black"/>
+                  )}
+                </pattern>
+              </defs>
+            )}
+            <rect 
+              x={-shapeSize / 2} 
+              y={-shapeSize / 2} 
+              width={shapeSize} 
+              height={shapeSize}
+              fill={item.modifier === 'stripe' || item.modifier === 'horizontal-stripe' ? `url(#pureStripePatternSquare_${item.modifier || 'stripe'})` : fill}
+              stroke={squareCustomStroke}
+              strokeWidth={strokeWidth}
+              rx="3"
+              transform={item.reflected ? `scale(-1, 1)` : undefined}
+            />
+          </>
         )
 
       case 'triangle':
+        const triangleRotation = item.rotation || 0
         return (
           <polygon 
             points={`0,${-shapeSize / 2} ${shapeSize / 2},${shapeSize / 2} ${-shapeSize / 2},${shapeSize / 2}`}
             fill={fill}
             stroke={stroke}
             strokeWidth={strokeWidth}
-            transform={item.reflected ? `scale(-1, 1)` : undefined}
+            transform={`${triangleRotation ? `rotate(${triangleRotation})` : ''} ${item.reflected ? 'scale(-1, 1)' : ''}`.trim()}
           />
         )
 
@@ -1525,6 +1560,15 @@ export default function StudentPatternReasoning() {
                 clipPath={`url(#circleBottomHalf${rotation})`}
                 transform={item.reflected ? `scale(-1, 1)` : undefined}
               />
+              {item.modifier === 'dot' && (
+                <circle
+                  cx={0}
+                  cy={0 - size / 4}
+                  r={size / 8}
+                  fill="black"
+                  transform={rotation ? `rotate(${rotation})` : undefined}
+                />
+              )}
             </>
           )
         }
@@ -1637,13 +1681,20 @@ export default function StudentPatternReasoning() {
           )
         }
         
+        // Use custom stroke color if provided
+        const customStroke = item.stroke ? (colorMap[item.stroke]?.stroke || item.stroke) : colors.stroke
+        
         return (
           <>
-            {item.modifier === 'stripe' && (
+            {(item.modifier === 'stripe' || item.modifier === 'horizontal-stripe') && (
               <defs>
-                <pattern id="stripePatternSquare" patternUnits="userSpaceOnUse" width="4" height="4">
+                <pattern id={`stripePatternSquare_${item.modifier || 'stripe'}`} patternUnits="userSpaceOnUse" width="4" height="4">
                   <rect width="4" height="4" fill={colors.fill}/>
-                  <rect width="2" height="4" fill="black"/>
+                  {item.modifier === 'horizontal-stripe' ? (
+                    <rect width="4" height="2" fill="black"/>
+                  ) : (
+                    <rect width="2" height="4" fill="black"/>
+                  )}
                 </pattern>
               </defs>
             )}
@@ -1652,8 +1703,8 @@ export default function StudentPatternReasoning() {
               y={-size / 2} 
               width={size} 
               height={size}
-              fill={item.style === 'outline' ? 'none' : (item.modifier === 'stripe' ? 'url(#stripePatternSquare)' : colors.fill)}
-              stroke={colors.stroke} 
+              fill={item.style === 'outline' ? 'none' : (item.modifier === 'stripe' || item.modifier === 'horizontal-stripe' ? `url(#stripePatternSquare_${item.modifier || 'stripe'})` : colors.fill)}
+              stroke={customStroke} 
               strokeWidth="2"
               rx="3"
               transform={item.reflected ? `scale(-1, 1)` : undefined}
@@ -1742,7 +1793,7 @@ export default function StudentPatternReasoning() {
               fill={item.style === 'outline' ? 'none' : (item.modifier === 'stripe' ? 'url(#stripePattern)' : colors.fill)} 
               stroke={colors.stroke} 
               strokeWidth="2"
-              transform={item.reflected ? `scale(-1, 1)` : undefined}
+              transform={`${rotation ? `rotate(${rotation})` : ''} ${item.reflected ? 'scale(-1, 1)' : ''}`.trim()}
             />
             {item.modifier === 'dot' && (
               <circle
