@@ -3002,74 +3002,74 @@
   {
     "question": 50,
     "type": "sequence",
-    "filename": "q_50_grid_r1c1_small_red_diamond_stroke1.svg",
-    "description": "small_red_diamond_stroke1"
+    "filename": "q_50_grid_r1c1_small_red_blue_diamond_stroke1.svg",
+    "description": "small_red_blue_diamond_stroke1"
   },
   {
     "question": 50,
     "type": "sequence",
-    "filename": "q_50_grid_r1c2_small_blue_diamond_rot45_stroke2.svg",
-    "description": "small_blue_diamond_rot45_stroke2"
+    "filename": "q_50_grid_r1c2_small_green_diamond_rot45_stroke2.svg",
+    "description": "small_green_diamond_rot45_stroke2"
   },
   {
     "question": 50,
     "type": "sequence",
-    "filename": "q_50_grid_r1c3_small_green_diamond_rot90_stroke3.svg",
-    "description": "small_green_diamond_rot90_stroke3"
+    "filename": "q_50_grid_r1c3_small_yellow_purple_diamond_rot90_stroke1.svg",
+    "description": "small_yellow_purple_diamond_rot90_stroke1"
   },
   {
     "question": 50,
     "type": "sequence",
-    "filename": "q_50_grid_r2c1_medium_red_diamond_rot90_stroke2.svg",
-    "description": "medium_red_diamond_rot90_stroke2"
+    "filename": "q_50_grid_r2c1_medium_blue_diamond_rot90_stroke2.svg",
+    "description": "medium_blue_diamond_rot90_stroke2"
   },
   {
     "question": 50,
     "type": "sequence",
-    "filename": "q_50_grid_r2c2_medium_blue_diamond_rot135_stroke3.svg",
-    "description": "medium_blue_diamond_rot135_stroke3"
+    "filename": "q_50_grid_r2c2_medium_orange_cyan_diamond_rot135_stroke3.svg",
+    "description": "medium_orange_cyan_diamond_rot135_stroke3"
   },
   {
     "question": 50,
     "type": "sequence",
-    "filename": "q_50_grid_r3c1_big_red_diamond_rot180_stroke3.svg",
-    "description": "big_red_diamond_rot180_stroke3"
+    "filename": "q_50_grid_r3c1_big_purple_green_diamond_rot180_stroke1.svg",
+    "description": "big_purple_green_diamond_rot180_stroke1"
   },
   {
     "question": 50,
     "type": "sequence",
-    "filename": "q_50_grid_r3c2_big_blue_diamond_rot225_stroke1.svg",
-    "description": "big_blue_diamond_rot225_stroke1"
+    "filename": "q_50_grid_r3c2_big_pink_diamond_rot225_stroke2.svg",
+    "description": "big_pink_diamond_rot225_stroke2"
   },
   {
     "question": 50,
     "type": "sequence",
-    "filename": "q_50_grid_r3c3_big_green_diamond_rot270_stroke2.svg",
-    "description": "big_green_diamond_rot270_stroke2"
+    "filename": "q_50_grid_r3c3_big_navy_lime_diamond_rot270_stroke3.svg",
+    "description": "big_navy_lime_diamond_rot270_stroke3"
   },
   {
     "question": 50,
     "type": "option",
-    "filename": "q_50_option_A_medium_green_diamond_rot180_stroke1.svg",
-    "description": "Green diamond pointing down, thin outline, medium size"
+    "filename": "q_50_option_A_medium_red_diamond_rot180_stroke2.svg",
+    "description": "Red solid diamond, pointing down, medium stroke"
   },
   {
     "question": 50,
     "type": "option",
-    "filename": "q_50_option_B_medium_blue_diamond_rot180_stroke1.svg",
-    "description": "Blue diamond pointing down, thin outline, medium size"
+    "filename": "q_50_option_B_medium_red_blue_diamond_rot180_stroke2.svg",
+    "description": "Red/Blue split diamond, pointing down, medium stroke"
   },
   {
     "question": 50,
     "type": "option",
-    "filename": "q_50_option_C_medium_green_diamond_rot135_stroke1.svg",
-    "description": "Green diamond pointing right-down, thin outline, medium size"
+    "filename": "q_50_option_C_medium_red_diamond_rot135_stroke2.svg",
+    "description": "Red solid diamond, pointing southeast, medium stroke"
   },
   {
     "question": 50,
     "type": "option",
-    "filename": "q_50_option_D_medium_green_diamond_rot180_stroke2.svg",
-    "description": "Green diamond pointing down, medium outline, medium size"
+    "filename": "q_50_option_D_medium_blue_diamond_rot180_stroke2.svg",
+    "description": "Blue solid diamond, pointing down, medium stroke"
   },
   {
     "question": 50,

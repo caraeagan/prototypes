@@ -1098,29 +1098,29 @@ const QUESTION_GROUPS = {
         id: 50,
         ageGroup: "15+",
         type: "matrix_transformation",
-        question: "Look at this 3×3 pattern. What goes in the missing cell?",
+        question: "Advanced pattern with multiple rules operating simultaneously. What goes in the missing cell?",
         grid: [
           [
-            { shape: "diamond", color: "red", rotation: 0, strokeWidth: 1, size: "small" },      // Small red up, thin
-            { shape: "diamond", color: "blue", rotation: 45, strokeWidth: 2, size: "small" },    // Small blue right-up, medium 
-            { shape: "diamond", color: "green", rotation: 90, strokeWidth: 3, size: "small" }    // Small green right, thick
+            { shape: "diamond", color: "split", topColor: "red", bottomColor: "blue", rotation: 0, strokeWidth: 1, size: "small" },     // Position (1,1): Red/Blue split, up, thin, small
+            { shape: "diamond", color: "green", rotation: 45, strokeWidth: 2, size: "small" },                                          // Position (1,2): Green solid, northeast, medium stroke, small
+            { shape: "diamond", color: "split", topColor: "yellow", bottomColor: "purple", rotation: 90, strokeWidth: 1, size: "small" } // Position (1,3): Yellow/Purple split, right, thin, small
           ],
           [
-            { shape: "diamond", color: "red", rotation: 90, strokeWidth: 2, size: "medium" },    // Medium red right, medium
-            { shape: "diamond", color: "blue", rotation: 135, strokeWidth: 3, size: "medium" },  // Medium blue right-down, thick
-            null                                                                                  // Missing: Medium green down, thin → should be green, 180°, stroke 1
+            { shape: "diamond", color: "blue", rotation: 90, strokeWidth: 2, size: "medium" },                                          // Position (2,1): Blue solid, right, medium stroke, medium
+            { shape: "diamond", color: "split", topColor: "orange", bottomColor: "cyan", rotation: 135, strokeWidth: 3, size: "medium" }, // Position (2,2): Orange/Cyan split, southeast, thick, medium
+            null                                                                                                                         // Position (2,3): Missing - should be Red solid, 180°, medium stroke, medium
           ],
           [
-            { shape: "diamond", color: "red", rotation: 180, strokeWidth: 3, size: "big" },      // Big red down, thick
-            { shape: "diamond", color: "blue", rotation: 225, strokeWidth: 1, size: "big" },     // Big blue left-down, thin
-            { shape: "diamond", color: "green", rotation: 270, strokeWidth: 2, size: "big" }     // Big green left, medium
+            { shape: "diamond", color: "split", topColor: "purple", bottomColor: "green", rotation: 180, strokeWidth: 1, size: "big" }, // Position (3,1): Purple/Green split, down, thin, big  
+            { shape: "diamond", color: "pink", rotation: 225, strokeWidth: 2, size: "big" },                                           // Position (3,2): Pink solid, southwest, medium stroke, big
+            { shape: "diamond", color: "split", topColor: "navy", bottomColor: "lime", rotation: 270, strokeWidth: 3, size: "big" }    // Position (3,3): Navy/Lime split, left, thick, big
           ]
         ],
         options: [
-          { id: "A", shape: "diamond", color: "green", rotation: 180, strokeWidth: 1, size: "medium", label: "Green diamond pointing down, thin outline, medium size" },
-          { id: "B", shape: "diamond", color: "blue", rotation: 180, strokeWidth: 1, size: "medium", label: "Blue diamond pointing down, thin outline, medium size" },
-          { id: "C", shape: "diamond", color: "green", rotation: 135, strokeWidth: 1, size: "medium", label: "Green diamond pointing right-down, thin outline, medium size" },
-          { id: "D", shape: "diamond", color: "green", rotation: 180, strokeWidth: 2, size: "medium", label: "Green diamond pointing down, medium outline, medium size" }
+          { id: "A", shape: "diamond", color: "red", rotation: 180, strokeWidth: 2, size: "medium", label: "Red solid diamond, pointing down, medium stroke" },
+          { id: "B", shape: "diamond", color: "split", topColor: "red", bottomColor: "blue", rotation: 180, strokeWidth: 2, size: "medium", label: "Red/Blue split diamond, pointing down, medium stroke" },
+          { id: "C", shape: "diamond", color: "red", rotation: 135, strokeWidth: 2, size: "medium", label: "Red solid diamond, pointing southeast, medium stroke" },
+          { id: "D", shape: "diamond", color: "blue", rotation: 180, strokeWidth: 2, size: "medium", label: "Blue solid diamond, pointing down, medium stroke" }
         ],
         correctAnswer: "A"
       }
