@@ -1,6 +1,6 @@
 <svg width="96" height="96" xmlns="http://www.w3.org/2000/svg">
     <rect x="1" y="1" width="94" height="94" rx="12" ry="12" fill="#FFFFFF" stroke="#D1D5DB" stroke-width="2" stroke-dasharray=""/>
     <g transform="translate(48, 48)">
-      <polygon points="0,-21 21,0 0,21 -21,0" fill="#9333EA" stroke="#7C3AED" stroke-width="1" transform="rotate(90 0 0)"/>
+      <polygon points="0,-21 12.6,0 0,21 -12.6,0" fill="#9333EA" stroke="#7C3AED" stroke-width="1" transform="rotate(90 0 0)"/>
     </g>
   </svg>

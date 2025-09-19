@@ -1263,9 +1263,12 @@ const renderPureSVG = (item: any, size = 100) => {
         )
 
       case 'diamond':
+        // Make diamond more directional - narrower width for clear pointing
+        const diamondWidth = shapeSize * 0.6
+        const diamondHeight = shapeSize
         return (
           <polygon 
-            points={`0,${-shapeSize / 2} ${shapeSize / 2},0 0,${shapeSize / 2} ${-shapeSize / 2},0`}
+            points={`0,${-diamondHeight / 2} ${diamondWidth / 2},0 0,${diamondHeight / 2} ${-diamondWidth / 2},0`}
             fill={fill}
             stroke={stroke}
             strokeWidth={strokeWidth}
@@ -1970,16 +1973,16 @@ export default function StudentPatternReasoning() {
           return (
             <>
               <g transform={item.rotation ? `rotate(${item.rotation})` : undefined}>
-                {/* Top half of diamond */}
+                {/* Top half of diamond - narrower for clear pointing */}
                 <polygon 
-                  points={`0,${-size / 2} ${size / 2},0 0,0 ${-size / 2},0`}
+                  points={`0,${-size / 2} ${size * 0.6 / 2},0 0,0 ${-size * 0.6 / 2},0`}
                   fill={topColors.fill} 
                   stroke={colors.stroke} 
                   strokeWidth="2"
                 />
                 {/* Bottom half of diamond */}
                 <polygon 
-                  points={`${-size / 2},0 0,0 ${size / 2},0 0,${size / 2}`}
+                  points={`${-size * 0.6 / 2},0 0,0 ${size * 0.6 / 2},0 0,${size / 2}`}
                   fill={bottomColors.fill} 
                   stroke={colors.stroke} 
                   strokeWidth="2"
@@ -1992,7 +1995,7 @@ export default function StudentPatternReasoning() {
         return (
           <>
               <polygon 
-                points={`0,${-size / 2} ${size / 2},0 0,${size / 2} ${-size / 2},0`}
+                points={`0,${-size / 2} ${size * 0.6 / 2},0 0,${size / 2} ${-size * 0.6 / 2},0`}
                 fill={colors.fill} 
                 stroke={colors.stroke} 
                 strokeWidth="2"

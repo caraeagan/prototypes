@@ -1458,19 +1458,23 @@ function generateTriangleContent(item, colors, size, centerX, centerY) {
 function generateDiamondContent(item, colors, size, centerX, centerY) {
   const strokeWidth = item.strokeWidth || 2;
   
+  // Make diamond more directional - taller than wide (2:1 ratio) to show clear pointing direction
+  const diamondWidth = size * 0.6; // Narrower width
+  const diamondHeight = size; // Full height for clear pointing
+  
   if (item.color === 'split' && item.topColor && item.bottomColor) {
     const topColors = colorMap[item.topColor] || { fill: '#2563EB', stroke: '#1D4ED8' };
     const bottomColors = colorMap[item.bottomColor] || { fill: '#DC2626', stroke: '#B91C1C' };
     const rotation = item.rotation || 0;
     
     return `<g transform="rotate(${rotation} ${centerX} ${centerY})">
-      <polygon points="${centerX},${centerY - size/2} ${centerX + size/2},${centerY} ${centerX},${centerY} ${centerX - size/2},${centerY}" fill="${topColors.fill}" stroke="${colors.stroke}" stroke-width="${strokeWidth}"/>
-      <polygon points="${centerX - size/2},${centerY} ${centerX},${centerY} ${centerX + size/2},${centerY} ${centerX},${centerY + size/2}" fill="${bottomColors.fill}" stroke="${colors.stroke}" stroke-width="${strokeWidth}"/>
+      <polygon points="${centerX},${centerY - diamondHeight/2} ${centerX + diamondWidth/2},${centerY} ${centerX},${centerY} ${centerX - diamondWidth/2},${centerY}" fill="${topColors.fill}" stroke="${colors.stroke}" stroke-width="${strokeWidth}"/>
+      <polygon points="${centerX - diamondWidth/2},${centerY} ${centerX},${centerY} ${centerX + diamondWidth/2},${centerY} ${centerX},${centerY + diamondHeight/2}" fill="${bottomColors.fill}" stroke="${colors.stroke}" stroke-width="${strokeWidth}"/>
     </g>`;
   }
   
   const rotation = item.rotation || 0;
-  return `<polygon points="${centerX},${centerY - size/2} ${centerX + size/2},${centerY} ${centerX},${centerY + size/2} ${centerX - size/2},${centerY}" fill="${colors.fill}" stroke="${colors.stroke}" stroke-width="${strokeWidth}" transform="rotate(${rotation} ${centerX} ${centerY})"/>`;
+  return `<polygon points="${centerX},${centerY - diamondHeight/2} ${centerX + diamondWidth/2},${centerY} ${centerX},${centerY + diamondHeight/2} ${centerX - diamondWidth/2},${centerY}" fill="${colors.fill}" stroke="${colors.stroke}" stroke-width="${strokeWidth}" transform="rotate(${rotation} ${centerX} ${centerY})"/>`;
 }
 
 function generateStarContent(item, colors, size, centerX, centerY) {
