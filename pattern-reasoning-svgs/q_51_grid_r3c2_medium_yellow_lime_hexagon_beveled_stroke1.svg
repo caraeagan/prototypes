@@ -1,0 +1,15 @@
+<svg width="96" height="96" xmlns="http://www.w3.org/2000/svg">
+    <rect x="1" y="1" width="94" height="94" rx="12" ry="12" fill="#FFFFFF" stroke="#D1D5DB" stroke-width="2" stroke-dasharray=""/>
+    <g transform="translate(48, 48)">
+      <defs>
+      <clipPath id="hexagonClip_jofk0l3duTop">
+        <rect x="-21" y="-21" width="42" height="21"/>
+      </clipPath>
+      <clipPath id="hexagonClip_jofk0l3duBottom">
+        <rect x="-21" y="0" width="42" height="21"/>
+      </clipPath>
+    </defs>
+    <polygon points="21,0 10.500000000000002,18.186533479473212 -10.499999999999995,18.186533479473212 -21,2.5717582782094417e-15 -10.500000000000009,-18.18653347947321 10.500000000000002,-18.186533479473212" fill="#EAB308" stroke="#CA8A04" stroke-width="1" clip-path="url(#hexagonClip_jofk0l3duTop)"/>
+    <polygon points="21,0 10.500000000000002,18.186533479473212 -10.499999999999995,18.186533479473212 -21,2.5717582782094417e-15 -10.500000000000009,-18.18653347947321 10.500000000000002,-18.186533479473212" fill="#65A30D" stroke="#4D7C0F" stroke-width="1" clip-path="url(#hexagonClip_jofk0l3duBottom)"/>
+    </g>
+  </svg>

@@ -998,7 +998,7 @@ const QUESTION_GROUPS = {
         id: 47,
         ageGroup: "12-14",
         type: "matrix_transformation",
-        question: "A 3×4 grid shows 12 hearts. The sequence changes like this: Normally, hearts flip across the vertical axis and cycle Red → Blue → Green → Red… But on every 4th step, the orientation does not flip, and the color skips forward by two places. Question: What goes in position 12?",
+        question: "What goes in position 12?",
         grid: [
           [
             { shape: "heart", color: "red", reflected: false, size: "medium", direction: "left" },   // Pos 1: Red, Left (normal)
@@ -1031,7 +1031,7 @@ const QUESTION_GROUPS = {
         id: 48,
         ageGroup: "12-14",
         type: "matrix_transformation",
-        question: "A 2×5 grid shows 10 stars. Odd positions follow Rule A; even positions follow Rule B. Rule A (odd): Red/Blue stars rotate 90° clockwise each step (0°→90°→180°→270°→0°...); Rule B (even): Different colored stars rotate 90° counter-clockwise each step (0°→270°→180°→90°→0°...) and cycle colors Green/Orange → Purple/Yellow → Pink/Black. Question: What goes in position 10?",
+        question: "What goes in position 10?",
         grid: [
           [
             { shape: "star", color: "split", topColor: "red", bottomColor: "blue", rotation: 0, size: "medium" },         // Pos 1: Red/Blue, 0° (Rule A: start)
@@ -1060,7 +1060,7 @@ const QUESTION_GROUPS = {
         id: 49,
         ageGroup: "12-14",
         type: "matrix_transformation",
-        question: "A 3×4 grid shows 12 arrows with color, direction, and thickness patterns. Question: What goes in position 8?",
+        question: "What goes in position 8?",
         grid: [
           [
             { shape: "arrow", color: "red", reflected: false, size: "small", direction: "left", strokeWidth: 1 },     // Pos 1: Red arrow, Left, Thin
@@ -1098,29 +1098,113 @@ const QUESTION_GROUPS = {
         id: 50,
         ageGroup: "15+",
         type: "matrix_transformation",
-        question: "Colors pass from one diamond to the next in sequence. What goes in the missing cell?",
+        question: "Colors pass from one diamond to the next following the path 1→2→3→6→5→4→7→8→9. What goes in the missing cell?",
         grid: [
           [
-            { shape: "diamond", color: "split", topColor: "red", bottomColor: "blue", rotation: 0, strokeWidth: 1, size: "small" },     // Red/Blue → Blue passes to (1,2)
-            { shape: "diamond", color: "split", topColor: "blue", bottomColor: "green", rotation: 45, strokeWidth: 2, size: "small" },  // Blue/Green → Green passes to (1,3)
-            { shape: "diamond", color: "split", topColor: "green", bottomColor: "yellow", rotation: 90, strokeWidth: 3, size: "small" } // Green/Yellow
+            { shape: "diamond", color: "split", topColor: "red", bottomColor: "blue", rotation: 0, strokeWidth: 1, size: "small" },     // Position 1: Red/Blue → Blue passes to position 2
+            { shape: "diamond", color: "split", topColor: "blue", bottomColor: "green", rotation: 45, strokeWidth: 2, size: "small" },  // Position 2: Blue/Green → Green passes to position 3
+            { shape: "diamond", color: "split", topColor: "green", bottomColor: "yellow", rotation: 90, strokeWidth: 3, size: "small" } // Position 3: Green/Yellow → Yellow passes to position 6
           ],
           [
-            { shape: "diamond", color: "split", topColor: "yellow", bottomColor: "orange", rotation: 135, strokeWidth: 1, size: "medium" }, // Yellow/Orange → Orange passes to (2,2)
-            { shape: "diamond", color: "split", topColor: "orange", bottomColor: "purple", rotation: 180, strokeWidth: 2, size: "medium" }, // Orange/Purple → Purple passes to (2,3)
-            null                                                                                                                             // Missing: Purple/? → ? should be Pink (next in sequence)
+            { shape: "diamond", color: "split", topColor: "purple", bottomColor: "pink", rotation: 225, strokeWidth: 1, size: "medium" }, // Position 4: Purple/Pink → Pink passes to position 7
+            { shape: "diamond", color: "split", topColor: "orange", bottomColor: "purple", rotation: 180, strokeWidth: 2, size: "medium" }, // Position 5: Orange/Purple → Purple passes to position 4
+            null                                                                                                                             // Position 6 (missing): Yellow/Orange → Orange passes to position 5, rotation 135°
           ],
           [
-            { shape: "diamond", color: "split", topColor: "pink", bottomColor: "cyan", rotation: 225, strokeWidth: 3, size: "big" },    // Pink/Cyan → Cyan passes to (3,2)
-            { shape: "diamond", color: "split", topColor: "cyan", bottomColor: "navy", rotation: 270, strokeWidth: 1, size: "big" },    // Cyan/Navy → Navy passes to (3,3)  
-            { shape: "diamond", color: "split", topColor: "navy", bottomColor: "lime", rotation: 315, strokeWidth: 2, size: "big" }     // Navy/Lime
+            { shape: "diamond", color: "split", topColor: "pink", bottomColor: "cyan", rotation: 270, strokeWidth: 3, size: "big" },    // Position 7: Pink/Cyan → Cyan passes to position 8
+            { shape: "diamond", color: "split", topColor: "cyan", bottomColor: "navy", rotation: 315, strokeWidth: 1, size: "big" },    // Position 8: Cyan/Navy → Navy passes to position 9  
+            { shape: "diamond", color: "split", topColor: "navy", bottomColor: "lime", rotation: 0, strokeWidth: 2, size: "big" }       // Position 9: Navy/Lime
           ]
         ],
         options: [
-          { id: "A", shape: "diamond", color: "split", topColor: "purple", bottomColor: "pink", rotation: 225, strokeWidth: 3, size: "medium", label: "Purple/Pink split diamond" },
-          { id: "B", shape: "diamond", color: "split", topColor: "orange", bottomColor: "pink", rotation: 225, strokeWidth: 3, size: "medium", label: "Orange/Pink split diamond" },
-          { id: "C", shape: "diamond", color: "split", topColor: "purple", bottomColor: "cyan", rotation: 225, strokeWidth: 3, size: "medium", label: "Purple/Cyan split diamond" },
-          { id: "D", shape: "diamond", color: "split", topColor: "purple", bottomColor: "pink", rotation: 180, strokeWidth: 3, size: "medium", label: "Purple/Pink split diamond, different rotation" }
+          { id: "A", shape: "diamond", color: "split", topColor: "yellow", bottomColor: "orange", rotation: 135, strokeWidth: 3, size: "medium", label: "Yellow/Orange split diamond, 135° rotation" },
+          { id: "B", shape: "diamond", color: "split", topColor: "green", bottomColor: "orange", rotation: 135, strokeWidth: 3, size: "medium", label: "Green/Orange split diamond" },
+          { id: "C", shape: "diamond", color: "split", topColor: "yellow", bottomColor: "purple", rotation: 135, strokeWidth: 3, size: "medium", label: "Yellow/Purple split diamond" },
+          { id: "D", shape: "diamond", color: "split", topColor: "orange", bottomColor: "yellow", rotation: 180, strokeWidth: 3, size: "medium", label: "Orange/Yellow split diamond, wrong rotation" }
+        ],
+        correctAnswer: "A"
+      },
+      {
+        id: 51,
+        ageGroup: "15+",
+        type: "matrix_transformation", 
+        question: "Each shape has random split colors. The pattern shows shape doubling: each shape in the top row doubles to the shape directly below it. Find the missing shape.",
+        grid: [
+          [
+            { shape: "trapezoid", color: "split", topColor: "red", bottomColor: "blue", rotation: 0, strokeWidth: 2, size: "medium" },    // Pos 1: Trapezoid → doubles to hexagon below
+            { shape: "triangle", color: "split", topColor: "green", bottomColor: "yellow", rotation: 45, strokeWidth: 1, size: "medium" }, // Pos 2: Triangle → doubles to diamond below  
+            { shape: "halfcircle", color: "split", topColor: "purple", bottomColor: "orange", rotation: 30, strokeWidth: 3, size: "medium" } // Pos 3: Half circle → doubles to square below
+          ],
+          [
+            { shape: "hexagon", color: "split", topColor: "cyan", bottomColor: "pink", rotation: 15, strokeWidth: 2, size: "medium" },   // Pos 4: Hexagon (doubled trapezoid from pos 1)
+            { shape: "diamond", color: "navy", rotation: 60, strokeWidth: 1, size: "medium" },   // Pos 5: Diamond (doubled triangle from pos 2) - single color
+            null                                                                                                                          // Pos 6: Missing - Square (doubled half circle from pos 3)
+          ]
+        ],
+        options: [
+          { id: "A", shape: "square", color: "split", topColor: "purple", bottomColor: "orange", rotation: 30, strokeWidth: 3, size: "medium", label: "Square with purple/orange split, 30° rotation, stroke 3" },
+          { id: "B", shape: "circle", color: "split", topColor: "red", bottomColor: "blue", rotation: 0, strokeWidth: 2, size: "medium", label: "Circle with red/blue split" },
+          { id: "C", shape: "heart", color: "split", topColor: "green", bottomColor: "yellow", rotation: 0, strokeWidth: 1, size: "medium", label: "Heart with green/yellow split" },
+          { id: "D", shape: "oval", color: "split", topColor: "cyan", bottomColor: "pink", rotation: 15, strokeWidth: 2, size: "medium", label: "Oval with cyan/pink split" }
+        ],
+        correctAnswer: "A"
+      },
+      {
+        id: 52,
+        ageGroup: "15+",
+        type: "matrix_transformation",
+        question: "A 3×4 grid (12 boxes) follows a mathematical pattern: For odd positions, use the position number. For even positions, add half the position number (e.g., position 2 = 2+1=3, position 4 = 4+2=6). All shapes are blue circles. Find the missing cell at position 10.",
+        grid: [
+          [
+            { shapes: [{ shape: "circle", color: "blue" }] }, // Position 1: 1 shape
+            { shapes: [{ shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }] }, // Position 2: 2+1=3 shapes
+            { shapes: [{ shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }] }, // Position 3: 3 shapes
+            { shapes: [{ shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }] } // Position 4: 4+2=6 shapes
+          ],
+          [
+            { shapes: [{ shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }] }, // Position 5: 5 shapes
+            { shapes: [{ shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }] }, // Position 6: 6+3=9 shapes
+            { shapes: [{ shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }] }, // Position 7: 7 shapes
+            { shapes: [{ shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }] } // Position 8: 8+4=12 shapes
+          ],
+          [
+            { shapes: [{ shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }] }, // Position 9: 9 shapes
+            null, // Position 10: Missing - should be 15 shapes
+            { shapes: [{ shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }] }, // Position 11: 11 shapes
+            { shapes: [{ shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }] } // Position 12: 12+6=18 shapes
+          ]
+        ],
+        options: [
+          { id: "A", shapes: [{ shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }], label: "15 blue circles" },
+          { id: "B", shapes: [{ shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }], label: "12 blue circles" },
+          { id: "C", shapes: [{ shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }], label: "10 blue circles" },
+          { id: "D", shapes: [{ shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }, { shape: "circle", color: "blue" }], label: "13 blue circles" }
+        ],
+        correctAnswer: "A"
+      },
+      {
+        id: 53,
+        ageGroup: "15+",
+        type: "matrix_transformation", 
+        question: "A sequence follows two patterns: (1) Shape cycle: Triangle→Square→Diamond→Circle (2) Color cycle: Red→Blue→Green. What comes next in the missing position?",
+        grid: [
+          [
+            { shapes: [{ shape: "triangle", color: "red" }] }, // Shape 1: Triangle, red
+            { shapes: [{ shape: "square", color: "blue" }] }, // Shape 2: Square, blue
+            { shapes: [{ shape: "diamond", color: "green" }] }, // Shape 3: Diamond, green
+            { shapes: [{ shape: "circle", color: "red" }] }, // Shape 4: Circle, red
+            { shapes: [{ shape: "triangle", color: "blue" }] }, // Shape 5: Triangle, blue
+            null // Shape 6: Missing - should be Square, green
+          ],
+          [
+            { shapes: [{ shape: "diamond", color: "red" }] } // Shape 7: Diamond, red
+          ]
+        ],
+        options: [
+          { id: "A", shapes: [{ shape: "square", color: "green" }], label: "Green square" },
+          { id: "B", shapes: [{ shape: "square", color: "red" }], label: "Red square" },
+          { id: "C", shapes: [{ shape: "circle", color: "green" }], label: "Green circle" },
+          { id: "D", shapes: [{ shape: "diamond", color: "green" }], label: "Green diamond" }
         ],
         correctAnswer: "A"
       }
@@ -1177,6 +1261,14 @@ const colorMap = {
 function generateShapeDescription(item) {
   if (!item) return 'empty';
   
+  // Handle shape stacks
+  if (item.shapes && Array.isArray(item.shapes)) {
+    const stackDesc = item.shapes.map(shape => {
+      return `${shape.color}_${shape.shape}`;
+    }).join('_');
+    return `stack_${stackDesc}`;
+  }
+  
   let description = [];
   
   if (item.size) description.push(item.size);
@@ -1230,8 +1322,89 @@ function generateSVGTile(item, isQuestionMark = false, isSelected = false, size 
   </svg>`;
 }
 
+function generateStackedShapesContent(shapes, tileSize = 96) {
+  if (!shapes || shapes.length === 0) return '';
+  
+  const shapeSize = 8; // Smaller size for grid arrangement
+  const spacing = 12; // Spacing between shapes
+  let content = '';
+  
+  // Arrange shapes in a compact grid
+  const getGridPosition = (index, total) => {
+    if (total <= 3) {
+      // Single row for 1-3 shapes
+      const startX = -(total - 1) * spacing / 2;
+      return { x: startX + index * spacing, y: 0 };
+    } else if (total <= 6) {
+      // 2 rows for 4-6 shapes
+      const cols = Math.ceil(total / 2);
+      const row = Math.floor(index / cols);
+      const col = index % cols;
+      const startX = -(cols - 1) * spacing / 2;
+      const startY = row * spacing - spacing / 2;
+      return { x: startX + col * spacing, y: startY };
+    } else {
+      // 3 rows for 7+ shapes
+      const cols = Math.ceil(total / 3);
+      const row = Math.floor(index / cols);
+      const col = index % cols;
+      const startX = -(cols - 1) * spacing / 2;
+      const startY = row * spacing - spacing;
+      return { x: startX + col * spacing, y: startY };
+    }
+  };
+  
+  shapes.forEach((shapeData, index) => {
+    const pos = getGridPosition(index, shapes.length);
+    const colors = colorMap[shapeData.color] || { fill: '#2563EB', stroke: '#1D4ED8' };
+    
+    const singleShapeContent = generateSingleShapeContent(shapeData, colors, shapeSize, 0, 0);
+    content += `<g transform="translate(${pos.x}, ${pos.y})">${singleShapeContent}</g>`;
+  });
+  
+  return content;
+}
+
+function generateSingleShapeContent(item, colors, size, centerX, centerY) {
+  switch (item.shape) {
+    case 'circle':
+      return generateCircleContent(item, colors, size, centerX, centerY);
+    case 'square':
+      return generateSquareContent(item, colors, size, centerX, centerY);
+    case 'triangle':
+      return generateTriangleContent(item, colors, size, centerX, centerY);
+    case 'diamond':
+      return generateDiamondContent(item, colors, size, centerX, centerY);
+    case 'star':
+      return generateStarContent(item, colors, size, centerX, centerY);
+    case 'heart':
+      return generateHeartContent(item, colors, size, centerX, centerY);
+    case 'dots':
+      return generateDotsContent(item, colors, size, centerX, centerY);
+    case 'arrow':
+      return generateArrowContent(item, colors, size, centerX, centerY);
+    case 'pentagon':
+    case 'hexagon':
+    case 'heptagon':
+    case 'octagon':
+      return generatePolygonContent(item, colors, size, centerX, centerY);
+    case 'trapezoid':
+    case 'rectangle':
+    case 'halfcircle':
+    case 'oval':
+      return generateCustomShapeContent(item, colors, size, centerX, centerY);
+    default:
+      return `<circle cx="${centerX}" cy="${centerY}" r="15" fill="${colors.fill}" stroke="${colors.stroke}"/>`;
+  }
+}
+
 function generateShapeContent(item, tileSize = 96) {
   if (!item) return '';
+  
+  // Handle shape stacks
+  if (item.shapes && Array.isArray(item.shapes)) {
+    return generateStackedShapesContent(item.shapes, tileSize);
+  }
   
   const colors = colorMap[item.color] || { fill: '#2563EB', stroke: '#1D4ED8' };
   const size = item.size === 'big' ? 50 : 
@@ -1270,6 +1443,15 @@ function generateShapeContent(item, tileSize = 96) {
       return generateDotsContent(item, colors, size, centerX, centerY);
     case 'arrow':
       return generateArrowContent(item, colors, size, centerX, centerY);
+    case 'hexagon':
+    case 'octagon':  
+    case 'dodecagon':
+      return generatePolygonContent(item, colors, size, centerX, centerY);
+    case 'trapezoid':
+    case 'rectangle':
+    case 'halfcircle':
+    case 'oval':
+      return generateCustomShapeContent(item, colors, size, centerX, centerY);
     default:
       return `<circle cx="${centerX}" cy="${centerY}" r="15" fill="${colors.fill}" stroke="${colors.stroke}"/>`;
   }
@@ -1703,6 +1885,155 @@ function generateArrowContent(item, colors, size, centerX, centerY) {
   const arrowPath = `M ${centerX - arrowSize/1.5} ${centerY - arrowSize/6} L ${centerX + arrowSize/3} ${centerY - arrowSize/6} L ${centerX + arrowSize/3} ${centerY - arrowSize/3} L ${centerX + arrowSize/1.5} ${centerY} L ${centerX + arrowSize/3} ${centerY + arrowSize/3} L ${centerX + arrowSize/3} ${centerY + arrowSize/6} L ${centerX - arrowSize/1.5} ${centerY + arrowSize/6} Z`;
   
   return `<path d="${arrowPath}" fill="${colors.fill}" stroke="${colors.stroke}" stroke-width="${arrowStrokeWidth}" ${item.reflected ? 'transform="scale(-1, 1)"' : ''}/>`;
+}
+
+function generatePolygonContent(item, colors, size, centerX, centerY) {
+  const sides = item.shape === 'hexagon' ? 6 : item.shape === 'octagon' ? 8 : 12;
+  const radius = size / 2;
+  const rotation = (item.rotation || 0) * Math.PI / 180;
+  const strokeWidth = item.strokeWidth === 1 ? 1 : item.strokeWidth === 3 ? 3 : 2;
+  
+  // Generate polygon points
+  const points = [];
+  for (let i = 0; i < sides; i++) {
+    const angle = (2 * Math.PI * i / sides) + rotation;
+    const x = centerX + radius * Math.cos(angle);
+    const y = centerY + radius * Math.sin(angle);
+    points.push(`${x},${y}`);
+  }
+  const pointsStr = points.join(' ');
+  
+  // Handle split colors
+  if (item.color === 'split' && item.topColor && item.bottomColor) {
+    const topColors = colorMap[item.topColor] || { fill: '#2563EB', stroke: '#1D4ED8' };
+    const bottomColors = colorMap[item.bottomColor] || { fill: '#DC2626', stroke: '#B91C1C' };
+    const clipId = `${item.shape}Clip_${Math.random().toString(36).substr(2, 9)}`;
+    
+    return `<defs>
+      <clipPath id="${clipId}Top">
+        <rect x="${centerX - radius}" y="${centerY - radius}" width="${radius * 2}" height="${radius}"/>
+      </clipPath>
+      <clipPath id="${clipId}Bottom">
+        <rect x="${centerX - radius}" y="${centerY}" width="${radius * 2}" height="${radius}"/>
+      </clipPath>
+    </defs>
+    <polygon points="${pointsStr}" fill="${topColors.fill}" stroke="${topColors.stroke}" stroke-width="${strokeWidth}" clip-path="url(#${clipId}Top)"/>
+    <polygon points="${pointsStr}" fill="${bottomColors.fill}" stroke="${bottomColors.stroke}" stroke-width="${strokeWidth}" clip-path="url(#${clipId}Bottom)"/>`;
+  }
+  
+  // Regular polygon
+  return `<polygon points="${pointsStr}" fill="${colors.fill}" stroke="${colors.stroke}" stroke-width="${strokeWidth}"/>`;
+}
+
+function generateCustomShapeContent(item, colors, size, centerX, centerY) {
+  const strokeWidth = item.strokeWidth === 1 ? 1 : item.strokeWidth === 3 ? 3 : 2;
+  const rotation = (item.rotation || 0) * Math.PI / 180;
+  
+  if (item.shape === 'trapezoid') {
+    // Less tall trapezoid points
+    const points = `${centerX - size/2},${centerY + size/3} ${centerX + size/2},${centerY + size/3} ${centerX + size/4},${centerY - size/3} ${centerX - size/4},${centerY - size/3}`;
+    
+    // Handle split colors
+    if (item.color === 'split' && item.topColor && item.bottomColor) {
+      const topColors = colorMap[item.topColor] || { fill: '#2563EB', stroke: '#1D4ED8' };
+      const bottomColors = colorMap[item.bottomColor] || { fill: '#DC2626', stroke: '#B91C1C' };
+      const clipId = `trapClip_${Math.random().toString(36).substr(2, 9)}`;
+      
+      return `<defs>
+        <clipPath id="${clipId}Top">
+          <rect x="${centerX - size/2}" y="${centerY - size/2}" width="${size}" height="${size/2}"/>
+        </clipPath>
+        <clipPath id="${clipId}Bottom">
+          <rect x="${centerX - size/2}" y="${centerY}" width="${size}" height="${size/2}"/>
+        </clipPath>
+      </defs>
+      <polygon points="${points}" fill="${topColors.fill}" stroke="${topColors.stroke}" stroke-width="${strokeWidth}" clip-path="url(#${clipId}Top)"/>
+      <polygon points="${points}" fill="${bottomColors.fill}" stroke="${bottomColors.stroke}" stroke-width="${strokeWidth}" clip-path="url(#${clipId}Bottom)"/>`;
+    }
+    
+    return `<polygon points="${points}" fill="${colors.fill}" stroke="${colors.stroke}" stroke-width="${strokeWidth}"/>`;
+  }
+  
+  if (item.shape === 'rectangle') {
+    const rectWidth = size * 0.8;
+    const rectHeight = size * 0.5;
+    const x = centerX - rectWidth/2;
+    const y = centerY - rectHeight/2;
+    
+    // Handle split colors
+    if (item.color === 'split' && item.topColor && item.bottomColor) {
+      const topColors = colorMap[item.topColor] || { fill: '#2563EB', stroke: '#1D4ED8' };
+      const bottomColors = colorMap[item.bottomColor] || { fill: '#DC2626', stroke: '#B91C1C' };
+      const clipId = `rectClip_${Math.random().toString(36).substr(2, 9)}`;
+      
+      return `<defs>
+        <clipPath id="${clipId}Top">
+          <rect x="${x}" y="${y}" width="${rectWidth}" height="${rectHeight/2}"/>
+        </clipPath>
+        <clipPath id="${clipId}Bottom">
+          <rect x="${x}" y="${centerY}" width="${rectWidth}" height="${rectHeight/2}"/>
+        </clipPath>
+      </defs>
+      <rect x="${x}" y="${y}" width="${rectWidth}" height="${rectHeight}" fill="${topColors.fill}" stroke="${topColors.stroke}" stroke-width="${strokeWidth}" clip-path="url(#${clipId}Top)"/>
+      <rect x="${x}" y="${y}" width="${rectWidth}" height="${rectHeight}" fill="${bottomColors.fill}" stroke="${bottomColors.stroke}" stroke-width="${strokeWidth}" clip-path="url(#${clipId}Bottom)"/>`;
+    }
+    
+    return `<rect x="${x}" y="${y}" width="${rectWidth}" height="${rectHeight}" fill="${colors.fill}" stroke="${colors.stroke}" stroke-width="${strokeWidth}"/>`;
+  }
+  
+  if (item.shape === 'halfcircle') {
+    const halfCircleRadius = size / 2;
+    const path = `M ${centerX - halfCircleRadius} ${centerY} A ${halfCircleRadius} ${halfCircleRadius} 0 1 1 ${centerX + halfCircleRadius} ${centerY} Z`;
+    
+    // Handle split colors
+    if (item.color === 'split' && item.topColor && item.bottomColor) {
+      const topColors = colorMap[item.topColor] || { fill: '#2563EB', stroke: '#1D4ED8' };
+      const bottomColors = colorMap[item.bottomColor] || { fill: '#DC2626', stroke: '#B91C1C' };
+      const clipId = `halfCircleClip_${Math.random().toString(36).substr(2, 9)}`;
+      
+      return `<defs>
+        <clipPath id="${clipId}Top">
+          <rect x="${centerX - halfCircleRadius}" y="${centerY - halfCircleRadius}" width="${halfCircleRadius * 2}" height="${halfCircleRadius}"/>
+        </clipPath>
+        <clipPath id="${clipId}Bottom">
+          <rect x="${centerX - halfCircleRadius}" y="${centerY}" width="${halfCircleRadius * 2}" height="${halfCircleRadius}"/>
+        </clipPath>
+      </defs>
+      <path d="${path}" fill="${topColors.fill}" stroke="${topColors.stroke}" stroke-width="${strokeWidth}" clip-path="url(#${clipId}Top)"/>
+      <path d="${path}" fill="${bottomColors.fill}" stroke="${bottomColors.stroke}" stroke-width="${strokeWidth}" clip-path="url(#${clipId}Bottom)"/>`;
+    }
+    
+    return `<path d="${path}" fill="${colors.fill}" stroke="${colors.stroke}" stroke-width="${strokeWidth}"/>`;
+  }
+  
+  if (item.shape === 'oval') {
+    const ovalWidth = size * 0.8;
+    const ovalHeight = size * 0.6;
+    const rx = ovalWidth / 2;
+    const ry = ovalHeight / 2;
+    
+    // Handle split colors
+    if (item.color === 'split' && item.topColor && item.bottomColor) {
+      const topColors = colorMap[item.topColor] || { fill: '#2563EB', stroke: '#1D4ED8' };
+      const bottomColors = colorMap[item.bottomColor] || { fill: '#DC2626', stroke: '#B91C1C' };
+      const clipId = `ovalClip_${Math.random().toString(36).substr(2, 9)}`;
+      
+      return `<defs>
+        <clipPath id="${clipId}Top">
+          <rect x="${centerX - rx}" y="${centerY - ry}" width="${rx * 2}" height="${ry}"/>
+        </clipPath>
+        <clipPath id="${clipId}Bottom">
+          <rect x="${centerX - rx}" y="${centerY}" width="${rx * 2}" height="${ry}"/>
+        </clipPath>
+      </defs>
+      <ellipse cx="${centerX}" cy="${centerY}" rx="${rx}" ry="${ry}" fill="${topColors.fill}" stroke="${topColors.stroke}" stroke-width="${strokeWidth}" clip-path="url(#${clipId}Top)"/>
+      <ellipse cx="${centerX}" cy="${centerY}" rx="${rx}" ry="${ry}" fill="${bottomColors.fill}" stroke="${bottomColors.stroke}" stroke-width="${strokeWidth}" clip-path="url(#${clipId}Bottom)"/>`;
+    }
+    
+    return `<ellipse cx="${centerX}" cy="${centerY}" rx="${rx}" ry="${ry}" fill="${colors.fill}" stroke="${colors.stroke}" stroke-width="${strokeWidth}"/>`;
+  }
+  
+  return `<circle cx="${centerX}" cy="${centerY}" r="15" fill="${colors.fill}" stroke="${colors.stroke}"/>`;
 }
 
 // Generate all SVG files

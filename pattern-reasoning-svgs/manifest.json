@@ -3020,8 +3020,8 @@
   {
     "question": 50,
     "type": "sequence",
-    "filename": "q_50_grid_r2c1_medium_yellow_orange_diamond_rot135_stroke1.svg",
-    "description": "medium_yellow_orange_diamond_rot135_stroke1"
+    "filename": "q_50_grid_r2c1_medium_purple_pink_diamond_rot225_stroke1.svg",
+    "description": "medium_purple_pink_diamond_rot225_stroke1"
   },
   {
     "question": 50,
@@ -3032,49 +3032,271 @@
   {
     "question": 50,
     "type": "sequence",
-    "filename": "q_50_grid_r3c1_big_pink_cyan_diamond_rot225_stroke3.svg",
-    "description": "big_pink_cyan_diamond_rot225_stroke3"
+    "filename": "q_50_grid_r3c1_big_pink_cyan_diamond_rot270_stroke3.svg",
+    "description": "big_pink_cyan_diamond_rot270_stroke3"
   },
   {
     "question": 50,
     "type": "sequence",
-    "filename": "q_50_grid_r3c2_big_cyan_navy_diamond_rot270_stroke1.svg",
-    "description": "big_cyan_navy_diamond_rot270_stroke1"
+    "filename": "q_50_grid_r3c2_big_cyan_navy_diamond_rot315_stroke1.svg",
+    "description": "big_cyan_navy_diamond_rot315_stroke1"
   },
   {
     "question": 50,
     "type": "sequence",
-    "filename": "q_50_grid_r3c3_big_navy_lime_diamond_rot315_stroke2.svg",
-    "description": "big_navy_lime_diamond_rot315_stroke2"
+    "filename": "q_50_grid_r3c3_big_navy_lime_diamond_stroke2.svg",
+    "description": "big_navy_lime_diamond_stroke2"
   },
   {
     "question": 50,
     "type": "option",
-    "filename": "q_50_option_A_medium_purple_pink_diamond_rot225_stroke3.svg",
-    "description": "Purple/Pink split diamond"
+    "filename": "q_50_option_A_medium_yellow_orange_diamond_rot135_stroke3.svg",
+    "description": "Yellow/Orange split diamond, 135° rotation"
   },
   {
     "question": 50,
     "type": "option",
-    "filename": "q_50_option_B_medium_orange_pink_diamond_rot225_stroke3.svg",
-    "description": "Orange/Pink split diamond"
+    "filename": "q_50_option_B_medium_green_orange_diamond_rot135_stroke3.svg",
+    "description": "Green/Orange split diamond"
   },
   {
     "question": 50,
     "type": "option",
-    "filename": "q_50_option_C_medium_purple_cyan_diamond_rot225_stroke3.svg",
-    "description": "Purple/Cyan split diamond"
+    "filename": "q_50_option_C_medium_yellow_purple_diamond_rot135_stroke3.svg",
+    "description": "Yellow/Purple split diamond"
   },
   {
     "question": 50,
     "type": "option",
-    "filename": "q_50_option_D_medium_purple_pink_diamond_rot180_stroke3.svg",
-    "description": "Purple/Pink split diamond, different rotation"
+    "filename": "q_50_option_D_medium_orange_yellow_diamond_rot180_stroke3.svg",
+    "description": "Orange/Yellow split diamond, wrong rotation"
   },
   {
     "question": 50,
     "type": "question_mark",
     "filename": "q_50_question_mark.svg",
+    "description": "Question mark placeholder"
+  },
+  {
+    "question": 51,
+    "type": "sequence",
+    "filename": "q_51_grid_r1c1_medium_red_blue_trapezoid_stroke2.svg",
+    "description": "medium_red_blue_trapezoid_stroke2"
+  },
+  {
+    "question": 51,
+    "type": "sequence",
+    "filename": "q_51_grid_r1c2_medium_green_yellow_triangle_rot45_stroke1.svg",
+    "description": "medium_green_yellow_triangle_rot45_stroke1"
+  },
+  {
+    "question": 51,
+    "type": "sequence",
+    "filename": "q_51_grid_r1c3_medium_purple_orange_halfcircle_rot30_stroke3.svg",
+    "description": "medium_purple_orange_halfcircle_rot30_stroke3"
+  },
+  {
+    "question": 51,
+    "type": "sequence",
+    "filename": "q_51_grid_r2c1_medium_cyan_pink_hexagon_rot15_stroke2.svg",
+    "description": "medium_cyan_pink_hexagon_rot15_stroke2"
+  },
+  {
+    "question": 51,
+    "type": "sequence",
+    "filename": "q_51_grid_r2c2_medium_navy_diamond_rot60_stroke1.svg",
+    "description": "medium_navy_diamond_rot60_stroke1"
+  },
+  {
+    "question": 51,
+    "type": "option",
+    "filename": "q_51_option_A_medium_purple_orange_square_rot30_stroke3.svg",
+    "description": "Square with purple/orange split, 30° rotation, stroke 3"
+  },
+  {
+    "question": 51,
+    "type": "option",
+    "filename": "q_51_option_B_medium_red_blue_circle_stroke2.svg",
+    "description": "Circle with red/blue split"
+  },
+  {
+    "question": 51,
+    "type": "option",
+    "filename": "q_51_option_C_medium_green_yellow_heart_stroke1.svg",
+    "description": "Heart with green/yellow split"
+  },
+  {
+    "question": 51,
+    "type": "option",
+    "filename": "q_51_option_D_medium_cyan_pink_oval_rot15_stroke2.svg",
+    "description": "Oval with cyan/pink split"
+  },
+  {
+    "question": 51,
+    "type": "question_mark",
+    "filename": "q_51_question_mark.svg",
+    "description": "Question mark placeholder"
+  },
+  {
+    "question": 52,
+    "type": "sequence",
+    "filename": "q_52_grid_r1c1_stack_blue_circle.svg",
+    "description": "stack_blue_circle"
+  },
+  {
+    "question": 52,
+    "type": "sequence",
+    "filename": "q_52_grid_r1c2_stack_blue_circle_blue_circle_blue_circle.svg",
+    "description": "stack_blue_circle_blue_circle_blue_circle"
+  },
+  {
+    "question": 52,
+    "type": "sequence",
+    "filename": "q_52_grid_r1c3_stack_blue_circle_blue_circle_blue_circle.svg",
+    "description": "stack_blue_circle_blue_circle_blue_circle"
+  },
+  {
+    "question": 52,
+    "type": "sequence",
+    "filename": "q_52_grid_r1c4_stack_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle.svg",
+    "description": "stack_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle"
+  },
+  {
+    "question": 52,
+    "type": "sequence",
+    "filename": "q_52_grid_r2c1_stack_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle.svg",
+    "description": "stack_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle"
+  },
+  {
+    "question": 52,
+    "type": "sequence",
+    "filename": "q_52_grid_r2c2_stack_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle.svg",
+    "description": "stack_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle"
+  },
+  {
+    "question": 52,
+    "type": "sequence",
+    "filename": "q_52_grid_r2c3_stack_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle.svg",
+    "description": "stack_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle"
+  },
+  {
+    "question": 52,
+    "type": "sequence",
+    "filename": "q_52_grid_r2c4_stack_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle.svg",
+    "description": "stack_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle"
+  },
+  {
+    "question": 52,
+    "type": "sequence",
+    "filename": "q_52_grid_r3c1_stack_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle.svg",
+    "description": "stack_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle"
+  },
+  {
+    "question": 52,
+    "type": "sequence",
+    "filename": "q_52_grid_r3c3_stack_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle.svg",
+    "description": "stack_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle"
+  },
+  {
+    "question": 52,
+    "type": "sequence",
+    "filename": "q_52_grid_r3c4_stack_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle.svg",
+    "description": "stack_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle"
+  },
+  {
+    "question": 52,
+    "type": "option",
+    "filename": "q_52_option_A_stack_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle.svg",
+    "description": "15 blue circles"
+  },
+  {
+    "question": 52,
+    "type": "option",
+    "filename": "q_52_option_B_stack_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle.svg",
+    "description": "12 blue circles"
+  },
+  {
+    "question": 52,
+    "type": "option",
+    "filename": "q_52_option_C_stack_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle.svg",
+    "description": "10 blue circles"
+  },
+  {
+    "question": 52,
+    "type": "option",
+    "filename": "q_52_option_D_stack_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle_blue_circle.svg",
+    "description": "13 blue circles"
+  },
+  {
+    "question": 52,
+    "type": "question_mark",
+    "filename": "q_52_question_mark.svg",
+    "description": "Question mark placeholder"
+  },
+  {
+    "question": 53,
+    "type": "sequence",
+    "filename": "q_53_grid_r1c1_stack_red_triangle.svg",
+    "description": "stack_red_triangle"
+  },
+  {
+    "question": 53,
+    "type": "sequence",
+    "filename": "q_53_grid_r1c2_stack_blue_square.svg",
+    "description": "stack_blue_square"
+  },
+  {
+    "question": 53,
+    "type": "sequence",
+    "filename": "q_53_grid_r1c3_stack_green_diamond.svg",
+    "description": "stack_green_diamond"
+  },
+  {
+    "question": 53,
+    "type": "sequence",
+    "filename": "q_53_grid_r1c4_stack_red_circle.svg",
+    "description": "stack_red_circle"
+  },
+  {
+    "question": 53,
+    "type": "sequence",
+    "filename": "q_53_grid_r1c5_stack_blue_triangle.svg",
+    "description": "stack_blue_triangle"
+  },
+  {
+    "question": 53,
+    "type": "sequence",
+    "filename": "q_53_grid_r2c1_stack_red_diamond.svg",
+    "description": "stack_red_diamond"
+  },
+  {
+    "question": 53,
+    "type": "option",
+    "filename": "q_53_option_A_stack_green_square.svg",
+    "description": "Green square"
+  },
+  {
+    "question": 53,
+    "type": "option",
+    "filename": "q_53_option_B_stack_red_square.svg",
+    "description": "Red square"
+  },
+  {
+    "question": 53,
+    "type": "option",
+    "filename": "q_53_option_C_stack_green_circle.svg",
+    "description": "Green circle"
+  },
+  {
+    "question": 53,
+    "type": "option",
+    "filename": "q_53_option_D_stack_green_diamond.svg",
+    "description": "Green diamond"
+  },
+  {
+    "question": 53,
+    "type": "question_mark",
+    "filename": "q_53_question_mark.svg",
     "description": "Question mark placeholder"
   }
 ]

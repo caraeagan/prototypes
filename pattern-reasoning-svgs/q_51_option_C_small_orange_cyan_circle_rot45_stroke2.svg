@@ -1,0 +1,15 @@
+<svg width="96" height="96" xmlns="http://www.w3.org/2000/svg">
+    <rect x="1" y="1" width="94" height="94" rx="12" ry="12" fill="#FFFFFF" stroke="#D1D5DB" stroke-width="2" stroke-dasharray=""/>
+    <g transform="translate(48, 48)">
+      <defs>
+      <clipPath id="circleTopHalf45_orange_cyan">
+        <rect x="-30" y="-30" width="60" height="30" transform="rotate(45 0 0)" />
+      </clipPath>
+      <clipPath id="circleBottomHalf45_orange_cyan">
+        <rect x="-30" y="0" width="60" height="30" transform="rotate(45 0 0)" />
+      </clipPath>
+    </defs>
+    <circle cx="0" cy="0" r="15" fill="#EA580C" stroke="#C2410C" stroke-width="2" clip-path="url(#circleTopHalf45_orange_cyan)" />
+    <circle cx="0" cy="0" r="15" fill="#0891B2" stroke="#0E7490" stroke-width="2" clip-path="url(#circleBottomHalf45_orange_cyan)" />
+    </g>
+  </svg>

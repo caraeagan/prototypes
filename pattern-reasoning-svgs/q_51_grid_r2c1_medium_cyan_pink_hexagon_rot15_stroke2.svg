@@ -1,0 +1,15 @@
+<svg width="96" height="96" xmlns="http://www.w3.org/2000/svg">
+    <rect x="1" y="1" width="94" height="94" rx="12" ry="12" fill="#FFFFFF" stroke="#D1D5DB" stroke-width="2" stroke-dasharray=""/>
+    <g transform="translate(48, 48)">
+      <defs>
+      <clipPath id="hexagonClip_e38dux51uTop">
+        <rect x="-21" y="-21" width="42" height="21"/>
+      </clipPath>
+      <clipPath id="hexagonClip_e38dux51uBottom">
+        <rect x="-21" y="0" width="42" height="21"/>
+      </clipPath>
+    </defs>
+    <polygon points="20.284442352070435,5.4351999471529355 5.43519994715294,20.284442352070432 -14.849242404917497,14.849242404917499 -20.284442352070435,-5.435199947152936 -5.4351999471529515,-20.28444235207043 14.849242404917494,-14.8492424049175" fill="#0891B2" stroke="#0E7490" stroke-width="2" clip-path="url(#hexagonClip_e38dux51uTop)"/>
+    <polygon points="20.284442352070435,5.4351999471529355 5.43519994715294,20.284442352070432 -14.849242404917497,14.849242404917499 -20.284442352070435,-5.435199947152936 -5.4351999471529515,-20.28444235207043 14.849242404917494,-14.8492424049175" fill="#EC4899" stroke="#DB2777" stroke-width="2" clip-path="url(#hexagonClip_e38dux51uBottom)"/>
+    </g>
+  </svg>

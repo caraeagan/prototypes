@@ -1,0 +1,15 @@
+<svg width="96" height="96" xmlns="http://www.w3.org/2000/svg">
+    <rect x="1" y="1" width="94" height="94" rx="12" ry="12" fill="#FFFFFF" stroke="#D1D5DB" stroke-width="2" stroke-dasharray=""/>
+    <g transform="translate(48, 48)">
+      <defs>
+      <clipPath id="triangleTopHalf315_purple_orange">
+        <rect x="-75" y="-50" width="150" height="50" transform="rotate(315 0 0)" />
+      </clipPath>
+      <clipPath id="triangleBottomHalf315_purple_orange">
+        <rect x="-75" y="0" width="150" height="50" transform="rotate(315 0 0)" />
+      </clipPath>
+    </defs>
+    <polygon points="0,-25 25,25 -25,25" fill="#9333EA" stroke="#7C3AED" stroke-width="2" clip-path="url(#triangleTopHalf315_purple_orange)" />
+    <polygon points="0,-25 25,25 -25,25" fill="#EA580C" stroke="#C2410C" stroke-width="2" clip-path="url(#triangleBottomHalf315_purple_orange)" />
+    </g>
+  </svg>

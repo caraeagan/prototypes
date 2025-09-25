@@ -1,0 +1,15 @@
+<svg width="96" height="96" xmlns="http://www.w3.org/2000/svg">
+    <rect x="1" y="1" width="94" height="94" rx="12" ry="12" fill="#FFFFFF" stroke="#D1D5DB" stroke-width="2" stroke-dasharray=""/>
+    <g transform="translate(48, 48)">
+      <defs>
+        <clipPath id="trapClip_w8hf54m39Top">
+          <rect x="-21" y="-21" width="42" height="21"/>
+        </clipPath>
+        <clipPath id="trapClip_w8hf54m39Bottom">
+          <rect x="-21" y="0" width="42" height="21"/>
+        </clipPath>
+      </defs>
+      <polygon points="-21,14 21,14 10.5,-14 -10.5,-14" fill="#DC2626" stroke="#B91C1C" stroke-width="2" clip-path="url(#trapClip_w8hf54m39Top)"/>
+      <polygon points="-21,14 21,14 10.5,-14 -10.5,-14" fill="#2563EB" stroke="#1D4ED8" stroke-width="2" clip-path="url(#trapClip_w8hf54m39Bottom)"/>
+    </g>
+  </svg>
