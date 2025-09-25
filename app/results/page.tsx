@@ -227,6 +227,60 @@ export default function ResultsDashboard() {
     window.URL.revokeObjectURL(url)
   }
 
+  const deleteResult = async (sessionId: string, name: string) => {
+    if (confirm(`Are you sure you want to delete ${name}'s test result? This cannot be undone.`)) {
+      try {
+        let apiDeleteSuccess = false
+        
+        // Try to delete from API (centralized storage)
+        try {
+          const response = await fetch('/api/delete-result', {
+            method: 'DELETE',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ sessionId })
+          })
+
+          if (response.ok) {
+            apiDeleteSuccess = true
+          } else {
+            const data = await response.json()
+            console.log('API delete failed:', data.error)
+            // Don't show error yet - might only be in localStorage
+          }
+        } catch (apiError) {
+          console.log('API delete error:', apiError)
+          // Don't show error yet - might only be in localStorage
+        }
+
+        // Always try to remove from localStorage (for local-only results)
+        const localDeleted = {
+          completed: !!localStorage.getItem(`test_completed_${sessionId}`),
+          test: !!localStorage.getItem(`pattern_reasoning_test_${sessionId}`),
+          student: !!localStorage.getItem(`student_${sessionId}`)
+        }
+        
+        localStorage.removeItem(`test_completed_${sessionId}`)
+        localStorage.removeItem(`pattern_reasoning_test_${sessionId}`)
+        localStorage.removeItem(`student_${sessionId}`)
+        
+        const localDeletedAny = localDeleted.completed || localDeleted.test || localDeleted.student
+        
+        if (apiDeleteSuccess || localDeletedAny) {
+          // Remove from current results state
+          setResults(results.filter(r => r.sessionId !== sessionId))
+          alert(`Successfully deleted ${name}'s test result.`)
+        } else {
+          alert(`Could not find ${name}'s test result to delete.`)
+        }
+      } catch (error) {
+        console.error('Error deleting result:', error)
+        alert('Error deleting result. Please try again.')
+      }
+    }
+  }
+
   const clearAllResults = () => {
     if (confirm('Are you sure you want to clear all results? This cannot be undone.')) {
       // Remove all test-related localStorage items
@@ -353,14 +407,22 @@ export default function ResultsDashboard() {
                         </div>
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
-                        <button
-                          onClick={() => {
-                            window.location.href = `/results/${result.sessionId}`
-                          }}
-                          className="text-blue-600 hover:text-blue-900"
-                        >
-                          View Details
-                        </button>
+                        <div className="flex space-x-3">
+                          <button
+                            onClick={() => {
+                              window.location.href = `/results/${result.sessionId}`
+                            }}
+                            className="text-blue-600 hover:text-blue-900"
+                          >
+                            View Details
+                          </button>
+                          <button
+                            onClick={() => deleteResult(result.sessionId, result.name)}
+                            className="text-red-600 hover:text-red-900"
+                          >
+                            Delete
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
