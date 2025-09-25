@@ -1725,13 +1725,16 @@ export default function StudentPatternReasoning() {
     const filter = urlParams.get('filter')
     
     console.log('Test completion - URL filter:', filter)
-    console.log('Test completion - Setting state to:', filter === '12plus' ? 'completed' : 'waiting')
+    console.log('Test completion - window.location.href:', window.location.href)
     
-    if (filter === '12plus') {
-      // This is the standalone public test - show completion message
+    // Always show completion with CSV download for standalone pattern test
+    if (filter === '12plus' || window.location.pathname.includes('pattern-reasoning')) {
+      // This is the standalone public test - show completion message with CSV download
+      console.log('Setting state to completed - standalone test detected')
       setTestState("completed")
     } else {
       // This is part of a multi-subtest flow - wait for next subtest
+      console.log('Setting state to waiting - multi-subtest flow')
       setTestState("waiting")
     }
   }
@@ -2941,6 +2944,7 @@ export default function StudentPatternReasoning() {
   // Function to generate and download CSV
   const downloadCSV = () => {
     const headers = [
+      'Name',
       'Question Number',
       'Question',
       'Your Answer',
@@ -2949,7 +2953,9 @@ export default function StudentPatternReasoning() {
       'Age Group'
     ]
     
+    const userName = studentInfo?.firstName || 'Student'
     const rows = testResults.map((result, index) => [
+      userName,
       index + 1,
       `"${result.questionText || 'N/A'}"`,
       result.userAnswer || 'No Answer',
