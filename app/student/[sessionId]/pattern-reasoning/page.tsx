@@ -1720,7 +1720,17 @@ export default function StudentPatternReasoning() {
       }))
     }
     
-    setTestState("waiting")
+    // Check if this is a standalone test (from /pattern-test) or part of a multi-subtest flow
+    const urlParams = new URLSearchParams(window.location.search)
+    const filter = urlParams.get('filter')
+    
+    if (filter === '12plus') {
+      // This is the standalone public test - show completion message
+      setTestState("completed")
+    } else {
+      // This is part of a multi-subtest flow - wait for next subtest
+      setTestState("waiting")
+    }
   }
 
   // Render triangle with rotation - make it fill the available space
@@ -2935,7 +2945,7 @@ export default function StudentPatternReasoning() {
             </svg>
           </div>
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Great Job!</h2>
-          <p className="text-gray-600">You completed the pattern reasoning test.</p>
+          <p className="text-gray-600">You completed the pattern reasoning test. Your responses have been submitted successfully.</p>
         </div>
       </div>
     )
