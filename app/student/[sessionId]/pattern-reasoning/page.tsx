@@ -2997,12 +2997,8 @@ export default function StudentPatternReasoning() {
     URL.revokeObjectURL(url)
   }
 
-  console.log('Current testState:', testState)
-  console.log('Current testResults length:', testResults?.length || 0)
-
   if (testState === "completed") {
     console.log('Rendering completed state with testResults:', testResults?.length || 0, 'results')
-    console.log('downloadCSV function exists:', typeof downloadCSV)
     return (
       <div className="min-h-screen bg-blue-50 flex items-center justify-center">
         <div className="bg-stone-100 rounded-xl shadow-lg p-8 max-w-md w-full text-center">
