@@ -1288,13 +1288,18 @@ const QUESTION_GROUPS = {
 }
 
 // Include all age group questions
-const QUESTIONS = [
+const ALL_QUESTIONS = [
   ...QUESTION_GROUPS["2.5-3.5"].questions,
   ...QUESTION_GROUPS["3.5-4"].questions,
   ...QUESTION_GROUPS["4.5-5"].questions,
   ...QUESTION_GROUPS["6-7"].questions,
   ...QUESTION_GROUPS["8-9"].questions,
   ...QUESTION_GROUPS["10-11"].questions,
+  ...QUESTION_GROUPS["12-14"].questions,
+  ...QUESTION_GROUPS["15+"].questions
+]
+
+const FILTERED_QUESTIONS_12_PLUS = [
   ...QUESTION_GROUPS["12-14"].questions,
   ...QUESTION_GROUPS["15+"].questions
 ]
@@ -1543,6 +1548,10 @@ export default function StudentPatternReasoning() {
   const router = useRouter()
   const sessionId = params.sessionId as string
   const [studentInfo, setStudentInfo] = useState<any>(null)
+  
+  // Check for 12+ filter in URL
+  const [isFiltered, setIsFiltered] = useState(false)
+  const [QUESTIONS, setQuestions] = useState(ALL_QUESTIONS)
   const [currentQuestion, setCurrentQuestion] = useState(0)
   const [answers, setAnswers] = useState<{[key: number]: any}>({})
   const [testState, setTestState] = useState("active")
@@ -1555,6 +1564,17 @@ export default function StudentPatternReasoning() {
       const studentData = localStorage.getItem(`student_${sessionId}`)
       if (studentData) {
         setStudentInfo(JSON.parse(studentData))
+      }
+      
+      // Check URL parameters for filtering
+      const urlParams = new URLSearchParams(window.location.search)
+      const filter = urlParams.get('filter')
+      if (filter === '12plus') {
+        setIsFiltered(true)
+        setQuestions(FILTERED_QUESTIONS_12_PLUS)
+      } else {
+        setIsFiltered(false)
+        setQuestions(ALL_QUESTIONS)
       }
     }
   }, [sessionId])
@@ -1647,6 +1667,8 @@ export default function StudentPatternReasoning() {
       totalQuestions,
       correctAnswers: correctCount,
       score: scorePercentage,
+      isFiltered: isFiltered,
+      filterType: isFiltered ? '12plus' : 'all',
       answers: testResults.reduce((acc: any, result, index) => {
         acc[index + 1] = {
           answer: result.userAnswer,

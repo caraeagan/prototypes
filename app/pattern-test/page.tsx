@@ -27,8 +27,8 @@ export default function PatternTestEntry() {
       sessionId
     }))
 
-    // Redirect to the pattern reasoning test
-    router.push(`/student/${sessionId}/pattern-reasoning`)
+    // Redirect to the pattern reasoning test with 12+ filter
+    router.push(`/student/${sessionId}/pattern-reasoning?filter=12plus`)
   }
 
   return (
@@ -63,8 +63,8 @@ export default function PatternTestEntry() {
           <div className="bg-blue-50 rounded-lg p-4">
             <h3 className="font-semibold text-blue-900 mb-2">Test Information:</h3>
             <ul className="text-sm text-blue-800 space-y-1">
-              <li>• 53 visual pattern questions</li>
-              <li>• Questions range from ages 2.5 to 15+</li>
+              <li>• 13 advanced visual pattern questions</li>
+              <li>• Questions designed for ages 12 and up</li>
               <li>• No time limit - work at your own pace</li>
               <li>• Choose the best answer for each pattern</li>
             </ul>

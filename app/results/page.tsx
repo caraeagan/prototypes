@@ -32,6 +32,30 @@ export default function ResultsDashboard() {
               const totalQuestions = testResults.length
               const scorePercentage = totalQuestions > 0 ? Math.round((correctCount / totalQuestions) * 100) : 0
               
+              // Calculate age group breakdowns
+              const ageGroupStats: any = {}
+              testResults.forEach((r: any) => {
+                const ageGroup = r.ageGroup || 'Unknown'
+                if (!ageGroupStats[ageGroup]) {
+                  ageGroupStats[ageGroup] = { total: 0, correct: 0 }
+                }
+                ageGroupStats[ageGroup].total += 1
+                if (r.isCorrect) {
+                  ageGroupStats[ageGroup].correct += 1
+                }
+              })
+              
+              // Calculate percentages for each age group
+              const ageGroupPercentages: any = {}
+              Object.keys(ageGroupStats).forEach(ageGroup => {
+                const stats = ageGroupStats[ageGroup]
+                ageGroupPercentages[ageGroup] = {
+                  total: stats.total,
+                  correct: stats.correct,
+                  percentage: stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0
+                }
+              })
+              
               allResults.push({
                 sessionId,
                 name: studentInfo?.firstName || result.studentName || 'Unknown',
@@ -39,7 +63,10 @@ export default function ResultsDashboard() {
                 totalQuestions,
                 correctAnswers: correctCount,
                 score: result.score || scorePercentage,
-                results: testResults
+                results: testResults,
+                ageGroupStats: ageGroupPercentages,
+                isFiltered: result.isFiltered || false,
+                filterType: result.filterType || 'all'
               })
             }
           } catch (error) {
@@ -146,6 +173,12 @@ export default function ResultsDashboard() {
             <h1 className="text-3xl font-bold text-gray-900">Pattern Reasoning Test Results</h1>
             <div className="flex gap-3">
               <button
+                onClick={() => window.location.href = '/analytics'}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
+                View Analytics
+              </button>
+              <button
                 onClick={exportToCSV}
                 disabled={results.length === 0}
                 className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -173,10 +206,11 @@ export default function ResultsDashboard() {
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Test Type</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Completed</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Questions</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Correct</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Score</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Overall Score</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Age Group Breakdown</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
@@ -187,14 +221,18 @@ export default function ResultsDashboard() {
                         <div className="text-sm font-medium text-gray-900">{result.name}</div>
                         <div className="text-sm text-gray-500">{result.sessionId}</div>
                       </td>
+                      <td className="px-4 py-4 whitespace-nowrap">
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                          result.isFiltered ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'
+                        }`}>
+                          {result.isFiltered ? 'Ages 12+' : 'All Ages'}
+                        </span>
+                      </td>
                       <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
                         {new Date(result.completedAt).toLocaleString()}
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
                         {result.totalQuestions}
-                      </td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {result.correctAnswers}
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap">
                         <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
@@ -202,15 +240,29 @@ export default function ResultsDashboard() {
                           result.score >= 60 ? 'bg-yellow-100 text-yellow-800' :
                           'bg-red-100 text-red-800'
                         }`}>
-                          {result.score}%
+                          {result.score}% ({result.correctAnswers}/{result.totalQuestions})
                         </span>
+                      </td>
+                      <td className="px-4 py-4">
+                        <div className="text-xs space-y-1">
+                          {Object.entries(result.ageGroupStats || {}).map(([ageGroup, stats]: [string, any]) => (
+                            <div key={ageGroup} className="flex justify-between items-center">
+                              <span className="font-medium text-gray-600">{ageGroup}:</span>
+                              <span className={`px-2 py-1 rounded text-xs ${
+                                stats.percentage >= 80 ? 'bg-green-100 text-green-800' :
+                                stats.percentage >= 60 ? 'bg-yellow-100 text-yellow-800' :
+                                'bg-red-100 text-red-800'
+                              }`}>
+                                {stats.percentage}% ({stats.correct}/{stats.total})
+                              </span>
+                            </div>
+                          ))}
+                        </div>
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
                         <button
                           onClick={() => {
-                            // Show detailed results (you can expand this)
-                            console.log('Detailed results for:', result.name, result.results)
-                            alert(`Detailed results for ${result.name} logged to console`)
+                            window.location.href = `/results/${result.sessionId}`
                           }}
                           className="text-blue-600 hover:text-blue-900"
                         >
