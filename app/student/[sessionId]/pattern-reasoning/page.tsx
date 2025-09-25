@@ -1724,6 +1724,9 @@ export default function StudentPatternReasoning() {
     const urlParams = new URLSearchParams(window.location.search)
     const filter = urlParams.get('filter')
     
+    console.log('Test completion - URL filter:', filter)
+    console.log('Test completion - Setting state to:', filter === '12plus' ? 'completed' : 'waiting')
+    
     if (filter === '12plus') {
       // This is the standalone public test - show completion message
       setTestState("completed")
@@ -2972,6 +2975,7 @@ export default function StudentPatternReasoning() {
   }
 
   if (testState === "completed") {
+    console.log('Rendering completed state with testResults:', testResults?.length || 0, 'results')
     return (
       <div className="min-h-screen bg-blue-50 flex items-center justify-center">
         <div className="bg-stone-100 rounded-xl shadow-lg p-8 max-w-md w-full text-center">
