@@ -2930,6 +2930,69 @@ export default function StudentPatternReasoning() {
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Great Job!</h2>
           <p className="text-gray-600 mb-6">You completed the pattern reasoning test. Your responses have been submitted successfully.</p>
           
+          <div 
+            onClick={() => {
+              console.log('EMERGENCY Download button clicked from waiting state!')
+              
+              const userName = studentInfo?.firstName || 'Student'
+              
+              const storedResults = localStorage.getItem(`pattern_reasoning_test_${params.sessionId}`)
+              let resultsToUse = []
+              
+              if (storedResults) {
+                try {
+                  resultsToUse = JSON.parse(storedResults)
+                } catch (error) {
+                  console.error('Error parsing stored results:', error)
+                }
+              }
+              
+              if (testResults && testResults.length > 0) {
+                resultsToUse = testResults
+              }
+              
+              console.log('Emergency download using results:', resultsToUse?.length || 0)
+              
+              if (!resultsToUse || resultsToUse.length === 0) {
+                alert('No test results found to download!')
+                return
+              }
+              
+              const headers = ['Name', ...resultsToUse.map((_, index) => `Question ${index + 1}`)]
+              const resultRow = [userName, ...resultsToUse.map(result => result.isCorrect ? 'Correct' : 'Incorrect')]
+              
+              const csvContent = [
+                headers.join(','),
+                resultRow.join(',')
+              ].join('\n')
+              
+              const blob = new Blob([csvContent], { type: 'text/csv' })
+              const url = URL.createObjectURL(blob)
+              const link = document.createElement('a')
+              link.href = url
+              link.download = `pattern-test-results-${userName}-${new Date().toISOString().split('T')[0]}.csv`
+              document.body.appendChild(link)
+              link.click()
+              document.body.removeChild(link)
+              URL.revokeObjectURL(url)
+              
+              alert(`CSV downloaded with ${resultsToUse.length} questions!`)
+            }}
+            style={{ 
+              background: 'red', 
+              color: 'white', 
+              padding: '15px', 
+              margin: '10px 0', 
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontWeight: 'bold',
+              textAlign: 'center',
+              fontSize: '16px'
+            }}
+          >
+            🔴 CLICK HERE TO DOWNLOAD CSV RESULTS 🔴
+          </div>
+          
           <div style={{ marginTop: '20px' }}>
             <button
               onClick={() => {
@@ -3071,6 +3134,69 @@ export default function StudentPatternReasoning() {
           </div>
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Great Job!</h2>
           <p className="text-gray-600 mb-6">You completed the pattern reasoning test. Your responses have been submitted successfully.</p>
+          
+          <div 
+            onClick={() => {
+              console.log('EMERGENCY Download button clicked from completed state!')
+              
+              const userName = studentInfo?.firstName || 'Student'
+              
+              const storedResults = localStorage.getItem(`pattern_reasoning_test_${params.sessionId}`)
+              let resultsToUse = []
+              
+              if (storedResults) {
+                try {
+                  resultsToUse = JSON.parse(storedResults)
+                } catch (error) {
+                  console.error('Error parsing stored results:', error)
+                }
+              }
+              
+              if (testResults && testResults.length > 0) {
+                resultsToUse = testResults
+              }
+              
+              console.log('Emergency download using results:', resultsToUse?.length || 0)
+              
+              if (!resultsToUse || resultsToUse.length === 0) {
+                alert('No test results found to download!')
+                return
+              }
+              
+              const headers = ['Name', ...resultsToUse.map((_, index) => `Question ${index + 1}`)]
+              const resultRow = [userName, ...resultsToUse.map(result => result.isCorrect ? 'Correct' : 'Incorrect')]
+              
+              const csvContent = [
+                headers.join(','),
+                resultRow.join(',')
+              ].join('\n')
+              
+              const blob = new Blob([csvContent], { type: 'text/csv' })
+              const url = URL.createObjectURL(blob)
+              const link = document.createElement('a')
+              link.href = url
+              link.download = `pattern-test-results-${userName}-${new Date().toISOString().split('T')[0]}.csv`
+              document.body.appendChild(link)
+              link.click()
+              document.body.removeChild(link)
+              URL.revokeObjectURL(url)
+              
+              alert(`CSV downloaded with ${resultsToUse.length} questions!`)
+            }}
+            style={{ 
+              background: 'red', 
+              color: 'white', 
+              padding: '15px', 
+              margin: '10px 0', 
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontWeight: 'bold',
+              textAlign: 'center',
+              fontSize: '16px'
+            }}
+          >
+            🔴 CLICK HERE TO DOWNLOAD CSV RESULTS 🔴
+          </div>
           
           <div style={{ marginTop: '20px' }}>
             <button
