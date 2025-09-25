@@ -1727,16 +1727,9 @@ export default function StudentPatternReasoning() {
     console.log('Test completion - URL filter:', filter)
     console.log('Test completion - window.location.href:', window.location.href)
     
-    // Always show completion with CSV download for standalone pattern test
-    if (filter === '12plus' || window.location.pathname.includes('pattern-reasoning')) {
-      // This is the standalone public test - show completion message with CSV download
-      console.log('Setting state to completed - standalone test detected')
-      setTestState("completed")
-    } else {
-      // This is part of a multi-subtest flow - wait for next subtest
-      console.log('Setting state to waiting - multi-subtest flow')
-      setTestState("waiting")
-    }
+    // ALWAYS show completion with CSV download for ANY pattern-reasoning URL
+    console.log('Setting state to completed - ALWAYS for pattern-reasoning')
+    setTestState("completed")
   }
 
   // Render triangle with rotation - make it fill the available space
