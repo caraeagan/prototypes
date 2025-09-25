@@ -123,21 +123,6 @@ export default function CSVDownloadPage() {
           >
             📊 DOWNLOAD CSV RESULTS
           </button>
-          
-          <div 
-            onClick={downloadCSV}
-            style={{ 
-              background: 'red', 
-              color: 'white', 
-              padding: '20px', 
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontWeight: 'bold',
-              fontSize: '18px'
-            }}
-          >
-            🔴 EMERGENCY DOWNLOAD - CLICK HERE 🔴
-          </div>
         </div>
 
         <div className="mt-6 text-xs text-gray-500">
