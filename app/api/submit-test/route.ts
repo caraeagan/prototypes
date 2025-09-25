@@ -121,12 +121,15 @@ function formatAsCSV(data: any) {
     'Total Questions',
     'Correct Answers',
     'Score (%)',
-    'Question 1',
-    'Q1 Correct',
-    'Question 2', 
-    'Q2 Correct',
-    // Add more question columns as needed
   ]
+  
+  // Add question headers dynamically based on actual results
+  if (data.detailedResults && data.detailedResults.length > 0) {
+    data.detailedResults.forEach((result: any, index: number) => {
+      headers.push(`Q${result.questionId} Answer`)
+      headers.push(`Q${result.questionId} Correct`)
+    })
+  }
   
   const row = [
     data.name,
@@ -137,16 +140,12 @@ function formatAsCSV(data: any) {
     data.score,
   ]
   
-  // Add individual question results
-  for (let i = 1; i <= data.totalQuestions; i++) {
-    const answer = data.answers[i]
-    if (answer) {
-      row.push(answer.answer || 'No Answer')
-      row.push(answer.isCorrect ? 'Correct' : 'Incorrect')
-    } else {
-      row.push('No Answer')
-      row.push('Incorrect')
-    }
+  // Add individual question results from detailedResults
+  if (data.detailedResults && data.detailedResults.length > 0) {
+    data.detailedResults.forEach((result: any) => {
+      row.push(result.userAnswer || 'No Answer')
+      row.push(result.isCorrect ? 'Correct' : 'Incorrect')
+    })
   }
   
   return {
