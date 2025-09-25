@@ -3008,8 +3008,6 @@ export default function StudentPatternReasoning() {
               onClick={() => {
                 console.log('Download button clicked!')
                 
-                // Simple CSV generation inline
-                const headers = ['Name', 'Question Number', 'Question', 'Your Answer', 'Correct Answer', 'Result', 'Age Group']
                 const userName = studentInfo?.firstName || 'Student'
                 
                 // Try to get results from localStorage if testResults is empty
@@ -3027,19 +3025,18 @@ export default function StudentPatternReasoning() {
                 
                 console.log('Using results:', resultsToUse?.length || 0)
                 
-                const rows = (resultsToUse || []).map((result, index) => [
-                  userName,
-                  index + 1,
-                  `"${result.questionText || 'Question ' + (index + 1)}"`,
-                  result.userAnswer || 'No Answer',
-                  result.correctAnswer || 'N/A',
-                  result.isCorrect ? 'Correct' : 'Incorrect',
-                  result.ageGroup || 'N/A'
-                ])
+                if (!resultsToUse || resultsToUse.length === 0) {
+                  alert('No test results found!')
+                  return
+                }
+                
+                // Create CSV with Name as first column, then each question as a column
+                const headers = ['Name', ...resultsToUse.map((_, index) => `Question ${index + 1}`)]
+                const resultRow = [userName, ...resultsToUse.map(result => result.isCorrect ? 'Correct' : 'Incorrect')]
                 
                 const csvContent = [
                   headers.join(','),
-                  ...rows.map(row => row.join(','))
+                  resultRow.join(',')
                 ].join('\n')
                 
                 const blob = new Blob([csvContent], { type: 'text/csv' })
@@ -3051,6 +3048,8 @@ export default function StudentPatternReasoning() {
                 link.click()
                 document.body.removeChild(link)
                 URL.revokeObjectURL(url)
+                
+                console.log('CSV downloaded successfully!')
               }}
               style={{
                 width: '100%',
