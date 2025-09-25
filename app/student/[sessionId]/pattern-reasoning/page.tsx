@@ -2922,13 +2922,82 @@ export default function StudentPatternReasoning() {
     return (
       <div className="min-h-screen bg-blue-50 flex items-center justify-center">
         <div className="bg-stone-100 rounded-xl shadow-lg p-8 max-w-md w-full text-center">
-          <div className="w-16 h-16 bg-yellow-500 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-white animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Please Wait</h2>
-          <p className="text-gray-600">The next activity will begin soon.</p>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Great Job!</h2>
+          <p className="text-gray-600 mb-6">You completed the pattern reasoning test. Your responses have been submitted successfully.</p>
+          
+          <div style={{ marginTop: '20px' }}>
+            <button
+              onClick={() => {
+                console.log('Download button clicked from waiting state!')
+                
+                const userName = studentInfo?.firstName || 'Student'
+                
+                // Try to get results from localStorage if testResults is empty
+                let resultsToUse = testResults
+                if (!resultsToUse || resultsToUse.length === 0) {
+                  const storedResults = localStorage.getItem(`pattern_reasoning_test_${sessionId}`)
+                  if (storedResults) {
+                    try {
+                      resultsToUse = JSON.parse(storedResults)
+                    } catch (e) {
+                      resultsToUse = []
+                    }
+                  }
+                }
+                
+                console.log('Using results:', resultsToUse?.length || 0)
+                
+                if (!resultsToUse || resultsToUse.length === 0) {
+                  alert('No test results found!')
+                  return
+                }
+                
+                // Create CSV with Name as first column, then each question as a column
+                const headers = ['Name', ...resultsToUse.map((_, index) => `Question ${index + 1}`)]
+                const resultRow = [userName, ...resultsToUse.map(result => result.isCorrect ? 'Correct' : 'Incorrect')]
+                
+                const csvContent = [
+                  headers.join(','),
+                  resultRow.join(',')
+                ].join('\n')
+                
+                const blob = new Blob([csvContent], { type: 'text/csv' })
+                const url = URL.createObjectURL(blob)
+                const link = document.createElement('a')
+                link.href = url
+                link.download = `pattern-test-results-${userName}-${new Date().toISOString().split('T')[0]}.csv`
+                document.body.appendChild(link)
+                link.click()
+                document.body.removeChild(link)
+                URL.revokeObjectURL(url)
+                
+                console.log('CSV downloaded successfully!')
+              }}
+              style={{
+                width: '100%',
+                backgroundColor: '#2563eb',
+                color: 'white',
+                padding: '12px 16px',
+                border: 'none',
+                borderRadius: '8px',
+                fontSize: '16px',
+                fontWeight: '500',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px'
+              }}
+            >
+              <span>📥</span>
+              <span>Download Your Results (CSV)</span>
+            </button>
+          </div>
         </div>
       </div>
     )
