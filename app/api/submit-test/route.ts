@@ -58,8 +58,18 @@ export async function POST(request: NextRequest) {
     // Option 3: CSV Export (will create a downloadable CSV)
     const csvData = formatAsCSV(data)
     
-    // Store data in a JSON file for cross-computer syncing
-    await storeTestResult(data)
+    // Store data externally for cross-computer syncing
+    try {
+      await storeTestResultExternally(data)
+    } catch (externalError) {
+      console.log('External storage failed, trying file storage as fallback:', externalError)
+      // Fallback to file storage for local development
+      try {
+        await storeTestResult(data)
+      } catch (fileError) {
+        console.log('File storage also failed (expected on Vercel):', fileError)
+      }
+    }
     
     return NextResponse.json({ 
       success: true, 
@@ -73,6 +83,55 @@ export async function POST(request: NextRequest) {
       { success: false, error: 'Failed to submit test results' },
       { status: 500 }
     )
+  }
+}
+
+async function storeTestResultExternally(data: any) {
+  // Using JSONBin.io as free external storage
+  const BIN_ID = process.env.JSONBIN_BIN_ID || '673de8a3ad19ca34f8d3f4bb' // Default bin ID
+  const API_KEY = process.env.JSONBIN_API_KEY || '$2a$10$K1m0R4ydVTBBfMCyuzIRSeQqsVqI6p7gQJ2VJH1Z5R3bKTjWlXJ.G' // Default API key
+  
+  try {
+    // First, get existing data
+    const getResponse = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
+      headers: {
+        'X-Master-Key': API_KEY
+      }
+    })
+    
+    let existingResults = []
+    if (getResponse.ok) {
+      const getResult = await getResponse.json()
+      existingResults = getResult.record.results || []
+    }
+    
+    // Add new result
+    const newResult = {
+      ...data,
+      submittedAt: new Date().toISOString()
+    }
+    existingResults.push(newResult)
+    
+    // Update the bin
+    const updateResponse = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Master-Key': API_KEY
+      },
+      body: JSON.stringify({
+        results: existingResults
+      })
+    })
+    
+    if (!updateResponse.ok) {
+      throw new Error(`JSONBin update failed: ${updateResponse.status}`)
+    }
+    
+    console.log('Test result stored externally successfully for:', data.name)
+  } catch (error) {
+    console.error('Error storing test result externally:', error)
+    throw error
   }
 }
 

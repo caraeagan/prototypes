@@ -4,5 +4,6 @@
       "SKIP_ESLINT": "true"
     }
   },
-  "buildCommand": "npm run build"
+  "buildCommand": "npm run build",
+  "public": true
 }

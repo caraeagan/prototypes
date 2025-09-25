@@ -5,15 +5,45 @@ import path from 'path'
 
 export async function GET(request: NextRequest) {
   try {
-    const dataDir = path.join(process.cwd(), 'data')
-    const filePath = path.join(dataDir, 'test-results.json')
+    let results = []
     
-    if (!existsSync(filePath)) {
-      return NextResponse.json({ success: true, results: [] })
+    // Try to get results from external storage first
+    try {
+      const BIN_ID = process.env.JSONBIN_BIN_ID || '673de8a3ad19ca34f8d3f4bb'
+      const API_KEY = process.env.JSONBIN_API_KEY || '$2a$10$K1m0R4ydVTBBfMCyuzIRSeQqsVqI6p7gQJ2VJH1Z5R3bKTjWlXJ.G'
+      
+      const getResponse = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
+        headers: {
+          'X-Master-Key': API_KEY
+        }
+      })
+      
+      if (getResponse.ok) {
+        const getResult = await getResponse.json()
+        results = getResult.record.results || []
+        console.log('Loaded', results.length, 'results from external storage')
+      } else {
+        throw new Error(`JSONBin fetch failed: ${getResponse.status}`)
+      }
+    } catch (externalError) {
+      console.log('External storage failed, trying file storage as fallback:', externalError)
+      
+      // Fallback to file storage for local development
+      const dataDir = path.join(process.cwd(), 'data')
+      const filePath = path.join(dataDir, 'test-results.json')
+      
+      if (!existsSync(filePath)) {
+        console.log('No results file found either')
+        return NextResponse.json({
+          success: true,
+          results: [],
+          message: 'No storage available. Results may be in logs only.'
+        })
+      }
+      
+      const fileContent = await readFile(filePath, 'utf8')
+      results = JSON.parse(fileContent)
     }
-    
-    const fileContent = await readFile(filePath, 'utf8')
-    const results = JSON.parse(fileContent)
     
     // Transform the data to match the format expected by the results page
     const transformedResults = results.map((result: any) => {
