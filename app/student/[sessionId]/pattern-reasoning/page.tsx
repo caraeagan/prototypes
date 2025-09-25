@@ -2954,7 +2954,24 @@ export default function StudentPatternReasoning() {
     ]
     
     const userName = studentInfo?.firstName || 'Student'
-    const rows = testResults.map((result, index) => [
+    
+    // If testResults is empty, try to get from localStorage
+    let resultsToUse = testResults
+    if (!resultsToUse || resultsToUse.length === 0) {
+      const storedResults = localStorage.getItem(`pattern_reasoning_test_${sessionId}`)
+      if (storedResults) {
+        try {
+          resultsToUse = JSON.parse(storedResults)
+        } catch (error) {
+          console.error('Error parsing stored results:', error)
+          resultsToUse = []
+        }
+      }
+    }
+    
+    console.log('downloadCSV called with results:', resultsToUse?.length || 0)
+    
+    const rows = (resultsToUse || []).map((result, index) => [
       userName,
       index + 1,
       `"${result.questionText || 'N/A'}"`,
@@ -2980,8 +2997,12 @@ export default function StudentPatternReasoning() {
     URL.revokeObjectURL(url)
   }
 
+  console.log('Current testState:', testState)
+  console.log('Current testResults length:', testResults?.length || 0)
+
   if (testState === "completed") {
     console.log('Rendering completed state with testResults:', testResults?.length || 0, 'results')
+    console.log('downloadCSV function exists:', typeof downloadCSV)
     return (
       <div className="min-h-screen bg-blue-50 flex items-center justify-center">
         <div className="bg-stone-100 rounded-xl shadow-lg p-8 max-w-md w-full text-center">
@@ -2994,7 +3015,10 @@ export default function StudentPatternReasoning() {
           <p className="text-gray-600 mb-6">You completed the pattern reasoning test. Your responses have been submitted successfully.</p>
           
           <button
-            onClick={downloadCSV}
+            onClick={() => {
+              console.log('Download button clicked!')
+              downloadCSV()
+            }}
             className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
