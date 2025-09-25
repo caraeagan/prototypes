@@ -7,78 +7,171 @@ export default function ResultsDashboard() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // For now, load results from localStorage (in production, this would come from your database)
-    const loadResults = () => {
-      const allResults: any[] = []
-      
-      // Scan localStorage for completed tests
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i)
-        if (key && key.startsWith('test_completed_')) {
-          try {
-            const result = JSON.parse(localStorage.getItem(key) || '{}')
-            const sessionId = key.replace('test_completed_', '')
-            
-            // Get student info
-            const studentData = localStorage.getItem(`student_${sessionId}`)
-            const studentInfo = studentData ? JSON.parse(studentData) : null
-            
-            // Get detailed test results
-            const testData = localStorage.getItem(`pattern_reasoning_test_${sessionId}`)
-            const testResults = testData ? JSON.parse(testData) : []
-            
-            if (result.testType === 'pattern_reasoning' || result.subtest === 'pattern-reasoning') {
-              const correctCount = testResults.filter((r: any) => r.isCorrect).length
-              const totalQuestions = testResults.length
-              const scorePercentage = totalQuestions > 0 ? Math.round((correctCount / totalQuestions) * 100) : 0
-              
-              // Calculate age group breakdowns
-              const ageGroupStats: any = {}
-              testResults.forEach((r: any) => {
-                const ageGroup = r.ageGroup || 'Unknown'
-                if (!ageGroupStats[ageGroup]) {
-                  ageGroupStats[ageGroup] = { total: 0, correct: 0 }
+    const loadResults = async () => {
+      try {
+        // First try to load from API (centralized storage)
+        const response = await fetch('/api/get-results')
+        const data = await response.json()
+        
+        if (data.success) {
+          let apiResults = data.results || []
+          
+          // Also load any localStorage results that might not be synced yet
+          const localResults: any[] = []
+          
+          // Scan localStorage for completed tests
+          for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i)
+            if (key && key.startsWith('test_completed_')) {
+              try {
+                const result = JSON.parse(localStorage.getItem(key) || '{}')
+                const sessionId = key.replace('test_completed_', '')
+                
+                // Check if this result is already in API results
+                const existsInApi = apiResults.find((r: any) => r.sessionId === sessionId)
+                if (existsInApi) continue // Skip if already in API results
+                
+                // Get student info
+                const studentData = localStorage.getItem(`student_${sessionId}`)
+                const studentInfo = studentData ? JSON.parse(studentData) : null
+                
+                // Get detailed test results
+                const testData = localStorage.getItem(`pattern_reasoning_test_${sessionId}`)
+                const testResults = testData ? JSON.parse(testData) : []
+                
+                if (result.testType === 'pattern_reasoning' || result.subtest === 'pattern-reasoning') {
+                  const correctCount = testResults.filter((r: any) => r.isCorrect).length
+                  const totalQuestions = testResults.length
+                  const scorePercentage = totalQuestions > 0 ? Math.round((correctCount / totalQuestions) * 100) : 0
+                  
+                  // Calculate age group breakdowns
+                  const ageGroupStats: any = {}
+                  testResults.forEach((r: any) => {
+                    const ageGroup = r.ageGroup || 'Unknown'
+                    if (!ageGroupStats[ageGroup]) {
+                      ageGroupStats[ageGroup] = { total: 0, correct: 0 }
+                    }
+                    ageGroupStats[ageGroup].total += 1
+                    if (r.isCorrect) {
+                      ageGroupStats[ageGroup].correct += 1
+                    }
+                  })
+                  
+                  // Calculate percentages for each age group
+                  const ageGroupPercentages: any = {}
+                  Object.keys(ageGroupStats).forEach(ageGroup => {
+                    const stats = ageGroupStats[ageGroup]
+                    ageGroupPercentages[ageGroup] = {
+                      total: stats.total,
+                      correct: stats.correct,
+                      percentage: stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0
+                    }
+                  })
+                  
+                  localResults.push({
+                    sessionId,
+                    name: studentInfo?.firstName || result.studentName || 'Unknown',
+                    completedAt: result.completedAt || result.timestamp,
+                    totalQuestions,
+                    correctAnswers: correctCount,
+                    score: result.score || scorePercentage,
+                    results: testResults,
+                    ageGroupStats: ageGroupPercentages,
+                    isFiltered: result.isFiltered || false,
+                    filterType: result.filterType || 'all'
+                  })
                 }
-                ageGroupStats[ageGroup].total += 1
-                if (r.isCorrect) {
-                  ageGroupStats[ageGroup].correct += 1
-                }
-              })
-              
-              // Calculate percentages for each age group
-              const ageGroupPercentages: any = {}
-              Object.keys(ageGroupStats).forEach(ageGroup => {
-                const stats = ageGroupStats[ageGroup]
-                ageGroupPercentages[ageGroup] = {
-                  total: stats.total,
-                  correct: stats.correct,
-                  percentage: stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0
-                }
-              })
-              
-              allResults.push({
-                sessionId,
-                name: studentInfo?.firstName || result.studentName || 'Unknown',
-                completedAt: result.completedAt || result.timestamp,
-                totalQuestions,
-                correctAnswers: correctCount,
-                score: result.score || scorePercentage,
-                results: testResults,
-                ageGroupStats: ageGroupPercentages,
-                isFiltered: result.isFiltered || false,
-                filterType: result.filterType || 'all'
-              })
+              } catch (error) {
+                console.error('Error parsing local result:', error)
+              }
             }
-          } catch (error) {
-            console.error('Error parsing result:', error)
+          }
+          
+          // Combine API and local results
+          const allResults = [...apiResults, ...localResults]
+          
+          // Sort by completion date (newest first)
+          allResults.sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime())
+          
+          setResults(allResults)
+        } else {
+          throw new Error('Failed to fetch from API')
+        }
+      } catch (error) {
+        console.error('Error loading results:', error)
+        // Fallback to localStorage only if API fails
+        const localResults: any[] = []
+        
+        // Scan localStorage for completed tests
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i)
+          if (key && key.startsWith('test_completed_')) {
+            try {
+              const result = JSON.parse(localStorage.getItem(key) || '{}')
+              const sessionId = key.replace('test_completed_', '')
+              
+              // Get student info
+              const studentData = localStorage.getItem(`student_${sessionId}`)
+              const studentInfo = studentData ? JSON.parse(studentData) : null
+              
+              // Get detailed test results
+              const testData = localStorage.getItem(`pattern_reasoning_test_${sessionId}`)
+              const testResults = testData ? JSON.parse(testData) : []
+              
+              if (result.testType === 'pattern_reasoning' || result.subtest === 'pattern-reasoning') {
+                const correctCount = testResults.filter((r: any) => r.isCorrect).length
+                const totalQuestions = testResults.length
+                const scorePercentage = totalQuestions > 0 ? Math.round((correctCount / totalQuestions) * 100) : 0
+                
+                // Calculate age group breakdowns
+                const ageGroupStats: any = {}
+                testResults.forEach((r: any) => {
+                  const ageGroup = r.ageGroup || 'Unknown'
+                  if (!ageGroupStats[ageGroup]) {
+                    ageGroupStats[ageGroup] = { total: 0, correct: 0 }
+                  }
+                  ageGroupStats[ageGroup].total += 1
+                  if (r.isCorrect) {
+                    ageGroupStats[ageGroup].correct += 1
+                  }
+                })
+                
+                // Calculate percentages for each age group
+                const ageGroupPercentages: any = {}
+                Object.keys(ageGroupStats).forEach(ageGroup => {
+                  const stats = ageGroupStats[ageGroup]
+                  ageGroupPercentages[ageGroup] = {
+                    total: stats.total,
+                    correct: stats.correct,
+                    percentage: stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0
+                  }
+                })
+                
+                localResults.push({
+                  sessionId,
+                  name: studentInfo?.firstName || result.studentName || 'Unknown',
+                  completedAt: result.completedAt || result.timestamp,
+                  totalQuestions,
+                  correctAnswers: correctCount,
+                  score: result.score || scorePercentage,
+                  results: testResults,
+                  ageGroupStats: ageGroupPercentages,
+                  isFiltered: result.isFiltered || false,
+                  filterType: result.filterType || 'all'
+                })
+              }
+            } catch (error) {
+              console.error('Error parsing result:', error)
+            }
           }
         }
+        
+        // Sort by completion date (newest first)
+        localResults.sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime())
+        
+        setResults(localResults)
       }
       
-      // Sort by completion date (newest first)
-      allResults.sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime())
-      
-      setResults(allResults)
       setLoading(false)
     }
 

@@ -1,4 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { writeFile, readFile, mkdir } from 'fs/promises'
+import { existsSync } from 'fs'
+import path from 'path'
 
 export async function POST(request: NextRequest) {
   try {
@@ -55,8 +58,8 @@ export async function POST(request: NextRequest) {
     // Option 3: CSV Export (will create a downloadable CSV)
     const csvData = formatAsCSV(data)
     
-    // Store in a simple JSON file for now (you can replace this with your database)
-    // This is just for demonstration - in production, use a proper database
+    // Store data in a JSON file for cross-computer syncing
+    await storeTestResult(data)
     
     return NextResponse.json({ 
       success: true, 
@@ -70,6 +73,43 @@ export async function POST(request: NextRequest) {
       { success: false, error: 'Failed to submit test results' },
       { status: 500 }
     )
+  }
+}
+
+async function storeTestResult(data: any) {
+  try {
+    const dataDir = path.join(process.cwd(), 'data')
+    const filePath = path.join(dataDir, 'test-results.json')
+    
+    // Ensure data directory exists
+    if (!existsSync(dataDir)) {
+      await mkdir(dataDir, { recursive: true })
+    }
+    
+    let existingData = []
+    
+    // Read existing data if file exists
+    if (existsSync(filePath)) {
+      try {
+        const fileContent = await readFile(filePath, 'utf8')
+        existingData = JSON.parse(fileContent)
+      } catch (error) {
+        console.warn('Could not read existing data file, starting fresh:', error)
+      }
+    }
+    
+    // Add new result
+    existingData.push({
+      ...data,
+      submittedAt: new Date().toISOString()
+    })
+    
+    // Write back to file
+    await writeFile(filePath, JSON.stringify(existingData, null, 2))
+    
+    console.log('Test result stored successfully for:', data.name)
+  } catch (error) {
+    console.error('Error storing test result:', error)
   }
 }
 

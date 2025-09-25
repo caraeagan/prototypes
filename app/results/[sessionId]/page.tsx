@@ -11,9 +11,23 @@ export default function IndividualResults() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const loadResult = () => {
+    const loadResult = async () => {
       try {
-        // Load the specific result from localStorage
+        // First try to load from API (centralized storage)
+        const response = await fetch('/api/get-results')
+        const data = await response.json()
+        
+        if (data.success) {
+          // Find the specific result by sessionId
+          const apiResult = data.results.find((r: any) => r.sessionId === sessionId)
+          if (apiResult) {
+            setResult(apiResult)
+            setLoading(false)
+            return
+          }
+        }
+        
+        // Fallback to localStorage if not found in API
         const completedData = localStorage.getItem(`test_completed_${sessionId}`)
         const studentData = localStorage.getItem(`student_${sessionId}`)
         const testData = localStorage.getItem(`pattern_reasoning_test_${sessionId}`)
@@ -45,7 +59,41 @@ export default function IndividualResults() {
         })
       } catch (error) {
         console.error('Error loading individual result:', error)
-        setResult(null)
+        // Final fallback to localStorage only
+        try {
+          const completedData = localStorage.getItem(`test_completed_${sessionId}`)
+          const studentData = localStorage.getItem(`student_${sessionId}`)
+          const testData = localStorage.getItem(`pattern_reasoning_test_${sessionId}`)
+          
+          if (!completedData || !testData) {
+            setResult(null)
+            setLoading(false)
+            return
+          }
+
+          const completed = JSON.parse(completedData)
+          const student = studentData ? JSON.parse(studentData) : null
+          const testResults = JSON.parse(testData)
+
+          const correctCount = testResults.filter((r: any) => r.isCorrect).length
+          const totalQuestions = testResults.length
+          const scorePercentage = totalQuestions > 0 ? Math.round((correctCount / totalQuestions) * 100) : 0
+
+          setResult({
+            sessionId,
+            name: student?.firstName || completed.studentName || 'Unknown',
+            completedAt: completed.completedAt || completed.timestamp,
+            totalQuestions,
+            correctAnswers: correctCount,
+            score: completed.score || scorePercentage,
+            results: testResults,
+            isFiltered: completed.isFiltered || false,
+            filterType: completed.filterType || 'all'
+          })
+        } catch (localError) {
+          console.error('Error loading from localStorage:', localError)
+          setResult(null)
+        }
       } finally {
         setLoading(false)
       }

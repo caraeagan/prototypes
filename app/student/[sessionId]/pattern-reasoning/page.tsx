@@ -1645,7 +1645,7 @@ export default function StudentPatternReasoning() {
       
       return {
         questionId: question.id,
-        questionText: question.question,
+        questionText: "What's the missing pattern?",
         ageGroup: question.ageGroup,
         userAnswer: answer?.answer || null,
         correctAnswer: question.correctAnswer,
@@ -2967,7 +2967,7 @@ export default function StudentPatternReasoning() {
           </div>
           
           <h2 className="text-xl font-bold text-gray-900 mb-4 text-center mt-6">
-            {question.question}
+            What's the missing pattern?
           </h2>
 
           {/* Pattern Sequence */}

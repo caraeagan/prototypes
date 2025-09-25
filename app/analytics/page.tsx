@@ -7,95 +7,214 @@ export default function Analytics() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const loadAnalytics = () => {
-      const questionStats: any = {}
-      const allResults: any[] = []
-      
-      // Scan localStorage for all completed tests
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i)
-        if (key && key.startsWith('test_completed_')) {
-          try {
-            const result = JSON.parse(localStorage.getItem(key) || '{}')
-            const sessionId = key.replace('test_completed_', '')
-            
-            // Get student info
-            const studentData = localStorage.getItem(`student_${sessionId}`)
-            const studentInfo = studentData ? JSON.parse(studentData) : null
-            
-            // Get detailed test results
-            const testData = localStorage.getItem(`pattern_reasoning_test_${sessionId}`)
-            const testResults = testData ? JSON.parse(testData) : []
-            
-            if (result.testType === 'pattern_reasoning' || result.subtest === 'pattern-reasoning') {
-              const userResult = {
-                sessionId,
-                name: studentInfo?.firstName || result.studentName || 'Unknown',
-                isFiltered: result.isFiltered || false,
-                results: testResults
-              }
-              allResults.push(userResult)
+    const loadAnalytics = async () => {
+      try {
+        // First try to load from API (centralized storage)
+        const response = await fetch('/api/get-results')
+        const data = await response.json()
+        
+        let allResults: any[] = []
+        
+        if (data.success) {
+          // Transform API results to analytics format
+          allResults = data.results.map((result: any) => ({
+            sessionId: result.sessionId,
+            name: result.name,
+            isFiltered: result.isFiltered || false,
+            results: result.results
+          }))
+        } else {
+          throw new Error('Failed to fetch from API')
+        }
+        
+        // Also check localStorage for any results not synced yet
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i)
+          if (key && key.startsWith('test_completed_')) {
+            try {
+              const result = JSON.parse(localStorage.getItem(key) || '{}')
+              const sessionId = key.replace('test_completed_', '')
               
-              // Process each question
-              testResults.forEach((questionResult: any) => {
-                const questionId = questionResult.questionId
-                const ageGroup = questionResult.ageGroup || 'Unknown'
-                
-                if (!questionStats[questionId]) {
-                  questionStats[questionId] = {
-                    questionId,
-                    ageGroup,
-                    total: 0,
-                    correct: 0,
-                    totalFiltered: 0,
-                    correctFiltered: 0,
-                    totalFull: 0,
-                    correctFull: 0
-                  }
+              // Check if this result is already in API results
+              const existsInApi = allResults.find((r: any) => r.sessionId === sessionId)
+              if (existsInApi) continue // Skip if already in API results
+              
+              // Get student info
+              const studentData = localStorage.getItem(`student_${sessionId}`)
+              const studentInfo = studentData ? JSON.parse(studentData) : null
+              
+              // Get detailed test results
+              const testData = localStorage.getItem(`pattern_reasoning_test_${sessionId}`)
+              const testResults = testData ? JSON.parse(testData) : []
+              
+              if (result.testType === 'pattern_reasoning' || result.subtest === 'pattern-reasoning') {
+                const userResult = {
+                  sessionId,
+                  name: studentInfo?.firstName || result.studentName || 'Unknown',
+                  isFiltered: result.isFiltered || false,
+                  results: testResults
                 }
-                
-                questionStats[questionId].total += 1
-                if (questionResult.isCorrect) {
-                  questionStats[questionId].correct += 1
-                }
-                
-                // Track by test type
-                if (userResult.isFiltered) {
-                  questionStats[questionId].totalFiltered += 1
-                  if (questionResult.isCorrect) {
-                    questionStats[questionId].correctFiltered += 1
-                  }
-                } else {
-                  questionStats[questionId].totalFull += 1
-                  if (questionResult.isCorrect) {
-                    questionStats[questionId].correctFull += 1
-                  }
-                }
-              })
+                allResults.push(userResult)
+              }
+            } catch (error) {
+              console.error('Error parsing analytics data:', error)
             }
-          } catch (error) {
-            console.error('Error parsing analytics data:', error)
           }
         }
+        
+        // Process question statistics
+        const questionStats: any = {}
+        
+        allResults.forEach((userResult: any) => {
+          // Process each question
+          userResult.results.forEach((questionResult: any) => {
+            const questionId = questionResult.questionId
+            const ageGroup = questionResult.ageGroup || 'Unknown'
+            
+            if (!questionStats[questionId]) {
+              questionStats[questionId] = {
+                questionId,
+                ageGroup,
+                total: 0,
+                correct: 0,
+                totalFiltered: 0,
+                correctFiltered: 0,
+                totalFull: 0,
+                correctFull: 0
+              }
+            }
+            
+            questionStats[questionId].total += 1
+            if (questionResult.isCorrect) {
+              questionStats[questionId].correct += 1
+            }
+            
+            // Track by test type
+            if (userResult.isFiltered) {
+              questionStats[questionId].totalFiltered += 1
+              if (questionResult.isCorrect) {
+                questionStats[questionId].correctFiltered += 1
+              }
+            } else {
+              questionStats[questionId].totalFull += 1
+              if (questionResult.isCorrect) {
+                questionStats[questionId].correctFull += 1
+              }
+            }
+          })
+        })
+        
+        // Calculate percentages
+        const processedStats = Object.values(questionStats).map((stat: any) => ({
+          ...stat,
+          percentage: stat.total > 0 ? Math.round((stat.correct / stat.total) * 100) : 0,
+          percentageFiltered: stat.totalFiltered > 0 ? Math.round((stat.correctFiltered / stat.totalFiltered) * 100) : 0,
+          percentageFull: stat.totalFull > 0 ? Math.round((stat.correctFull / stat.totalFull) * 100) : 0
+        }))
+        
+        // Sort by question ID
+        processedStats.sort((a, b) => a.questionId - b.questionId)
+        
+        setAnalytics({
+          questionStats: processedStats,
+          totalUsers: allResults.length,
+          filteredUsers: allResults.filter(r => r.isFiltered).length,
+          fullTestUsers: allResults.filter(r => !r.isFiltered).length
+        })
+        
+      } catch (error) {
+        console.error('Error loading analytics:', error)
+        // Fallback to localStorage only
+        const questionStats: any = {}
+        const allResults: any[] = []
+        
+        // Scan localStorage for all completed tests
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i)
+          if (key && key.startsWith('test_completed_')) {
+            try {
+              const result = JSON.parse(localStorage.getItem(key) || '{}')
+              const sessionId = key.replace('test_completed_', '')
+              
+              // Get student info
+              const studentData = localStorage.getItem(`student_${sessionId}`)
+              const studentInfo = studentData ? JSON.parse(studentData) : null
+              
+              // Get detailed test results
+              const testData = localStorage.getItem(`pattern_reasoning_test_${sessionId}`)
+              const testResults = testData ? JSON.parse(testData) : []
+              
+              if (result.testType === 'pattern_reasoning' || result.subtest === 'pattern-reasoning') {
+                const userResult = {
+                  sessionId,
+                  name: studentInfo?.firstName || result.studentName || 'Unknown',
+                  isFiltered: result.isFiltered || false,
+                  results: testResults
+                }
+                allResults.push(userResult)
+                
+                // Process each question
+                testResults.forEach((questionResult: any) => {
+                  const questionId = questionResult.questionId
+                  const ageGroup = questionResult.ageGroup || 'Unknown'
+                  
+                  if (!questionStats[questionId]) {
+                    questionStats[questionId] = {
+                      questionId,
+                      ageGroup,
+                      total: 0,
+                      correct: 0,
+                      totalFiltered: 0,
+                      correctFiltered: 0,
+                      totalFull: 0,
+                      correctFull: 0
+                    }
+                  }
+                  
+                  questionStats[questionId].total += 1
+                  if (questionResult.isCorrect) {
+                    questionStats[questionId].correct += 1
+                  }
+                  
+                  // Track by test type
+                  if (userResult.isFiltered) {
+                    questionStats[questionId].totalFiltered += 1
+                    if (questionResult.isCorrect) {
+                      questionStats[questionId].correctFiltered += 1
+                    }
+                  } else {
+                    questionStats[questionId].totalFull += 1
+                    if (questionResult.isCorrect) {
+                      questionStats[questionId].correctFull += 1
+                    }
+                  }
+                })
+              }
+            } catch (error) {
+              console.error('Error parsing analytics data:', error)
+            }
+          }
+        }
+        
+        // Calculate percentages
+        const processedStats = Object.values(questionStats).map((stat: any) => ({
+          ...stat,
+          percentage: stat.total > 0 ? Math.round((stat.correct / stat.total) * 100) : 0,
+          percentageFiltered: stat.totalFiltered > 0 ? Math.round((stat.correctFiltered / stat.totalFiltered) * 100) : 0,
+          percentageFull: stat.totalFull > 0 ? Math.round((stat.correctFull / stat.totalFull) * 100) : 0
+        }))
+        
+        // Sort by question ID
+        processedStats.sort((a, b) => a.questionId - b.questionId)
+        
+        setAnalytics({
+          questionStats: processedStats,
+          totalUsers: allResults.length,
+          filteredUsers: allResults.filter(r => r.isFiltered).length,
+          fullTestUsers: allResults.filter(r => !r.isFiltered).length
+        })
       }
       
-      // Calculate percentages
-      const processedStats = Object.values(questionStats).map((stat: any) => ({
-        ...stat,
-        percentage: stat.total > 0 ? Math.round((stat.correct / stat.total) * 100) : 0,
-        percentageFiltered: stat.totalFiltered > 0 ? Math.round((stat.correctFiltered / stat.totalFiltered) * 100) : 0,
-        percentageFull: stat.totalFull > 0 ? Math.round((stat.correctFull / stat.totalFull) * 100) : 0
-      }))
-      
-      // Sort by question ID
-      processedStats.sort((a, b) => a.questionId - b.questionId)
-      
-      setAnalytics({
-        questionStats: processedStats,
-        totalUsers: allResults.length,
-        filteredUsers: allResults.filter(r => r.isFiltered).length,
-        fullTestUsers: allResults.filter(r => !r.isFiltered).length
-      })
       setLoading(false)
     }
 
