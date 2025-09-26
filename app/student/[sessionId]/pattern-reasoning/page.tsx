@@ -1021,10 +1021,10 @@ const QUESTION_GROUPS = {
         options: [
           { id: "1", shape: "heart", color: "blue", reflected: false, size: "medium", direction: "left", label: "Blue heart, Left" },
           { id: "2", shape: "heart", color: "red", reflected: false, size: "medium", direction: "left", label: "Red heart, Left" },
-          { id: "3", shape: "heart", color: "green", reflected: true, size: "medium", direction: "right", label: "Green heart, Right" },
+          { id: "3", shape: "heart", color: "red", reflected: true, size: "medium", direction: "right", label: "Red heart, Right" },
           { id: "4", shape: "heart", color: "blue", reflected: true, size: "medium", direction: "right", label: "Blue heart, Right" }
         ],
-        correctAnswer: "1"
+        correctAnswer: "3"
       },
       {
         id: 48,
