@@ -1237,7 +1237,7 @@ const QUESTION_GROUPS = {
           ]
         ],
         options: [
-          { id: "A", shape: "star", color: "split", topColor: "green", bottomColor: "yellow", rotation: 240, label: "Green-Yellow star 240°" },
+          { id: "A", shape: "star", color: "split", topColor: "green", bottomColor: "yellow", rotation: 150, label: "Green-Yellow star 150°" },
           { id: "B", shape: "circle", color: "split", topColor: "green", bottomColor: "yellow", rotation: 240, label: "Green-Yellow circle 240°" },
           { id: "C", shape: "star", color: "split", topColor: "yellow", bottomColor: "green", rotation: 240, label: "Yellow-Green star 240°" },
           { id: "D", shape: "star", color: "split", topColor: "green", bottomColor: "yellow", rotation: 180, label: "Green-Yellow star 180°" }
