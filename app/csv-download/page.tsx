@@ -52,8 +52,19 @@ export default function CSVDownloadPage() {
       return
     }
     
+    // Log detailed information for debugging
+    console.log('=== DETAILED CSV DEBUG INFO ===')
+    resultsToUse.forEach((result, index) => {
+      console.log(`Question ${index + 1}:`)
+      console.log(`  - Your Answer: ${result.userAnswer}`)
+      console.log(`  - Correct Answer: ${result.correctAnswer}`)
+      console.log(`  - Is Correct: ${result.isCorrect}`)
+      console.log(`  - Raw comparison: ${result.userAnswer} === ${result.correctAnswer}`)
+    })
+    
     // Generate CSV with requested format: Name column, then Question 1, Question 2, etc.
-    const headers = ['Name', ...resultsToUse.map((_, index) => `Question ${index + 1}`)]
+    // Also include detailed headers with answer info
+    const headers = ['Name', ...resultsToUse.map((result, index) => `Question ${index + 1} (Your: ${result.userAnswer}, Correct: ${result.correctAnswer})`)]
     const resultRow = [name, ...resultsToUse.map(result => result.isCorrect ? 'Correct' : 'Incorrect')]
     
     const csvContent = [
