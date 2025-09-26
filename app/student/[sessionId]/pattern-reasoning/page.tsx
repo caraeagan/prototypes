@@ -1086,7 +1086,7 @@ const QUESTION_GROUPS = {
           { id: "C", shape: "arrow", color: "green", reflected: true, size: "small", direction: "right", strokeWidth: 1, label: "Green arrow, Right, Thin" },
           { id: "D", shape: "arrow", color: "blue", reflected: false, size: "small", direction: "left", strokeWidth: 1, label: "Blue arrow, Left, Thin" }
         ],
-        correctAnswer: "B"
+        correctAnswer: "A"
       }
     ]
   },
