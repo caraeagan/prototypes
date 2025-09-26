@@ -63,9 +63,9 @@ export default function CSVDownloadPage() {
     })
     
     // Generate CSV with requested format: Name column, then Question 1, Question 2, etc.
-    // Also include detailed headers with answer info
-    const headers = ['Name', ...resultsToUse.map((result, index) => `Question ${index + 1} (Your: ${result.userAnswer}, Correct: ${result.correctAnswer})`)]
-    const resultRow = [name, ...resultsToUse.map(result => result.isCorrect ? 'Correct' : 'Incorrect')]
+    // Show actual answers instead of Correct/Incorrect
+    const headers = ['Name', ...resultsToUse.map((_, index) => `Question ${index + 1}`)]
+    const resultRow = [name, ...resultsToUse.map(result => result.userAnswer || 'No Answer')]
     
     const csvContent = [
       headers.join(','),
