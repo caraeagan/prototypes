@@ -910,12 +910,12 @@ const QUESTION_GROUPS = {
           null // Missing cell - should be outline square rotated 180°
         ],
         options: [
-          { id: "1", shape: "square", color: "split", topColor: "yellow", bottomColor: "purple", size: "medium", style: "outline", rotation: 180, label: "Split-color outline square rotated 180°" },
-          { id: "2", shape: "square", color: "split", topColor: "yellow", bottomColor: "purple", size: "medium", style: "outline", rotation: 0, label: "Split-color outline square not rotated" },
-          { id: "3", shape: "square", color: "split", topColor: "yellow", bottomColor: "purple", size: "medium", style: "outline", rotation: 90, label: "Split-color outline square rotated 90°" },
-          { id: "4", shape: "square", color: "split", topColor: "yellow", bottomColor: "purple", size: "medium", style: "outline", rotation: 270, label: "Split-color outline square rotated 270°" }
+          { id: "A", shape: "square", color: "split", topColor: "yellow", bottomColor: "purple", size: "medium", style: "outline", rotation: 180, label: "Split-color outline square rotated 180°" },
+          { id: "B", shape: "square", color: "split", topColor: "yellow", bottomColor: "purple", size: "medium", style: "outline", rotation: 0, label: "Split-color outline square not rotated" },
+          { id: "C", shape: "square", color: "split", topColor: "yellow", bottomColor: "purple", size: "medium", style: "outline", rotation: 90, label: "Split-color outline square rotated 90°" },
+          { id: "D", shape: "square", color: "split", topColor: "yellow", bottomColor: "purple", size: "medium", style: "outline", rotation: 270, label: "Split-color outline square rotated 270°" }
         ],
-        correctAnswer: "1"
+        correctAnswer: "A"
       },
       {
         id: 44,
@@ -940,12 +940,12 @@ const QUESTION_GROUPS = {
           ]
         ],
         options: [
-          { id: "1", shape: "square", color: "blue", size: "medium", style: "filled", rotation: 45, label: "Medium blue filled square rotated 45°" },
-          { id: "2", shape: "square", color: "blue", size: "medium", style: "outline", rotation: 45, label: "Medium blue outline square rotated 45°" },
-          { id: "3", shape: "triangle", color: "blue", size: "medium", style: "filled", rotation: 0, label: "Medium blue filled triangle" },
-          { id: "4", shape: "circle", color: "blue", size: "medium", style: "filled", rotation: 45, label: "Medium blue filled circle rotated 45°" }
+          { id: "A", shape: "square", color: "blue", size: "medium", style: "filled", rotation: 45, label: "Medium blue filled square rotated 45°" },
+          { id: "B", shape: "square", color: "blue", size: "medium", style: "outline", rotation: 45, label: "Medium blue outline square rotated 45°" },
+          { id: "C", shape: "triangle", color: "blue", size: "medium", style: "filled", rotation: 0, label: "Medium blue filled triangle" },
+          { id: "D", shape: "circle", color: "blue", size: "medium", style: "filled", rotation: 45, label: "Medium blue filled circle rotated 45°" }
         ],
-        correctAnswer: "1"
+        correctAnswer: "A"
       },
       {
         id: 45,
@@ -963,12 +963,12 @@ const QUESTION_GROUPS = {
           null  // Step 8: Yellow heart, Left, Large (flips to Left)
         ],
         options: [
-          { id: "1", shape: "heart", color: "yellow", reflected: false, size: "big", direction: "left", label: "Yellow heart, Left, Large" },
-          { id: "2", shape: "heart", color: "yellow", reflected: true, size: "small", direction: "right", label: "Yellow heart, Right, Small" },
-          { id: "3", shape: "heart", color: "yellow", reflected: false, size: "small", direction: "left", label: "Yellow heart, Left, Small" },
-          { id: "4", shape: "heart", color: "yellow", reflected: true, size: "big", direction: "right", label: "Yellow heart, Right, Large" }
+          { id: "A", shape: "heart", color: "yellow", reflected: false, size: "big", direction: "left", label: "Yellow heart, Left, Large" },
+          { id: "B", shape: "heart", color: "yellow", reflected: true, size: "small", direction: "right", label: "Yellow heart, Right, Small" },
+          { id: "C", shape: "heart", color: "yellow", reflected: false, size: "small", direction: "left", label: "Yellow heart, Left, Small" },
+          { id: "D", shape: "heart", color: "yellow", reflected: true, size: "big", direction: "right", label: "Yellow heart, Right, Large" }
         ],
-        correctAnswer: "1"
+        correctAnswer: "A"
       },
       {
         id: 46,
@@ -986,12 +986,12 @@ const QUESTION_GROUPS = {
           null  // Step 8: Yellow, 270°, Big (clockwise continues, size cycle continues)
         ],
         options: [
-          { id: "1", shape: "triangle", color: "yellow", rotation: 270, size: "big", label: "Yellow triangle, 270°, Big" },
-          { id: "2", shape: "triangle", color: "yellow", rotation: 180, size: "big", label: "Yellow triangle, 180°, Big" },
-          { id: "3", shape: "triangle", color: "yellow", rotation: 90, size: "small", label: "Yellow triangle, 90°, Small" },
-          { id: "4", shape: "triangle", color: "yellow", rotation: 0, size: "medium", label: "Yellow triangle, 0°, Medium" }
+          { id: "A", shape: "triangle", color: "yellow", rotation: 270, size: "big", label: "Yellow triangle, 270°, Big" },
+          { id: "B", shape: "triangle", color: "yellow", rotation: 180, size: "big", label: "Yellow triangle, 180°, Big" },
+          { id: "C", shape: "triangle", color: "yellow", rotation: 90, size: "small", label: "Yellow triangle, 90°, Small" },
+          { id: "D", shape: "triangle", color: "yellow", rotation: 0, size: "medium", label: "Yellow triangle, 0°, Medium" }
         ],
-        correctAnswer: "1"
+        correctAnswer: "A"
       },
       {
         id: 47,
@@ -1019,12 +1019,12 @@ const QUESTION_GROUPS = {
           ]
         ],
         options: [
-          { id: "1", shape: "heart", color: "blue", reflected: false, size: "medium", direction: "left", label: "Blue heart, Left" },
-          { id: "2", shape: "heart", color: "red", reflected: false, size: "medium", direction: "left", label: "Red heart, Left" },
-          { id: "3", shape: "heart", color: "green", reflected: false, size: "medium", direction: "left", label: "Green heart, Left" },
-          { id: "4", shape: "heart", color: "red", reflected: true, size: "medium", direction: "right", label: "Red heart, Right" }
+          { id: "A", shape: "heart", color: "blue", reflected: false, size: "medium", direction: "left", label: "Blue heart, Left" },
+          { id: "B", shape: "heart", color: "red", reflected: false, size: "medium", direction: "left", label: "Red heart, Left" },
+          { id: "C", shape: "heart", color: "green", reflected: false, size: "medium", direction: "left", label: "Green heart, Left" },
+          { id: "D", shape: "heart", color: "red", reflected: true, size: "medium", direction: "right", label: "Red heart, Right" }
         ],
-        correctAnswer: "2"
+        correctAnswer: "B"
       },
       {
         id: 48,
@@ -1048,12 +1048,12 @@ const QUESTION_GROUPS = {
           ]
         ],
         options: [
-          { id: "1", shape: "star", color: "split", topColor: "purple", bottomColor: "yellow", rotation: 0, size: "medium", label: "Purple/Yellow star, 0°" },
-          { id: "2", shape: "star", color: "split", topColor: "red", bottomColor: "pink", rotation: 0, size: "medium", label: "Red/Pink star, 0°" },
-          { id: "3", shape: "star", color: "split", topColor: "pink", bottomColor: "black", rotation: 0, size: "medium", label: "Pink/Black star, 0°" },
-          { id: "4", shape: "star", color: "split", topColor: "purple", bottomColor: "yellow", rotation: 270, size: "medium", label: "Purple/Yellow star, 270°" }
+          { id: "A", shape: "star", color: "split", topColor: "purple", bottomColor: "yellow", rotation: 0, size: "medium", label: "Purple/Yellow star, 0°" },
+          { id: "B", shape: "star", color: "split", topColor: "red", bottomColor: "pink", rotation: 0, size: "medium", label: "Red/Pink star, 0°" },
+          { id: "C", shape: "star", color: "split", topColor: "pink", bottomColor: "black", rotation: 0, size: "medium", label: "Pink/Black star, 0°" },
+          { id: "D", shape: "star", color: "split", topColor: "purple", bottomColor: "yellow", rotation: 270, size: "medium", label: "Purple/Yellow star, 270°" }
         ],
-        correctAnswer: "1"
+        correctAnswer: "A"
       },
       {
         id: 49,
