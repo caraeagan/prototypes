@@ -1000,29 +1000,29 @@ const QUESTION_GROUPS = {
         question: "What goes in position 12?",
         grid: [
           [
-            { shape: "heart", color: "red", reflected: false, size: "medium", direction: "left" },   // Pos 1: Red, Left (normal)
-            { shape: "heart", color: "blue", reflected: true, size: "medium", direction: "right" },  // Pos 2: Blue, Right (normal flip)
-            { shape: "heart", color: "green", reflected: false, size: "medium", direction: "left" }, // Pos 3: Green, Left (normal flip)
-            { shape: "heart", color: "blue", reflected: false, size: "medium", direction: "left" }    // Pos 4: Special rule - Blue (skip 2: G→R→B→G, so G+2=B), Left (no flip)
+            { shape: "heart", color: "blue", reflected: false, size: "medium", direction: "left" },   // Pos 1: Blue, Left
+            { shape: "heart", color: "blue", reflected: true, size: "medium", direction: "right" },   // Pos 2: Blue, Right (opposite of pos 1)
+            { shape: "heart", color: "red", reflected: true, size: "medium", direction: "right" },    // Pos 3: Red, Right (flipped from blue left)
+            { shape: "heart", color: "red", reflected: false, size: "medium", direction: "left" }     // Pos 4: Red, Left (opposite of pos 3)
           ],
           [
-            { shape: "heart", color: "green", reflected: true, size: "medium", direction: "right" }, // Pos 5: Green, Right (normal from pos 4 Blue)
-            { shape: "heart", color: "red", reflected: false, size: "medium", direction: "left" },   // Pos 6: Red, Left (normal)
-            { shape: "heart", color: "blue", reflected: true, size: "medium", direction: "right" },  // Pos 7: Blue, Right (normal)
-            { shape: "heart", color: "red", reflected: true, size: "medium", direction: "right" }    // Pos 8: Special rule - Red (skip 2: B→G→R→B, so B+2=R), Right (no flip from pos 7)
+            { shape: "heart", color: "green", reflected: false, size: "medium", direction: "left" },  // Pos 5: Green, Left (flipped from red right)
+            { shape: "heart", color: "green", reflected: true, size: "medium", direction: "right" },  // Pos 6: Green, Right (opposite of pos 5)
+            { shape: "heart", color: "blue", reflected: true, size: "medium", direction: "right" },   // Pos 7: Blue, Right (flipped from green left)
+            { shape: "heart", color: "blue", reflected: false, size: "medium", direction: "left" }    // Pos 8: Blue, Left (opposite of pos 7)
           ],
           [
-            { shape: "heart", color: "green", reflected: false, size: "medium", direction: "left" },  // Pos 9: Green, Left (normal from pos 8 Red)
-            { shape: "heart", color: "blue", reflected: true, size: "medium", direction: "right" },   // Pos 10: Blue, Right (normal)
-            { shape: "heart", color: "green", reflected: false, size: "medium", direction: "left" },  // Pos 11: Green, Left (normal)
-            null // Pos 12: Special rule - Red (skip 2: G→R→B→G, so G+2=B), Left (no flip from pos 11)
+            { shape: "heart", color: "red", reflected: false, size: "medium", direction: "left" },    // Pos 9: Red, Left (flipped from blue right)
+            { shape: "heart", color: "red", reflected: true, size: "medium", direction: "right" },    // Pos 10: Red, Right (opposite of pos 9)
+            { shape: "heart", color: "green", reflected: true, size: "medium", direction: "right" },  // Pos 11: Green, Right (flipped from red left)
+            null // Pos 12: Green, Left (opposite of pos 11)
           ]
         ],
         options: [
           { id: "1", shape: "heart", color: "blue", reflected: false, size: "medium", direction: "left", label: "Blue heart, Left" },
           { id: "2", shape: "heart", color: "red", reflected: false, size: "medium", direction: "left", label: "Red heart, Left" },
-          { id: "3", shape: "heart", color: "red", reflected: true, size: "medium", direction: "right", label: "Red heart, Right" },
-          { id: "4", shape: "heart", color: "blue", reflected: true, size: "medium", direction: "right", label: "Blue heart, Right" }
+          { id: "3", shape: "heart", color: "green", reflected: false, size: "medium", direction: "left", label: "Green heart, Left" },
+          { id: "4", shape: "heart", color: "green", reflected: true, size: "medium", direction: "right", label: "Green heart, Right" }
         ],
         correctAnswer: "3"
       },
