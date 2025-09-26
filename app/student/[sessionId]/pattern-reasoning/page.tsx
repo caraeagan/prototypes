@@ -1002,29 +1002,29 @@ const QUESTION_GROUPS = {
           [
             { shape: "heart", color: "blue", reflected: false, size: "medium", direction: "left" },   // Pos 1: Blue, Left
             { shape: "heart", color: "blue", reflected: true, size: "medium", direction: "right" },   // Pos 2: Blue, Right (opposite of pos 1)
-            { shape: "heart", color: "red", reflected: true, size: "medium", direction: "right" },    // Pos 3: Red, Right (flipped from blue left)
-            { shape: "heart", color: "red", reflected: false, size: "medium", direction: "left" }     // Pos 4: Red, Left (opposite of pos 3)
+            { shape: "heart", color: "red", reflected: true, size: "medium", direction: "right" },    // Pos 3: Red, Right (single)
+            { shape: "heart", color: "green", reflected: false, size: "medium", direction: "left" }   // Pos 4: Green, Left (single)
           ],
           [
-            { shape: "heart", color: "green", reflected: false, size: "medium", direction: "left" },  // Pos 5: Green, Left (flipped from red right)
-            { shape: "heart", color: "green", reflected: true, size: "medium", direction: "right" },  // Pos 6: Green, Right (opposite of pos 5)
-            { shape: "heart", color: "blue", reflected: true, size: "medium", direction: "right" },   // Pos 7: Blue, Right (flipped from green left)
-            { shape: "heart", color: "blue", reflected: false, size: "medium", direction: "left" }    // Pos 8: Blue, Left (opposite of pos 7)
+            { shape: "heart", color: "red", reflected: false, size: "medium", direction: "left" },    // Pos 5: Red, Left (flipped from red right)
+            { shape: "heart", color: "red", reflected: true, size: "medium", direction: "right" },    // Pos 6: Red, Right (opposite of pos 5)
+            { shape: "heart", color: "blue", reflected: false, size: "medium", direction: "left" },   // Pos 7: Blue, Left (single, flipped from blue right)
+            { shape: "heart", color: "green", reflected: true, size: "medium", direction: "right" }   // Pos 8: Green, Right (single, flipped from green left)
           ],
           [
-            { shape: "heart", color: "red", reflected: false, size: "medium", direction: "left" },    // Pos 9: Red, Left (flipped from blue right)
-            { shape: "heart", color: "red", reflected: true, size: "medium", direction: "right" },    // Pos 10: Red, Right (opposite of pos 9)
-            { shape: "heart", color: "green", reflected: true, size: "medium", direction: "right" },  // Pos 11: Green, Right (flipped from red left)
-            null // Pos 12: Green, Left (opposite of pos 11)
+            { shape: "heart", color: "green", reflected: false, size: "medium", direction: "left" },  // Pos 9: Green, Left (flipped from green right)
+            { shape: "heart", color: "green", reflected: true, size: "medium", direction: "right" },  // Pos 10: Green, Right (opposite of pos 9)
+            { shape: "heart", color: "blue", reflected: true, size: "medium", direction: "right" },   // Pos 11: Blue, Right (single, flipped from blue left)
+            null // Pos 12: Red, Left (single, flipped from red right)
           ]
         ],
         options: [
           { id: "1", shape: "heart", color: "blue", reflected: false, size: "medium", direction: "left", label: "Blue heart, Left" },
           { id: "2", shape: "heart", color: "red", reflected: false, size: "medium", direction: "left", label: "Red heart, Left" },
           { id: "3", shape: "heart", color: "green", reflected: false, size: "medium", direction: "left", label: "Green heart, Left" },
-          { id: "4", shape: "heart", color: "green", reflected: true, size: "medium", direction: "right", label: "Green heart, Right" }
+          { id: "4", shape: "heart", color: "red", reflected: true, size: "medium", direction: "right", label: "Red heart, Right" }
         ],
-        correctAnswer: "3"
+        correctAnswer: "2"
       },
       {
         id: 48,
