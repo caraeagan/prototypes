@@ -150,20 +150,12 @@ const QUESTIONS = [
   },
   {
     id: 13,
-    type: "audio_duration_comparison",
-    question: "Which sound was longer?",
-    instruction: "Listen to both sounds, then choose which one was longer",
-    audioA: {
-      name: "Sound A",
-      file: "/audio/sound-a.mp3",
-      duration: 2000 // 2 seconds
-    },
-    audioB: {
-      name: "Sound B", 
-      file: "/audio/sound-b.mp3",
-      duration: 4000 // 4 seconds
-    },
-    correctAnswer: "B" // Sound B is longer
+    type: "audio_time_estimation",
+    question: "Estimate how many seconds passed between the first tone and the second tone.",
+    instruction: "Listen closely, you're going to hear two tones. Estimate how many seconds passed between the first tone and the second tone.",
+    audioFile: "/audio/two-tones.mp3", // Audio file with two tones separated by a specific duration
+    correctAnswer: 3, // Assuming 3 seconds between tones
+    toleranceRange: 1 // Accept answers within 1 second of correct answer (2-4 seconds)
   }
 ]
 

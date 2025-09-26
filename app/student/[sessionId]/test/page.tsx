@@ -150,20 +150,12 @@ const QUESTIONS = [
   },
   {
     id: 13,
-    type: "audio_duration_comparison",
-    question: "Which sound was longer?",
-    instruction: "Listen to both sounds, then choose which one was longer",
-    audioA: {
-      name: "Sound A",
-      file: "/audio/sound-a.mp3",
-      duration: 2000 // 2 seconds
-    },
-    audioB: {
-      name: "Sound B", 
-      file: "/audio/sound-b.mp3",
-      duration: 4000 // 4 seconds
-    },
-    correctAnswer: "B" // Sound B is longer
+    type: "audio_time_estimation",
+    question: "Estimate how many seconds passed between the first tone and the second tone.",
+    instruction: "Listen closely, you're going to hear two tones. Estimate how many seconds passed between the first tone and the second tone.",
+    audioFile: "/audio/two-tones.mp3", // Audio file with two tones separated by a specific duration
+    correctAnswer: 3, // Assuming 3 seconds between tones
+    toleranceRange: 1 // Accept answers within 1 second of correct answer (2-4 seconds)
   }
 ]
 
@@ -246,6 +238,10 @@ export default function StudentTest() {
       return () => clearTimeout(timer)
     } else if (question.type === "audio_estimation") {
       // Reset audio state when entering audio question
+      setHasPlayedAudio(false)
+      setIsPlayingAudio(false)
+    } else if (question.type === "audio_time_estimation") {
+      // Reset audio state when entering audio time estimation question
       setHasPlayedAudio(false)
       setIsPlayingAudio(false)
     } else if (question.type === "audio_duration_comparison") {
@@ -403,6 +399,12 @@ export default function StudentTest() {
         isCorrect = answer?.answer === question.correctAnswer
       } else if (question.type === "audio_estimation") {
         isCorrect = answer?.answer === question.correctAnswer
+      } else if (question.type === "audio_time_estimation") {
+        // Check if answer is within tolerance range
+        const userAnswer = parseFloat(answer?.answer)
+        const correctAnswer = question.correctAnswer
+        const tolerance = question.toleranceRange || 1
+        isCorrect = Math.abs(userAnswer - correctAnswer) <= tolerance
       } else if (question.type === "audio_duration_comparison") {
         isCorrect = answer?.answer === question.correctAnswer
       }
@@ -1117,6 +1119,75 @@ export default function StudentTest() {
                       >
                         <span className="text-lg font-bold text-gray-900">More than 50</span>
                       </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Audio Time Estimation Question */}
+          {question.type === "audio_time_estimation" && (
+            <div className="space-y-8">
+              <div className="text-center h-64 flex flex-col justify-center">
+                {!hasPlayedAudio ? (
+                  <>
+                    {!isPlayingAudio ? (
+                      <>
+                        <p className="text-2xl text-gray-900 mb-8">{question.instruction}</p>
+                        
+                        {/* Play button */}
+                        <div className="flex justify-center">
+                          <button
+                            onClick={playAudio}
+                            className="flex items-center space-x-3 px-8 py-4 bg-blue-900 text-white rounded-xl hover:bg-blue-800 transition-all"
+                          >
+                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1.586a1 1 0 01.707.293l2.414 2.414a1 1 0 00.707.293H15a2 2 0 012 2v0a2 2 0 01-2 2h-1.586a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 0010.586 14H9a2 2 0 01-2-2v0a2 2 0 012-2z" />
+                            </svg>
+                            <span className="text-xl">Play</span>
+                          </button>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-lg text-gray-600 mb-6">Listen carefully</p>
+                        
+                        {/* Audio playing visual indicator */}
+                        <div className="flex justify-center items-center space-x-4 mb-6">
+                          <div className="flex space-x-1">
+                            <div className="w-3 h-8 bg-blue-500 rounded animate-pulse"></div>
+                            <div className="w-3 h-12 bg-blue-600 rounded animate-pulse" style={{animationDelay: '0.2s'}}></div>
+                            <div className="w-3 h-6 bg-blue-500 rounded animate-pulse" style={{animationDelay: '0.4s'}}></div>
+                            <div className="w-3 h-10 bg-blue-600 rounded animate-pulse" style={{animationDelay: '0.6s'}}></div>
+                            <div className="w-3 h-8 bg-blue-500 rounded animate-pulse" style={{animationDelay: '0.8s'}}></div>
+                          </div>
+                          <svg className="w-8 h-8 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+                          </svg>
+                        </div>
+                        
+                        <p className="text-gray-600">Audio playing...</p>
+                      </>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <p className="text-xl text-gray-900 mb-8">{question.question}</p>
+                    
+                    {/* Number input for seconds - only visible after audio has played */}
+                    <div className="flex justify-center items-center space-x-4">
+                      <input
+                        type="number"
+                        min="0"
+                        max="10"
+                        step="0.1"
+                        value={answers[currentQuestion]?.answer || ''}
+                        onChange={(e) => handleAnswer(e.target.value)}
+                        placeholder="0"
+                        className="w-20 px-4 py-3 text-2xl text-center border-2 border-gray-300 rounded-lg focus:border-blue-900 focus:outline-none"
+                      />
+                      <span className="text-xl text-gray-900">seconds</span>
                     </div>
                   </>
                 )}

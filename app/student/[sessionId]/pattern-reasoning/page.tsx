@@ -986,10 +986,10 @@ const QUESTION_GROUPS = {
           null  // Step 8: Yellow, 270°, Big (clockwise continues, size cycle continues)
         ],
         options: [
-          { id: "A", shape: "triangle", color: "yellow", rotation: 270, size: "big", label: "Yellow triangle, 270°, Big" },
+          { id: "A", shape: "triangle", color: "yellow", rotation: 0, size: "big", label: "Yellow triangle pointing right, Big" },
           { id: "B", shape: "triangle", color: "yellow", rotation: 180, size: "big", label: "Yellow triangle, 180°, Big" },
           { id: "C", shape: "triangle", color: "yellow", rotation: 90, size: "small", label: "Yellow triangle, 90°, Small" },
-          { id: "D", shape: "triangle", color: "yellow", rotation: 0, size: "medium", label: "Yellow triangle, 0°, Medium" }
+          { id: "D", shape: "triangle", color: "yellow", rotation: 270, size: "medium", label: "Yellow triangle, 270°, Medium" }
         ],
         correctAnswer: "A"
       },
