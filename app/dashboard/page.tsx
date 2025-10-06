@@ -37,6 +37,11 @@ const SUBTESTS = [
     id: "pattern-reasoning",
     name: "Visual Pattern Reasoning",
     description: "Assess student's visual pattern recognition with rotating shapes"
+  },
+  {
+    id: "figure-reproduction",
+    name: "Figure Reproduction",
+    description: "Student completes figure drawings in a physical booklet"
   }
 ]
 

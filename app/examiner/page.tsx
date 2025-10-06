@@ -193,13 +193,13 @@ function ExaminerInterfaceContent() {
                 <span>Student is connected and ready</span>
               </div>
               
-              <button 
+              <button
                 onClick={() => {
                   // Start the test for both examiner and student
                   const tests = selectedTests.join(",")
                   localStorage.setItem(`test_start_${sessionId}`, "true")
                   localStorage.setItem(`selected_tests_${sessionId}`, tests)
-                  
+
                   // Route to appropriate test based on selection
                   if (tests.includes("value-estimation")) {
                     window.location.href = `/examiner/test?session=${sessionId}`
@@ -209,6 +209,8 @@ function ExaminerInterfaceContent() {
                     window.location.href = `/examiner/pattern-reasoning?session=${sessionId}`
                   } else if (tests.includes("math-concepts-applications")) {
                     window.location.href = `/examiner/math-concepts?session=${sessionId}`
+                  } else if (tests.includes("figure-reproduction")) {
+                    window.location.href = `/examiner/figure-reproduction?session=${sessionId}`
                   }
                 }}
                 className="px-6 py-3 bg-blue-900 text-white rounded-lg font-medium hover:bg-blue-800"

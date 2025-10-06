@@ -254,6 +254,12 @@ const SUBTESTS = [
     name: "Letter and Word Identification",
     description: "Assess letter and word identification skills",
     phase: "Pilot: Phase 1, Pre Pilot"
+  },
+  {
+    id: "figure-reproduction",
+    name: "Figure Reproduction",
+    description: "Student completes figure drawings in a physical booklet",
+    phase: "Pilot: Phase 2"
   }
 ]
 

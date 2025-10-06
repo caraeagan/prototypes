@@ -54,7 +54,7 @@ export default function StudentInterface() {
       const testStart = localStorage.getItem(`test_start_${sessionId}`)
       if (testStart === "true") {
         setTestStarted(true)
-        
+
         // Check which test was selected
         const selectedTests = localStorage.getItem(`selected_tests_${sessionId}`)
         if (selectedTests?.includes("value-estimation")) {
@@ -65,6 +65,8 @@ export default function StudentInterface() {
           window.location.href = `/student/${sessionId}/pattern-reasoning`
         } else if (selectedTests?.includes("math-concepts-applications")) {
           window.location.href = `/student/${sessionId}/math-concepts`
+        } else if (selectedTests?.includes("figure-reproduction")) {
+          window.location.href = `/student/${sessionId}/figure-reproduction`
         }
       }
     }
