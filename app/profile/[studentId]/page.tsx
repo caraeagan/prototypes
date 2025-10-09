@@ -682,23 +682,27 @@ export default function StudentProfile() {
                   <div className="mt-2 space-y-2">
                     {student.completedSubtests.map((subtestId) => {
                       const subtest = SUBTESTS.find(s => s.id === subtestId)
-                      
+                      const isNonsenseWordDecoding = subtestId === 'nonsense-word-decoding'
+
                       return (
-                        <div key={subtestId} className="flex items-center justify-between py-2 px-3 rounded bg-green-50 border border-green-200">
-                          <div>
-                            <p className="font-medium text-sm text-green-800">
-                              {subtest?.name}
-                            </p>
-                            <p className="text-xs text-green-600">
-                              {subtest?.description}
-                            </p>
+                        <div key={subtestId} className="space-y-2">
+                          <div className="flex items-center justify-between py-2 px-3 rounded bg-green-50 border border-green-200">
+                            <div>
+                              <p className="font-medium text-sm text-green-800">
+                                {subtest?.name}
+                              </p>
+                              <p className="text-xs text-green-600">
+                                {subtest?.description}
+                              </p>
+                            </div>
+                            <div className="px-2 py-1 rounded text-xs font-medium flex items-center space-x-1 bg-green-100 text-green-800">
+                              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                              <span>Completed</span>
+                            </div>
                           </div>
-                          <div className="px-2 py-1 rounded text-xs font-medium flex items-center space-x-1 bg-green-100 text-green-800">
-                            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                            </svg>
-                            <span>Completed</span>
-                          </div>
+
                         </div>
                       )
                     })}
@@ -706,14 +710,26 @@ export default function StudentProfile() {
                 </div>
               )}
 
-              {/* Action Button for Current Session */}
+              {/* Action Buttons for Current Session */}
               {student.testStatus === 'in-progress' && (
-                <button
-                  onClick={continueCurrentSession}
-                  className="w-full px-4 py-2 bg-blue-900 text-white rounded-lg font-medium hover:bg-blue-800"
-                >
-                  Continue Current Session
-                </button>
+                <div className="space-y-3">
+                  <button
+                    onClick={continueCurrentSession}
+                    className="w-full px-4 py-2 bg-blue-900 text-white rounded-lg font-medium hover:bg-blue-800"
+                  >
+                    Continue Current Session
+                  </button>
+
+                  {/* Score Review button */}
+                  {student.sessionId && (
+                    <button
+                      onClick={() => router.push(`/score-review/${student.sessionId}`)}
+                      className="w-full px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700"
+                    >
+                      Score Review
+                    </button>
+                  )}
+                </div>
               )}
               </>
             )}

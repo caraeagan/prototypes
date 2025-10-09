@@ -171,7 +171,7 @@ function ExaminerInterfaceContent() {
         {/* Test Control Panel */}
         <div className="bg-stone-100 rounded-lg shadow p-6">
           <h2 className="text-lg font-semibold mb-4">Test Controls</h2>
-          
+
           {!studentConnected ? (
             <div className="text-center py-8">
               <div className="text-gray-500 mb-4">
@@ -192,7 +192,7 @@ function ExaminerInterfaceContent() {
                 </svg>
                 <span>Student is connected and ready</span>
               </div>
-              
+
               <button
                 onClick={() => {
                   // Start the test for both examiner and student
@@ -213,9 +213,19 @@ function ExaminerInterfaceContent() {
                     window.location.href = `/examiner/figure-reproduction?session=${sessionId}`
                   }
                 }}
-                className="px-6 py-3 bg-blue-900 text-white rounded-lg font-medium hover:bg-blue-800"
+                className="w-full px-6 py-3 bg-blue-900 text-white rounded-lg font-medium hover:bg-blue-800"
               >
                 Begin Assessment
+              </button>
+
+              {/* Score Review button */}
+              <button
+                onClick={() => {
+                  window.location.href = `/score-review/${sessionId}`
+                }}
+                className="w-full px-6 py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700"
+              >
+                Score Review
               </button>
             </div>
           )}
