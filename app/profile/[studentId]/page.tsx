@@ -648,7 +648,21 @@ export default function StudentProfile() {
           </div>
           <div className="px-6 py-4">
             {student.testStatus === 'not-started' ? (
-              <p className="text-gray-600">No assessments started yet. Click "Start Assessment" to begin.</p>
+              <>
+                <p className="text-gray-600 mb-4">No assessments started yet. Click "Start Assessment" to begin.</p>
+
+                {/* Score Review button - always show for all students */}
+                <button
+                  onClick={() => {
+                    // Use existing session or create a temporary one for score review
+                    const sessionToUse = student.sessionId || `temp_${student.id}`
+                    router.push(`/score-review/${sessionToUse}`)
+                  }}
+                  className="w-full px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700"
+                >
+                  Score Review
+                </button>
+              </>
             ) : (
               <>
                 {/* Student Link */}
