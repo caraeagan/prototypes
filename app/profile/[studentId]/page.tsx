@@ -711,26 +711,28 @@ export default function StudentProfile() {
               )}
 
               {/* Action Buttons for Current Session */}
-              {student.testStatus === 'in-progress' && (
-                <div className="space-y-3">
+              <div className="space-y-3">
+                {student.testStatus === 'in-progress' && (
                   <button
                     onClick={continueCurrentSession}
                     className="w-full px-4 py-2 bg-blue-900 text-white rounded-lg font-medium hover:bg-blue-800"
                   >
                     Continue Current Session
                   </button>
+                )}
 
-                  {/* Score Review button */}
-                  {student.sessionId && (
-                    <button
-                      onClick={() => router.push(`/score-review/${student.sessionId}`)}
-                      className="w-full px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700"
-                    >
-                      Score Review
-                    </button>
-                  )}
-                </div>
-              )}
+                {/* Score Review button - always show for all students */}
+                <button
+                  onClick={() => {
+                    // Use existing session or create a temporary one for score review
+                    const sessionToUse = student.sessionId || `temp_${student.id}`
+                    router.push(`/score-review/${sessionToUse}`)
+                  }}
+                  className="w-full px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700"
+                >
+                  Score Review
+                </button>
+              </div>
               </>
             )}
           </div>
