@@ -47,11 +47,20 @@ export default function ScoreReviewHome() {
   const [student, setStudent] = useState<Student | null>(null)
 
   useEffect(() => {
-    // Find student by session ID
+    // Find student by session ID or temp session ID
     const savedStudents = localStorage.getItem('students')
     if (savedStudents) {
       const students = JSON.parse(savedStudents)
-      const foundStudent = students.find((s: Student) => s.sessionId === sessionId)
+
+      // First try to find by sessionId
+      let foundStudent = students.find((s: Student) => s.sessionId === sessionId)
+
+      // If not found and sessionId starts with "temp_", try to find by student ID
+      if (!foundStudent && sessionId.startsWith('temp_')) {
+        const studentId = sessionId.replace('temp_', '')
+        foundStudent = students.find((s: Student) => s.id === studentId)
+      }
+
       if (foundStudent) {
         setStudent(foundStudent)
       } else {
