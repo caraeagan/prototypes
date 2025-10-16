@@ -838,5 +838,860 @@
       }
     ],
     "submittedAt": "2025-10-15T19:54:38.234Z"
+  },
+  {
+    "name": "Cara",
+    "sessionId": "phb1etnqsos",
+    "completedAt": "2025-10-16T17:55:59.793Z",
+    "totalQuestions": 56,
+    "correctAnswers": 1,
+    "score": 2,
+    "isFiltered": false,
+    "filterType": "all",
+    "answers": {
+      "1": {
+        "answer": null,
+        "isCorrect": false,
+        "question": "What's the missing pattern?",
+        "ageGroup": "2.5-3.5"
+      },
+      "2": {
+        "answer": null,
+        "isCorrect": false,
+        "question": "What's the missing pattern?",
+        "ageGroup": "2.5-3.5"
+      },
+      "3": {
+        "answer": null,
+        "isCorrect": false,
+        "question": "What's the missing pattern?",
+        "ageGroup": "2.5-3.5"
+      },
+      "4": {
+        "answer": null,
+        "isCorrect": false,
+        "question": "What's the missing pattern?",
+        "ageGroup": "2.5-3.5"
+      },
+      "5": {
+        "answer": null,
+        "isCorrect": false,
+        "question": "What's the missing pattern?",
+        "ageGroup": "2.5-3.5"
+      },
+      "6": {
+        "answer": null,
+        "isCorrect": false,
+        "question": "What's the missing pattern?",
+        "ageGroup": "2.5-3.5"
+      },
+      "7": {
+        "answer": null,
+        "isCorrect": false,
+        "question": "What's the missing pattern?",
+        "ageGroup": "2.5-3.5"
+      },
+      "8": {
+        "answer": null,
+        "isCorrect": false,
+        "question": "What's the missing pattern?",
+        "ageGroup": "3.5-4"
+      },
+      "9": {
+        "answer": null,
+        "isCorrect": false,
+        "question": "What's the missing pattern?",
+        "ageGroup": "3.5-4"
+      },
+      "10": {
+        "answer": null,
+        "isCorrect": false,
+        "question": "What's the missing pattern?",
+        "ageGroup": "3.5-4"
+      },
+      "11": {
+        "answer": null,
+        "isCorrect": false,
+        "question": "What's the missing pattern?",
+        "ageGroup": "3.5-4"
+      },
+      "12": {
+        "answer": null,
+        "isCorrect": false,
+        "question": "What's the missing pattern?",
+        "ageGroup": "3.5-4"
+      },
+      "13": {
+        "answer": null,
+        "isCorrect": false,
+        "question": "What's the missing pattern?",
+        "ageGroup": "3.5-4"
+      },
+      "14": {
+        "answer": null,
+        "isCorrect": false,
+        "question": "What's the missing pattern?",
+        "ageGroup": "3.5-4"
+      },
+      "15": {
+        "answer": null,
+        "isCorrect": false,
+        "question": "What's the missing pattern?",
+        "ageGroup": "4.5-5"
+      },
+      "16": {
+        "answer": null,
+        "isCorrect": false,
+        "question": "What's the missing pattern?",
+        "ageGroup": "4.5-5"
+      },
+      "17": {
+        "answer": null,
+        "isCorrect": false,
+        "question": "What's the missing pattern?",
+        "ageGroup": "4.5-5"
+      },
+      "18": {
+        "answer": null,
+        "isCorrect": false,
+        "question": "What's the missing pattern?",
+        "ageGroup": "4.5-5"
+      },
+      "19": {
+        "answer": null,
+        "isCorrect": false,
+        "question": "What's the missing pattern?",
+        "ageGroup": "4.5-5"
+      },
+      "20": {
+        "answer": null,
+        "isCorrect": false,
+        "question": "What's the missing pattern?",
+        "ageGroup": "4.5-5"
+      },
+      "21": {
+        "answer": null,
+        "isCorrect": false,
+        "question": "What's the missing pattern?",
+        "ageGroup": "4.5-5"
+      },
+      "22": {
+        "answer": null,
+        "isCorrect": false,
+        "question": "What's the missing pattern?",
+        "ageGroup": "6-7"
+      },
+      "23": {
+        "answer": null,
+        "isCorrect": false,
+        "question": "What's the missing pattern?",
+        "ageGroup": "6-7"
+      },
+      "24": {
+        "answer": null,
+        "isCorrect": false,
+        "question": "What's the missing pattern?",
+        "ageGroup": "6-7"
+      },
+      "25": {
+        "answer": null,
+        "isCorrect": false,
+        "question": "What's the missing pattern?",
+        "ageGroup": "6-7"
+      },
+      "26": {
+        "answer": null,
+        "isCorrect": false,
+        "question": "What's the missing pattern?",
+        "ageGroup": "6-7"
+      },
+      "27": {
+        "answer": null,
+        "isCorrect": false,
+        "question": "What's the missing pattern?",
+        "ageGroup": "6-7"
+      },
+      "28": {
+        "answer": null,
+        "isCorrect": false,
+        "question": "What's the missing pattern?",
+        "ageGroup": "6-7"
+      },
+      "29": {
+        "answer": null,
+        "isCorrect": false,
+        "question": "What's the missing pattern?",
+        "ageGroup": "8-9"
+      },
+      "30": {
+        "answer": null,
+        "isCorrect": false,
+        "question": "What's the missing pattern?",
+        "ageGroup": "8-9"
+      },
+      "31": {
+        "answer": null,
+        "isCorrect": false,
+        "question": "What's the missing pattern?",
+        "ageGroup": "8-9"
+      },
+      "32": {
+        "answer": null,
+        "isCorrect": false,
+        "question": "What's the missing pattern?",
+        "ageGroup": "8-9"
+      },
+      "33": {
+        "answer": null,
+        "isCorrect": false,
+        "question": "What's the missing pattern?",
+        "ageGroup": "8-9"
+      },
+      "34": {
+        "answer": null,
+        "isCorrect": false,
+        "question": "What's the missing pattern?",
+        "ageGroup": "8-9"
+      },
+      "35": {
+        "answer": null,
+        "isCorrect": false,
+        "question": "What's the missing pattern?",
+        "ageGroup": "8-9"
+      },
+      "36": {
+        "answer": null,
+        "isCorrect": false,
+        "question": "What's the missing pattern?",
+        "ageGroup": "10-11"
+      },
+      "37": {
+        "answer": null,
+        "isCorrect": false,
+        "question": "What's the missing pattern?",
+        "ageGroup": "10-11"
+      },
+      "38": {
+        "answer": null,
+        "isCorrect": false,
+        "question": "What's the missing pattern?",
+        "ageGroup": "10-11"
+      },
+      "39": {
+        "answer": null,
+        "isCorrect": false,
+        "question": "What's the missing pattern?",
+        "ageGroup": "10-11"
+      },
+      "40": {
+        "answer": null,
+        "isCorrect": false,
+        "question": "What's the missing pattern?",
+        "ageGroup": "10-11"
+      },
+      "41": {
+        "answer": null,
+        "isCorrect": false,
+        "question": "What's the missing pattern?",
+        "ageGroup": "10-11"
+      },
+      "42": {
+        "answer": null,
+        "isCorrect": false,
+        "question": "What's the missing pattern?",
+        "ageGroup": "10-11"
+      },
+      "43": {
+        "answer": null,
+        "isCorrect": false,
+        "question": "What's the missing pattern?",
+        "ageGroup": "12-14"
+      },
+      "44": {
+        "answer": null,
+        "isCorrect": false,
+        "question": "What's the missing pattern?",
+        "ageGroup": "12-14"
+      },
+      "45": {
+        "answer": null,
+        "isCorrect": false,
+        "question": "What's the missing pattern?",
+        "ageGroup": "12-14"
+      },
+      "46": {
+        "answer": null,
+        "isCorrect": false,
+        "question": "What's the missing pattern?",
+        "ageGroup": "12-14"
+      },
+      "47": {
+        "answer": null,
+        "isCorrect": false,
+        "question": "What's the missing pattern?",
+        "ageGroup": "12-14"
+      },
+      "48": {
+        "answer": null,
+        "isCorrect": false,
+        "question": "What's the missing pattern?",
+        "ageGroup": "12-14"
+      },
+      "49": {
+        "answer": null,
+        "isCorrect": false,
+        "question": "What's the missing pattern?",
+        "ageGroup": "12-15"
+      },
+      "50": {
+        "answer": "D",
+        "isCorrect": false,
+        "question": "What's the missing pattern?",
+        "ageGroup": "15+"
+      },
+      "51": {
+        "answer": "D",
+        "isCorrect": false,
+        "question": "What's the missing pattern?",
+        "ageGroup": "15+"
+      },
+      "52": {
+        "answer": "D",
+        "isCorrect": false,
+        "question": "What's the missing pattern?",
+        "ageGroup": "15+"
+      },
+      "53": {
+        "answer": "D",
+        "isCorrect": true,
+        "question": "What's the missing pattern?",
+        "ageGroup": "15+"
+      },
+      "54": {
+        "answer": "D",
+        "isCorrect": false,
+        "question": "What's the missing pattern?",
+        "ageGroup": "15+"
+      },
+      "55": {
+        "answer": "C",
+        "isCorrect": false,
+        "question": "What's the missing pattern?",
+        "ageGroup": "15+"
+      },
+      "56": {
+        "answer": "D",
+        "isCorrect": false,
+        "question": "What's the missing pattern?",
+        "ageGroup": "15+"
+      }
+    },
+    "detailedResults": [
+      {
+        "questionId": 1,
+        "questionText": "What's the missing pattern?",
+        "ageGroup": "2.5-3.5",
+        "userAnswer": null,
+        "correctAnswer": "4",
+        "isCorrect": false,
+        "timestamp": "2025-10-16T17:55:59.793Z"
+      },
+      {
+        "questionId": 2,
+        "questionText": "What's the missing pattern?",
+        "ageGroup": "2.5-3.5",
+        "userAnswer": null,
+        "correctAnswer": "2",
+        "isCorrect": false,
+        "timestamp": "2025-10-16T17:55:59.793Z"
+      },
+      {
+        "questionId": 3,
+        "questionText": "What's the missing pattern?",
+        "ageGroup": "2.5-3.5",
+        "userAnswer": null,
+        "correctAnswer": "3",
+        "isCorrect": false,
+        "timestamp": "2025-10-16T17:55:59.793Z"
+      },
+      {
+        "questionId": 4,
+        "questionText": "What's the missing pattern?",
+        "ageGroup": "2.5-3.5",
+        "userAnswer": null,
+        "correctAnswer": "4",
+        "isCorrect": false,
+        "timestamp": "2025-10-16T17:55:59.793Z"
+      },
+      {
+        "questionId": 5,
+        "questionText": "What's the missing pattern?",
+        "ageGroup": "2.5-3.5",
+        "userAnswer": null,
+        "correctAnswer": "3",
+        "isCorrect": false,
+        "timestamp": "2025-10-16T17:55:59.793Z"
+      },
+      {
+        "questionId": 6,
+        "questionText": "What's the missing pattern?",
+        "ageGroup": "2.5-3.5",
+        "userAnswer": null,
+        "correctAnswer": "1",
+        "isCorrect": false,
+        "timestamp": "2025-10-16T17:55:59.793Z"
+      },
+      {
+        "questionId": 7,
+        "questionText": "What's the missing pattern?",
+        "ageGroup": "2.5-3.5",
+        "userAnswer": null,
+        "correctAnswer": "3",
+        "isCorrect": false,
+        "timestamp": "2025-10-16T17:55:59.793Z"
+      },
+      {
+        "questionId": 8,
+        "questionText": "What's the missing pattern?",
+        "ageGroup": "3.5-4",
+        "userAnswer": null,
+        "correctAnswer": "2",
+        "isCorrect": false,
+        "timestamp": "2025-10-16T17:55:59.793Z"
+      },
+      {
+        "questionId": 9,
+        "questionText": "What's the missing pattern?",
+        "ageGroup": "3.5-4",
+        "userAnswer": null,
+        "correctAnswer": "2",
+        "isCorrect": false,
+        "timestamp": "2025-10-16T17:55:59.793Z"
+      },
+      {
+        "questionId": 10,
+        "questionText": "What's the missing pattern?",
+        "ageGroup": "3.5-4",
+        "userAnswer": null,
+        "correctAnswer": "1",
+        "isCorrect": false,
+        "timestamp": "2025-10-16T17:55:59.793Z"
+      },
+      {
+        "questionId": 11,
+        "questionText": "What's the missing pattern?",
+        "ageGroup": "3.5-4",
+        "userAnswer": null,
+        "correctAnswer": "2",
+        "isCorrect": false,
+        "timestamp": "2025-10-16T17:55:59.793Z"
+      },
+      {
+        "questionId": 12,
+        "questionText": "What's the missing pattern?",
+        "ageGroup": "3.5-4",
+        "userAnswer": null,
+        "correctAnswer": "3",
+        "isCorrect": false,
+        "timestamp": "2025-10-16T17:55:59.793Z"
+      },
+      {
+        "questionId": 13,
+        "questionText": "What's the missing pattern?",
+        "ageGroup": "3.5-4",
+        "userAnswer": null,
+        "correctAnswer": "2",
+        "isCorrect": false,
+        "timestamp": "2025-10-16T17:55:59.793Z"
+      },
+      {
+        "questionId": 14,
+        "questionText": "What's the missing pattern?",
+        "ageGroup": "3.5-4",
+        "userAnswer": null,
+        "correctAnswer": "3",
+        "isCorrect": false,
+        "timestamp": "2025-10-16T17:55:59.793Z"
+      },
+      {
+        "questionId": 15,
+        "questionText": "What's the missing pattern?",
+        "ageGroup": "4.5-5",
+        "userAnswer": null,
+        "correctAnswer": "1",
+        "isCorrect": false,
+        "timestamp": "2025-10-16T17:55:59.793Z"
+      },
+      {
+        "questionId": 16,
+        "questionText": "What's the missing pattern?",
+        "ageGroup": "4.5-5",
+        "userAnswer": null,
+        "correctAnswer": "2",
+        "isCorrect": false,
+        "timestamp": "2025-10-16T17:55:59.793Z"
+      },
+      {
+        "questionId": 17,
+        "questionText": "What's the missing pattern?",
+        "ageGroup": "4.5-5",
+        "userAnswer": null,
+        "correctAnswer": "1",
+        "isCorrect": false,
+        "timestamp": "2025-10-16T17:55:59.793Z"
+      },
+      {
+        "questionId": 18,
+        "questionText": "What's the missing pattern?",
+        "ageGroup": "4.5-5",
+        "userAnswer": null,
+        "correctAnswer": "1",
+        "isCorrect": false,
+        "timestamp": "2025-10-16T17:55:59.793Z"
+      },
+      {
+        "questionId": 19,
+        "questionText": "What's the missing pattern?",
+        "ageGroup": "4.5-5",
+        "userAnswer": null,
+        "correctAnswer": "1",
+        "isCorrect": false,
+        "timestamp": "2025-10-16T17:55:59.793Z"
+      },
+      {
+        "questionId": 20,
+        "questionText": "What's the missing pattern?",
+        "ageGroup": "4.5-5",
+        "userAnswer": null,
+        "correctAnswer": "1",
+        "isCorrect": false,
+        "timestamp": "2025-10-16T17:55:59.793Z"
+      },
+      {
+        "questionId": 21,
+        "questionText": "What's the missing pattern?",
+        "ageGroup": "4.5-5",
+        "userAnswer": null,
+        "correctAnswer": "3",
+        "isCorrect": false,
+        "timestamp": "2025-10-16T17:55:59.793Z"
+      },
+      {
+        "questionId": 22,
+        "questionText": "What's the missing pattern?",
+        "ageGroup": "6-7",
+        "userAnswer": null,
+        "correctAnswer": "1",
+        "isCorrect": false,
+        "timestamp": "2025-10-16T17:55:59.793Z"
+      },
+      {
+        "questionId": 23,
+        "questionText": "What's the missing pattern?",
+        "ageGroup": "6-7",
+        "userAnswer": null,
+        "correctAnswer": "3",
+        "isCorrect": false,
+        "timestamp": "2025-10-16T17:55:59.793Z"
+      },
+      {
+        "questionId": 24,
+        "questionText": "What's the missing pattern?",
+        "ageGroup": "6-7",
+        "userAnswer": null,
+        "correctAnswer": "3",
+        "isCorrect": false,
+        "timestamp": "2025-10-16T17:55:59.793Z"
+      },
+      {
+        "questionId": 25,
+        "questionText": "What's the missing pattern?",
+        "ageGroup": "6-7",
+        "userAnswer": null,
+        "correctAnswer": "3",
+        "isCorrect": false,
+        "timestamp": "2025-10-16T17:55:59.793Z"
+      },
+      {
+        "questionId": 26,
+        "questionText": "What's the missing pattern?",
+        "ageGroup": "6-7",
+        "userAnswer": null,
+        "correctAnswer": "1",
+        "isCorrect": false,
+        "timestamp": "2025-10-16T17:55:59.793Z"
+      },
+      {
+        "questionId": 27,
+        "questionText": "What's the missing pattern?",
+        "ageGroup": "6-7",
+        "userAnswer": null,
+        "correctAnswer": "3",
+        "isCorrect": false,
+        "timestamp": "2025-10-16T17:55:59.793Z"
+      },
+      {
+        "questionId": 28,
+        "questionText": "What's the missing pattern?",
+        "ageGroup": "6-7",
+        "userAnswer": null,
+        "correctAnswer": "3",
+        "isCorrect": false,
+        "timestamp": "2025-10-16T17:55:59.793Z"
+      },
+      {
+        "questionId": 29,
+        "questionText": "What's the missing pattern?",
+        "ageGroup": "8-9",
+        "userAnswer": null,
+        "correctAnswer": "3",
+        "isCorrect": false,
+        "timestamp": "2025-10-16T17:55:59.793Z"
+      },
+      {
+        "questionId": 30,
+        "questionText": "What's the missing pattern?",
+        "ageGroup": "8-9",
+        "userAnswer": null,
+        "correctAnswer": "3",
+        "isCorrect": false,
+        "timestamp": "2025-10-16T17:55:59.793Z"
+      },
+      {
+        "questionId": 31,
+        "questionText": "What's the missing pattern?",
+        "ageGroup": "8-9",
+        "userAnswer": null,
+        "correctAnswer": "1",
+        "isCorrect": false,
+        "timestamp": "2025-10-16T17:55:59.793Z"
+      },
+      {
+        "questionId": 32,
+        "questionText": "What's the missing pattern?",
+        "ageGroup": "8-9",
+        "userAnswer": null,
+        "correctAnswer": "3",
+        "isCorrect": false,
+        "timestamp": "2025-10-16T17:55:59.793Z"
+      },
+      {
+        "questionId": 33,
+        "questionText": "What's the missing pattern?",
+        "ageGroup": "8-9",
+        "userAnswer": null,
+        "correctAnswer": "3",
+        "isCorrect": false,
+        "timestamp": "2025-10-16T17:55:59.793Z"
+      },
+      {
+        "questionId": 34,
+        "questionText": "What's the missing pattern?",
+        "ageGroup": "8-9",
+        "userAnswer": null,
+        "correctAnswer": "2",
+        "isCorrect": false,
+        "timestamp": "2025-10-16T17:55:59.793Z"
+      },
+      {
+        "questionId": 35,
+        "questionText": "What's the missing pattern?",
+        "ageGroup": "8-9",
+        "userAnswer": null,
+        "correctAnswer": "1",
+        "isCorrect": false,
+        "timestamp": "2025-10-16T17:55:59.793Z"
+      },
+      {
+        "questionId": 36,
+        "questionText": "What's the missing pattern?",
+        "ageGroup": "10-11",
+        "userAnswer": null,
+        "correctAnswer": "4",
+        "isCorrect": false,
+        "timestamp": "2025-10-16T17:55:59.793Z"
+      },
+      {
+        "questionId": 37,
+        "questionText": "What's the missing pattern?",
+        "ageGroup": "10-11",
+        "userAnswer": null,
+        "correctAnswer": "1",
+        "isCorrect": false,
+        "timestamp": "2025-10-16T17:55:59.793Z"
+      },
+      {
+        "questionId": 38,
+        "questionText": "What's the missing pattern?",
+        "ageGroup": "10-11",
+        "userAnswer": null,
+        "correctAnswer": "1",
+        "isCorrect": false,
+        "timestamp": "2025-10-16T17:55:59.793Z"
+      },
+      {
+        "questionId": 39,
+        "questionText": "What's the missing pattern?",
+        "ageGroup": "10-11",
+        "userAnswer": null,
+        "correctAnswer": "1",
+        "isCorrect": false,
+        "timestamp": "2025-10-16T17:55:59.793Z"
+      },
+      {
+        "questionId": 40,
+        "questionText": "What's the missing pattern?",
+        "ageGroup": "10-11",
+        "userAnswer": null,
+        "correctAnswer": "1",
+        "isCorrect": false,
+        "timestamp": "2025-10-16T17:55:59.793Z"
+      },
+      {
+        "questionId": 41,
+        "questionText": "What's the missing pattern?",
+        "ageGroup": "10-11",
+        "userAnswer": null,
+        "correctAnswer": "1",
+        "isCorrect": false,
+        "timestamp": "2025-10-16T17:55:59.793Z"
+      },
+      {
+        "questionId": 42,
+        "questionText": "What's the missing pattern?",
+        "ageGroup": "10-11",
+        "userAnswer": null,
+        "correctAnswer": "1",
+        "isCorrect": false,
+        "timestamp": "2025-10-16T17:55:59.793Z"
+      },
+      {
+        "questionId": 43,
+        "questionText": "What's the missing pattern?",
+        "ageGroup": "12-14",
+        "userAnswer": null,
+        "correctAnswer": "A",
+        "isCorrect": false,
+        "timestamp": "2025-10-16T17:55:59.793Z"
+      },
+      {
+        "questionId": 44,
+        "questionText": "What's the missing pattern?",
+        "ageGroup": "12-14",
+        "userAnswer": null,
+        "correctAnswer": "A",
+        "isCorrect": false,
+        "timestamp": "2025-10-16T17:55:59.793Z"
+      },
+      {
+        "questionId": 45,
+        "questionText": "What's the missing pattern?",
+        "ageGroup": "12-14",
+        "userAnswer": null,
+        "correctAnswer": "A",
+        "isCorrect": false,
+        "timestamp": "2025-10-16T17:55:59.793Z"
+      },
+      {
+        "questionId": 46,
+        "questionText": "What's the missing pattern?",
+        "ageGroup": "12-14",
+        "userAnswer": null,
+        "correctAnswer": "A",
+        "isCorrect": false,
+        "timestamp": "2025-10-16T17:55:59.793Z"
+      },
+      {
+        "questionId": 47,
+        "questionText": "What's the missing pattern?",
+        "ageGroup": "12-14",
+        "userAnswer": null,
+        "correctAnswer": "B",
+        "isCorrect": false,
+        "timestamp": "2025-10-16T17:55:59.793Z"
+      },
+      {
+        "questionId": 48,
+        "questionText": "What's the missing pattern?",
+        "ageGroup": "12-14",
+        "userAnswer": null,
+        "correctAnswer": "A",
+        "isCorrect": false,
+        "timestamp": "2025-10-16T17:55:59.793Z"
+      },
+      {
+        "questionId": 56,
+        "questionText": "What's the missing pattern?",
+        "ageGroup": "12-15",
+        "userAnswer": null,
+        "correctAnswer": "D",
+        "isCorrect": false,
+        "timestamp": "2025-10-16T17:55:59.793Z"
+      },
+      {
+        "questionId": 49,
+        "questionText": "What's the missing pattern?",
+        "ageGroup": "15+",
+        "userAnswer": "D",
+        "correctAnswer": "A",
+        "isCorrect": false,
+        "timestamp": "2025-10-16T17:55:43.493Z"
+      },
+      {
+        "questionId": 50,
+        "questionText": "What's the missing pattern?",
+        "ageGroup": "15+",
+        "userAnswer": "D",
+        "correctAnswer": "B",
+        "isCorrect": false,
+        "timestamp": "2025-10-16T17:55:44.892Z"
+      },
+      {
+        "questionId": 51,
+        "questionText": "What's the missing pattern?",
+        "ageGroup": "15+",
+        "userAnswer": "D",
+        "correctAnswer": "A",
+        "isCorrect": false,
+        "timestamp": "2025-10-16T17:55:49.458Z"
+      },
+      {
+        "questionId": 52,
+        "questionText": "What's the missing pattern?",
+        "ageGroup": "15+",
+        "userAnswer": "D",
+        "correctAnswer": "D",
+        "isCorrect": true,
+        "timestamp": "2025-10-16T17:55:52.908Z"
+      },
+      {
+        "questionId": 53,
+        "questionText": "What's the missing pattern?",
+        "ageGroup": "15+",
+        "userAnswer": "D",
+        "correctAnswer": "C",
+        "isCorrect": false,
+        "timestamp": "2025-10-16T17:55:54.557Z"
+      },
+      {
+        "questionId": 54,
+        "questionText": "What's the missing pattern?",
+        "ageGroup": "15+",
+        "userAnswer": "C",
+        "correctAnswer": "B",
+        "isCorrect": false,
+        "timestamp": "2025-10-16T17:55:56.708Z"
+      },
+      {
+        "questionId": 55,
+        "questionText": "What's the missing pattern?",
+        "ageGroup": "15+",
+        "userAnswer": "D",
+        "correctAnswer": "B",
+        "isCorrect": false,
+        "timestamp": "2025-10-16T17:55:58.941Z"
+      }
+    ],
+    "submittedAt": "2025-10-16T17:56:01.502Z"
   }
 ]

@@ -689,9 +689,9 @@ const QUESTION_GROUPS = {
     questions: [
       {
         id: 35,
-        ageGroup: "10-11",
+        ageGroup: "8-9",
         type: "rotation_sequence",
-        question: "A diamond rotates 90° clockwise each step. The blue half points up, right, down… What comes next?",
+        question: "What comes next in the pattern?",
         sequence: [
           { shape: "diamond", color: "split", topColor: "blue", bottomColor: "red", rotation: 0, size: "medium" },
           { shape: "diamond", color: "split", topColor: "blue", bottomColor: "red", rotation: 90, size: "medium" },
@@ -709,7 +709,7 @@ const QUESTION_GROUPS = {
         id: 36,
         ageGroup: "10-11",
         type: "flip_rotate_pattern",
-        question: "A triangle flips horizontally, then rotates 180°, then flips again (pattern repeats). If the last position was 'pointing left,' what comes next?",
+        question: "What comes next in the pattern?",
         sequence: [
           { shape: "triangle", color: "green", rotation: 0, reflected: false, size: "medium" },
           { shape: "triangle", color: "green", rotation: 90, reflected: false, size: "medium" },
@@ -731,7 +731,7 @@ const QUESTION_GROUPS = {
         id: 37,
         ageGroup: "10-11",
         type: "size_rotation_sequence",
-        question: "A star rotates 45° each step. Missing cell in row 1, col 3",
+        question: "What goes in the missing position?",
         sequence: [
           { shape: "star", color: "split", topColor: "pink", bottomColor: "blue", rotation: 0, size: "medium" },
           { shape: "star", color: "split", topColor: "pink", bottomColor: "blue", rotation: 45, size: "medium" },
@@ -751,7 +751,7 @@ const QUESTION_GROUPS = {
         id: 38,
         ageGroup: "10-11",
         type: "matrix_transformation",
-        question: "Complex multi-attribute pattern: Shapes cycle (square→triangle→circle), colors shift (blue/yellow→red/green→pink/purple), sizes grow (small→medium→big), rotations increase (0°→45°→90°). Missing: position [2,2]",
+        question: "What goes in the missing position?",
         grid: [
           [
             { shape: "square", color: "split", topColor: "blue", bottomColor: "yellow", rotation: 0, reflected: false, size: "small" },
@@ -781,7 +781,7 @@ const QUESTION_GROUPS = {
         id: 39,
         ageGroup: "10-11",
         type: "sequence_pattern",
-        question: "Mathematical sequence: Each step shows dots equal to the sum of the previous two numbers (like Fibonacci). Pattern: 1, 1, 2, 3, 5... Missing: position 8",
+        question: "What comes next in the pattern?",
         sequence: [
           { shape: "dots", color: "blue", rotation: 0, reflected: false, size: "medium", count: 1 },
           { shape: "dots", color: "blue", rotation: 0, reflected: false, size: "medium", count: 1 },
@@ -804,7 +804,7 @@ const QUESTION_GROUPS = {
         id: 40,
         ageGroup: "10-11",
         type: "matrix_transformation",
-        question: "Dual-rule matrix: Rule 1 = shapes alternate between filled and outline. Rule 2 = size increases down each column. Missing: bottom-right cell",
+        question: "What goes in the missing position?",
         grid: [
           [
             { shape: "star", color: "blue", style: "filled", size: "small", rotation: 0, reflected: false },
@@ -834,7 +834,7 @@ const QUESTION_GROUPS = {
         id: 41,
         ageGroup: "10-11",
         type: "sequence_pattern",
-        question: "Heart reflection sequence: Hearts alternate between facing left and facing right. Pattern: left→right→left→right... Missing: position 8",
+        question: "What comes next in the pattern?",
         sequence: [
           { shape: "heart", color: "red", rotation: 0, reflected: false, size: "medium", direction: "left" },
           { shape: "heart", color: "red", rotation: 0, reflected: true, size: "medium", direction: "right" },
@@ -857,7 +857,7 @@ const QUESTION_GROUPS = {
         id: 42,
         ageGroup: "10-11",
         type: "matrix_transformation",
-        question: "4x4 Circle shading pattern: Each row shifts the sequence (filled→outline→left-half→right-half) one position to the right. Missing: position (2,2).",
+        question: "What goes in the missing position?",
         grid: [
           [
             { shape: "circle", color: "blue", size: "medium", style: "filled", label: "Filled circle" },
@@ -900,7 +900,7 @@ const QUESTION_GROUPS = {
         id: 43,
         ageGroup: "12-14",
         type: "sequence_pattern",
-        question: "Dual transformation: A square rotates 90° clockwise each step, and at the same time its shading alternates between filled and outline. After: (filled square → rotated outline square → filled rotated square)… Missing: position 6",
+        question: "What comes next in the pattern?",
         sequence: [
           { shape: "square", color: "split", topColor: "yellow", bottomColor: "purple", size: "medium", style: "filled", rotation: 0 },
           { shape: "square", color: "split", topColor: "yellow", bottomColor: "purple", size: "medium", style: "outline", rotation: 0 },
@@ -921,7 +921,7 @@ const QUESTION_GROUPS = {
         id: 44,
         ageGroup: "12-14",
         type: "matrix_transformation",
-        question: "Complex 3×3 matrix: Row rule = shapes change AND rotate 45°. Column rule = colors change AND size increases. Diagonal rule = fill/outline alternates. Missing: center cell.",
+        question: "What goes in the missing position?",
         grid: [
           [
             { shape: "triangle", color: "red", size: "small", style: "filled", rotation: 0, label: "Small red filled triangle" },
@@ -951,7 +951,7 @@ const QUESTION_GROUPS = {
         id: 45,
         ageGroup: "12-14",
         type: "sequence_pattern",
-        question: "A sequence of yellow hearts changes in two ways at once: Orientation flips left/right every step, and Size alternates Small ↔ Large. Step 1: Yellow heart, Left, Small. Step 2: Yellow heart, Right, Large. Question: What will Step 8 look like?",
+        question: "What comes next in the pattern?",
         sequence: [
           { shape: "heart", color: "yellow", reflected: false, size: "small", direction: "left" },
           { shape: "heart", color: "yellow", reflected: true, size: "big", direction: "right" },
@@ -974,7 +974,7 @@ const QUESTION_GROUPS = {
         id: 46,
         ageGroup: "12-14",
         type: "sequence_pattern",
-        question: "A sequence of yellow triangles changes in two ways at once: First 4 steps rotate counter-clockwise (0°, 90°, 180°, 270°), then next 4 rotate clockwise (270°, 180°, 90°, 0°). Size cycles in groups of 2: Big, Big, Small, Small, Medium, Medium, then repeats. Question: What will Step 8 look like?",
+        question: "What comes next in the pattern?",
         sequence: [
           { shape: "triangle", color: "yellow", rotation: 0, size: "big" },      // Step 1: Yellow, 0°, Big
           { shape: "triangle", color: "yellow", rotation: 90, size: "big" },     // Step 2: Yellow, 90°, Big  
@@ -1054,6 +1054,46 @@ const QUESTION_GROUPS = {
           { id: "D", shape: "star", color: "split", topColor: "purple", bottomColor: "yellow", rotation: 270, size: "medium", label: "Purple/Yellow star, 270°" }
         ],
         correctAnswer: "A"
+      },
+      {
+        id: 56,
+        ageGroup: "12-15",
+        type: "matrix_transformation",
+        question: "What goes in the missing position?",
+        grid: [
+          [
+            { shape: "circle", color: "split", topColor: "blue", bottomColor: "red", rotation: 0 },      // Pos 1: Blue/Red 0° (start)
+            { shape: "circle", color: "split", topColor: "blue", bottomColor: "red", rotation: 90 },     // Pos 2: Rotate 90° right → Blue/Red 90°
+            { shape: "circle", color: "split", topColor: "red", bottomColor: "blue", rotation: 90 },     // Pos 3: Flip by 180° → Red/Blue 90°
+            { shape: "circle", color: "split", topColor: "red", bottomColor: "blue", rotation: 0 }       // Pos 4: Rotate 90° left (opposite) → Red/Blue 0°
+          ],
+          [
+            { shape: "circle", color: "split", topColor: "blue", bottomColor: "red", rotation: 0 },      // Pos 5: Flip by 180° → Blue/Red 0°
+            { shape: "circle", color: "split", topColor: "red", bottomColor: "blue", rotation: 0 },      // Pos 6: Flip by 180° → Red/Blue 0°
+            { shape: "circle", color: "split", topColor: "red", bottomColor: "blue", rotation: 90 },     // Pos 7: Rotate 90° right (opposite) → Red/Blue 90°
+            { shape: "circle", color: "split", topColor: "blue", bottomColor: "red", rotation: 90 }      // Pos 8: Flip by 180° → Blue/Red 90°
+          ],
+          [
+            { shape: "circle", color: "split", topColor: "red", bottomColor: "blue", rotation: 90 },     // Pos 9: Flip by 180° → Red/Blue 90°
+            { shape: "circle", color: "split", topColor: "blue", bottomColor: "red", rotation: 90 },     // Pos 10: Flip by 180° → Blue/Red 90°
+            { shape: "circle", color: "split", topColor: "blue", bottomColor: "red", rotation: 0 },      // Pos 11: Rotate 90° left (opposite) → Blue/Red 0°
+            { shape: "circle", color: "split", topColor: "red", bottomColor: "blue", rotation: 0 }       // Pos 12: Flip by 180° → Red/Blue 0°
+          ],
+          [
+            { shape: "circle", color: "split", topColor: "blue", bottomColor: "red", rotation: 0 },      // Pos 13: Flip by 180° → Blue/Red 0°
+            { shape: "circle", color: "split", topColor: "red", bottomColor: "blue", rotation: 0 },      // Pos 14: Flip by 180° → Red/Blue 0°
+            null,                                                                                         // Pos 15: Flip by 180° → Blue/Red 0°
+            { shape: "circle", color: "split", topColor: "red", bottomColor: "blue", rotation: 90 }      // Pos 16: Rotate 90° right (opposite) → Red/Blue 90°
+          ]
+        ],
+        options: [
+          { id: "A", shape: "circle", color: "split", topColor: "red", bottomColor: "blue", rotation: 90, label: "Red/Blue circle 90°" },
+          { id: "B", shape: "circle", color: "split", topColor: "blue", bottomColor: "red", rotation: 90, label: "Blue/Red circle 90°" },
+          { id: "C", shape: "circle", color: "split", topColor: "red", bottomColor: "blue", rotation: 0, label: "Red/Blue circle 0°" },
+          { id: "D", shape: "circle", color: "split", topColor: "blue", bottomColor: "red", rotation: 0, label: "Blue/Red circle 0°" },
+          { id: "E", label: "I don't know" }
+        ],
+        correctAnswer: "D"
       }
     ]
   },
@@ -1103,7 +1143,7 @@ const QUESTION_GROUPS = {
         id: 50,
         ageGroup: "15+",
         type: "matrix_transformation",
-        question: "Colors pass from one diamond to the next following the path 1→2→3→6→5→4→7→8→9. What goes in the missing cell?",
+        question: "What goes in the missing position?",
         grid: [
           [
             { shape: "diamond", color: "split", topColor: "red", bottomColor: "blue", rotation: 0, strokeWidth: 1, size: "small" },     // Position 1: Red/Blue → Blue passes to position 2
@@ -1174,7 +1214,7 @@ const QUESTION_GROUPS = {
         id: 52,
         ageGroup: "15+",
         type: "matrix_transformation",
-        question: "A 3×4 grid (12 boxes) follows a mathematical pattern: For odd positions, use the position number. For even positions, add half the position number (e.g., position 2 = 2+1=3, position 4 = 4+2=6). All shapes are blue circles. Find the missing cell at position 10.",
+        question: "What goes in the missing position?",
         grid: [
           [
             { shapes: [{shape: "circle", color: "blue"}], gridPosition: "r1c1" }, // Position 1: 1 shape
@@ -1207,20 +1247,27 @@ const QUESTION_GROUPS = {
       {
         id: 53,
         ageGroup: "15+",
-        type: "sequence",
-        question: "Each tile increases by the number of sides of the current shape. If a circle counts as 0 sides, what comes next?",
-        sequence: [
-          { shapes: [{shape: "triangle", color: "blue"}] },                                    // 1 blue triangle (3 sides)
-          { shapes: [{shape: "square", color: "yellow"}, {shape: "square", color: "yellow"}, {shape: "square", color: "yellow"}, {shape: "square", color: "yellow"}] },  // 4 yellow squares (1+3=4, square has 4 sides)
-          { shapes: [{shape: "circle", color: "pink"}, {shape: "circle", color: "pink"}, {shape: "circle", color: "pink"}, {shape: "circle", color: "pink"}, {shape: "circle", color: "pink"}, {shape: "circle", color: "pink"}, {shape: "circle", color: "pink"}, {shape: "circle", color: "pink"}] }, // 8 pink circles (4+4=8, circle has 0 sides)
-          { shapes: [{shape: "diamond", color: "green"}, {shape: "diamond", color: "green"}, {shape: "diamond", color: "green"}, {shape: "diamond", color: "green"}, {shape: "diamond", color: "green"}, {shape: "diamond", color: "green"}, {shape: "diamond", color: "green"}, {shape: "diamond", color: "green"}] }, // 8 green diamonds (8+0=8, diamond has 4 sides)
-          null // Next: 12 blue triangles (8+4=12, triangle has 3 sides)
+        type: "matrix_transformation",
+        question: "What goes in the missing position?",
+        grid: [
+          [
+            { shapes: [{shape: "triangle", color: "blue"}] },                                    // R1C1: 1 blue triangle (3 sides)
+            { shapes: [{shape: "square", color: "yellow"}, {shape: "square", color: "yellow"}, {shape: "square", color: "yellow"}, {shape: "square", color: "yellow"}] },  // R1C2: 4 yellow squares (1+3=4, square has 4 sides)
+            { shapes: [{shape: "circle", color: "pink"}, {shape: "circle", color: "pink"}, {shape: "circle", color: "pink"}, {shape: "circle", color: "pink"}, {shape: "circle", color: "pink"}, {shape: "circle", color: "pink"}, {shape: "circle", color: "pink"}, {shape: "circle", color: "pink"}] }, // R1C3: 8 pink circles (4+4=8, circle has 0 sides)
+            { shapes: [{shape: "diamond", color: "green"}, {shape: "diamond", color: "green"}, {shape: "diamond", color: "green"}, {shape: "diamond", color: "green"}, {shape: "diamond", color: "green"}, {shape: "diamond", color: "green"}, {shape: "diamond", color: "green"}, {shape: "diamond", color: "green"}] } // R1C4: 8 green diamonds (8+0=8, diamond has 4 sides)
+          ],
+          [
+            { shapes: Array.from({length: 12}, () => ({shape: "triangle", color: "blue"})) },  // R2C1: 12 blue triangles (8+4=12, triangle has 3 sides)
+            { shapes: Array.from({length: 15}, () => ({shape: "square", color: "yellow"})) },  // R2C2: 15 yellow squares (12+3=15, square has 4 sides)
+            { shapes: Array.from({length: 19}, () => ({shape: "circle", color: "pink"})) },    // R2C3: 19 pink circles (15+4=19, circle has 0 sides)
+            null                                                                                 // R2C4: 19 green diamonds (19+0=19, diamond has 4 sides)
+          ]
         ],
         options: [
-          { id: "A", shapes: Array.from({length: 10}, () => ({shape: "triangle", color: "blue"})), label: "10 blue triangles" },
-          { id: "B", shapes: Array.from({length: 13}, () => ({shape: "triangle", color: "blue"})), label: "13 blue triangles" },
-          { id: "C", shapes: Array.from({length: 12}, () => ({shape: "triangle", color: "blue"})), label: "12 blue triangles" },
-          { id: "D", shapes: Array.from({length: 11}, () => ({shape: "triangle", color: "blue"})), label: "11 blue triangles" },
+          { id: "A", shapes: Array.from({length: 18}, () => ({shape: "diamond", color: "green"})), label: "18 green diamonds" },
+          { id: "B", shapes: Array.from({length: 20}, () => ({shape: "diamond", color: "green"})), label: "20 green diamonds" },
+          { id: "C", shapes: Array.from({length: 19}, () => ({shape: "diamond", color: "green"})), label: "19 green diamonds" },
+          { id: "D", shapes: Array.from({length: 21}, () => ({shape: "diamond", color: "green"})), label: "21 green diamonds" },
           { id: "E", label: "I don't know" }
         ],
         correctAnswer: "C"
@@ -1232,26 +1279,26 @@ const QUESTION_GROUPS = {
         question: "What goes in the missing position?",
         grid: [
           [
-            { shape: "triangle", color: "split", topColor: "green", bottomColor: "yellow", rotation: 0 },        // R1C1: Green top, yellow bottom
-            { shape: "square", color: "split", topColor: "green", bottomColor: "yellow", rotation: 60 },       // R1C2: Green top, yellow bottom
-            { shape: "diamond", color: "split", topColor: "green", bottomColor: "yellow", rotation: 120 }       // R1C3: Green top, yellow bottom
+            { shape: "circle", color: "split", topColor: "green", bottomColor: "yellow", rotation: 0 },        // R1C1: Green top, yellow bottom
+            { shape: "circle", color: "split", topColor: "green", bottomColor: "yellow", rotation: 60 },       // R1C2: Green top, yellow bottom
+            { shape: "circle", color: "split", topColor: "green", bottomColor: "yellow", rotation: 120 }       // R1C3: Green top, yellow bottom
           ],
           [
-            { shape: "square", color: "split", topColor: "green", bottomColor: "yellow", rotation: 60 },       // R2C1: Green top, yellow bottom
-            { shape: "diamond", color: "split", topColor: "green", bottomColor: "yellow", rotation: 120 },       // R2C2: Green top, yellow bottom
+            { shape: "circle", color: "split", topColor: "green", bottomColor: "yellow", rotation: 60 },       // R2C1: Green top, yellow bottom
+            { shape: "circle", color: "split", topColor: "green", bottomColor: "yellow", rotation: 120 },       // R2C2: Green top, yellow bottom
             { shape: "circle", color: "split", topColor: "green", bottomColor: "yellow", rotation: 180 }      // R2C3: Green top, yellow bottom
           ],
           [
-            { shape: "diamond", color: "split", topColor: "green", bottomColor: "yellow", rotation: 120 },     // R3C1: Green top, yellow bottom
+            { shape: "circle", color: "split", topColor: "green", bottomColor: "yellow", rotation: 120 },     // R3C1: Green top, yellow bottom
             { shape: "circle", color: "split", topColor: "green", bottomColor: "yellow", rotation: 180 },      // R3C2: Green top, yellow bottom
             null                                                                                              // R3C3: Green top, yellow bottom
           ]
         ],
         options: [
-          { id: "A", shape: "star", color: "split", topColor: "green", bottomColor: "yellow", rotation: 240, label: "Green-Yellow star 240°" },
-          { id: "B", shape: "star", color: "split", topColor: "yellow", bottomColor: "green", rotation: 120, label: "Yellow-Green star 120°" },
-          { id: "C", shape: "star", color: "split", topColor: "green", bottomColor: "yellow", rotation: 120, label: "Green-Yellow star 120°" },
-          { id: "D", shape: "star", color: "split", topColor: "green", bottomColor: "yellow", rotation: 180, label: "Green-Yellow star 180°" },
+          { id: "A", shape: "circle", color: "split", topColor: "green", bottomColor: "yellow", rotation: 240, label: "Green-Yellow circle 240°" },
+          { id: "B", shape: "circle", color: "split", topColor: "yellow", bottomColor: "green", rotation: 120, label: "Yellow-Green circle 120°" },
+          { id: "C", shape: "circle", color: "split", topColor: "green", bottomColor: "yellow", rotation: 120, label: "Green-Yellow circle 120°" },
+          { id: "D", shape: "circle", color: "split", topColor: "green", bottomColor: "yellow", rotation: 180, label: "Green-Yellow circle 180°" },
           { id: "E", label: "I don't know" }
         ],
         correctAnswer: "B"
@@ -1263,78 +1310,32 @@ const QUESTION_GROUPS = {
         question: "What goes in the missing position?",
         grid: [
           [
-            { shape: "triangle", color: "split", topColor: "red", bottomColor: "blue", rotation: 0 },      // Row 1: Shapes progress, colors cycle, rotation increases by 45°
-            { shape: "square", color: "split", topColor: "blue", bottomColor: "green", rotation: 45 },     
-            { shape: "diamond", color: "split", topColor: "green", bottomColor: "yellow", rotation: 90 },   
-            { shape: "circle", color: "split", topColor: "yellow", bottomColor: "red", rotation: 135 }  
+            { shape: "circle", color: "split", topColor: "yellow", bottomColor: "blue", rotation: 0 },      // Row 1, Col 1: Yellow/Blue at 0°
+            { shape: "circle", color: "split", topColor: "green", bottomColor: "blue", rotation: 45 },      // Row 1, Col 2: Blue rotates 45°, Green new top
+            { shape: "circle", color: "split", topColor: "pink", bottomColor: "green", rotation: 135 },     // Row 1, Col 3: Green rotates 90° to bottom (45° + 90° = 135°), Pink new top
+            { shape: "circle", color: "split", topColor: "pink", bottomColor: "yellow", rotation: 315 }     // Row 1, Col 4: Pink rotates 180° stays top (135° + 180° = 315°), Yellow new bottom
           ],
           [
-            { shape: "square", color: "split", topColor: "blue", bottomColor: "green", rotation: 45 },     // Row 2: Shifts one position right from row 1
-            { shape: "diamond", color: "split", topColor: "green", bottomColor: "yellow", rotation: 90 },       
-            { shape: "circle", color: "split", topColor: "yellow", bottomColor: "red", rotation: 135 },        
-            { shape: "star", color: "split", topColor: "red", bottomColor: "blue", rotation: 180 }     
+            { shape: "circle", color: "split", topColor: "pink", bottomColor: "yellow", rotation: 315 },    // Row 2, Col 1: Same as R1C4
+            { shape: "circle", color: "split", topColor: "blue", bottomColor: "yellow", rotation: 0 },      // Row 2, Col 2: Yellow rotates 45° to bottom (315° + 45° = 0°), Blue new top
+            { shape: "circle", color: "split", topColor: "blue", bottomColor: "green", rotation: 90 },      // Row 2, Col 3: Blue on top, Green on bottom at 90°
+            { shape: "circle", color: "split", topColor: "pink", bottomColor: "green", rotation: 270 }      // Row 2, Col 4: Pink on top, Green on bottom at 270°
           ],
           [
-            { shape: "diamond", color: "split", topColor: "green", bottomColor: "yellow", rotation: 90 },   // Row 3: Shifts one position right from row 2
-            { shape: "circle", color: "split", topColor: "yellow", bottomColor: "red", rotation: 135 },       
-            { shape: "star", color: "split", topColor: "red", bottomColor: "blue", rotation: 180 },       
-            { shape: "triangle", color: "split", topColor: "blue", bottomColor: "green", rotation: 225 }         
-          ],
-          [
-            { shape: "circle", color: "split", topColor: "yellow", bottomColor: "red", rotation: 135 },      // Row 4: Shifts one position right from row 3
-            { shape: "star", color: "split", topColor: "red", bottomColor: "blue", rotation: 180 },    
-            { shape: "triangle", color: "split", topColor: "blue", bottomColor: "green", rotation: 225 },        
-            null                                                                                            // Should be: square, green/yellow, 270°
+            { shape: "circle", color: "split", topColor: "pink", bottomColor: "green", rotation: 270 },     // Row 3, Col 1: Pink on top, Green on bottom at 270°
+            null,                                                                                            // Row 3, Col 2: Pink rotates 45° to bottom (270° + 45° = 315°), Green stays top, Yellow new bottom
+            { shape: "circle", color: "split", topColor: "yellow", bottomColor: "blue", rotation: 225 },    // Row 3, Col 3: Yellow on top, Blue on bottom at 225°
+            { shape: "circle", color: "split", topColor: "blue", bottomColor: "green", rotation: 225 }      // Row 3, Col 4: Blue on top, Green on bottom at 225°
           ]
         ],
         options: [
-          { id: "A", shape: "square", color: "split", topColor: "yellow", bottomColor: "green", rotation: 270, label: "Yellow-Green square 270°" },
-          { id: "B", shape: "square", color: "split", topColor: "green", bottomColor: "yellow", rotation: 315, label: "Green-Yellow square 315°" },
-          { id: "C", shape: "diamond", color: "split", topColor: "green", bottomColor: "yellow", rotation: 270, label: "Green-Yellow diamond 270°" },
-          { id: "D", shape: "square", color: "split", topColor: "green", bottomColor: "yellow", rotation: 270, label: "Green-Yellow square 270°" },
+          { id: "A", shape: "circle", color: "split", topColor: "yellow", bottomColor: "green", rotation: 225, label: "Yellow-Green circle 225°" },
+          { id: "B", shape: "circle", color: "split", topColor: "pink", bottomColor: "yellow", rotation: 315, label: "Pink-Yellow circle 315°" },
+          { id: "C", shape: "circle", color: "split", topColor: "green", bottomColor: "yellow", rotation: 225, label: "Green-Yellow circle 225°" },
+          { id: "D", shape: "circle", color: "split", topColor: "yellow", bottomColor: "pink", rotation: 315, label: "Yellow-Pink circle 315°" },
           { id: "E", label: "I don't know" }
         ],
-        correctAnswer: "D"
-      },
-      {
-        id: 56,
-        ageGroup: "15+",
-        type: "matrix_transformation",
-        question: "What goes in the missing position?",
-        grid: [
-          [
-            { shape: "circle", color: "split", topColor: "blue", bottomColor: "red", rotation: 0 },      // Pos 1: 0° (start)
-            { shape: "circle", color: "split", topColor: "blue", bottomColor: "red", rotation: 90 },     // Pos 2: 90° (rotate after 1 position)
-            { shape: "circle", color: "split", topColor: "blue", bottomColor: "red", rotation: 270 },    // Pos 3: 270° (flip 180°)
-            { shape: "circle", color: "split", topColor: "blue", bottomColor: "red", rotation: 180 }     // Pos 4: 180° (rotate after 2 positions from pos 2)
-          ],
-          [
-            { shape: "circle", color: "split", topColor: "blue", bottomColor: "red", rotation: 0 },      // Pos 5: 0° (flip 180° from pos 4)
-            { shape: "circle", color: "split", topColor: "blue", bottomColor: "red", rotation: 180 },    // Pos 6: 180° (flip back)
-            { shape: "circle", color: "split", topColor: "blue", bottomColor: "red", rotation: 270 },    // Pos 7: 270° (rotate after 3 positions from pos 4)
-            { shape: "circle", color: "split", topColor: "blue", bottomColor: "red", rotation: 90 }      // Pos 8: 90° (flip 180° from pos 7)
-          ],
-          [
-            { shape: "circle", color: "split", topColor: "blue", bottomColor: "red", rotation: 270 },    // Pos 9: 270° (flip back)
-            { shape: "circle", color: "split", topColor: "blue", bottomColor: "red", rotation: 90 },     // Pos 10: 90° (flip)
-            { shape: "circle", color: "split", topColor: "blue", bottomColor: "red", rotation: 0 },      // Pos 11: 0° (rotate after 4 positions from pos 7)
-            { shape: "circle", color: "split", topColor: "blue", bottomColor: "red", rotation: 180 }     // Pos 12: 180° (flip 180° from pos 11)
-          ],
-          [
-            { shape: "circle", color: "split", topColor: "blue", bottomColor: "red", rotation: 0 },      // Pos 13: 0° (flip back)
-            { shape: "circle", color: "split", topColor: "blue", bottomColor: "red", rotation: 180 },    // Pos 14: 180° (flip)
-            { shape: "circle", color: "split", topColor: "blue", bottomColor: "red", rotation: 0 },      // Pos 15: 0° (flip)
-            null                                                                                          // Pos 16: 180° (flip) - Would rotate after 5 positions at pos 17
-          ]
-        ],
-        options: [
-          { id: "A", shape: "circle", color: "split", topColor: "blue", bottomColor: "red", rotation: 180, label: "Blue/Red circle 180°" },
-          { id: "B", shape: "circle", color: "split", topColor: "blue", bottomColor: "red", rotation: 90, label: "Blue/Red circle 90°" },
-          { id: "C", shape: "circle", color: "split", topColor: "blue", bottomColor: "red", rotation: 0, label: "Blue/Red circle 0°" },
-          { id: "D", shape: "circle", color: "split", topColor: "blue", bottomColor: "red", rotation: 270, label: "Blue/Red circle 270°" },
-          { id: "E", label: "I don't know" }
-        ],
-        correctAnswer: "A"
+        correctAnswer: "B"
       }
     ]
   }
