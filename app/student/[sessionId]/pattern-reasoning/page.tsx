@@ -1304,32 +1304,32 @@ const QUESTION_GROUPS = {
         grid: [
           [
             { shape: "circle", color: "split", topColor: "blue", bottomColor: "red", rotation: 0 },      // Pos 1: 0° (start)
-            { shape: "circle", color: "split", topColor: "blue", bottomColor: "red", rotation: 90 },     // Pos 2: 90° (shift left)
-            { shape: "circle", color: "split", topColor: "blue", bottomColor: "red", rotation: 270 },    // Pos 3: 270° (opposite 180° from pos 2)
-            { shape: "circle", color: "split", topColor: "blue", bottomColor: "red", rotation: 90 }      // Pos 4: 90° (back to pos 2)
+            { shape: "circle", color: "split", topColor: "blue", bottomColor: "red", rotation: 90 },     // Pos 2: 90° (rotate after 1 position)
+            { shape: "circle", color: "split", topColor: "blue", bottomColor: "red", rotation: 270 },    // Pos 3: 270° (flip 180°)
+            { shape: "circle", color: "split", topColor: "blue", bottomColor: "red", rotation: 180 }     // Pos 4: 180° (rotate after 2 positions from pos 2)
           ],
           [
-            { shape: "circle", color: "split", topColor: "blue", bottomColor: "red", rotation: 270 },    // Pos 5: 270° (opposite from pos 4)
-            { shape: "circle", color: "split", topColor: "blue", bottomColor: "red", rotation: 90 },     // Pos 6: 90° (back to pos 4)
-            { shape: "circle", color: "split", topColor: "blue", bottomColor: "red", rotation: 180 },    // Pos 7: 180° (shift 90° from last pattern start)
-            { shape: "circle", color: "split", topColor: "blue", bottomColor: "red", rotation: 0 }       // Pos 8: 0° (opposite 180° from pos 7)
+            { shape: "circle", color: "split", topColor: "blue", bottomColor: "red", rotation: 0 },      // Pos 5: 0° (flip 180° from pos 4)
+            { shape: "circle", color: "split", topColor: "blue", bottomColor: "red", rotation: 180 },    // Pos 6: 180° (flip back)
+            { shape: "circle", color: "split", topColor: "blue", bottomColor: "red", rotation: 270 },    // Pos 7: 270° (rotate after 3 positions from pos 4)
+            { shape: "circle", color: "split", topColor: "blue", bottomColor: "red", rotation: 90 }      // Pos 8: 90° (flip 180° from pos 7)
           ],
           [
-            { shape: "circle", color: "split", topColor: "blue", bottomColor: "red", rotation: 180 },    // Pos 9: 180° (back to pos 7)
-            { shape: "circle", color: "split", topColor: "blue", bottomColor: "red", rotation: 0 },      // Pos 10: 0° (opposite from pos 9)
-            { shape: "circle", color: "split", topColor: "blue", bottomColor: "red", rotation: 180 },    // Pos 11: 180° (back to pos 9)
-            { shape: "circle", color: "split", topColor: "blue", bottomColor: "red", rotation: 0 }       // Pos 12: 0° (opposite from pos 11)
+            { shape: "circle", color: "split", topColor: "blue", bottomColor: "red", rotation: 270 },    // Pos 9: 270° (flip back)
+            { shape: "circle", color: "split", topColor: "blue", bottomColor: "red", rotation: 90 },     // Pos 10: 90° (flip)
+            { shape: "circle", color: "split", topColor: "blue", bottomColor: "red", rotation: 0 },      // Pos 11: 0° (rotate after 4 positions from pos 7)
+            { shape: "circle", color: "split", topColor: "blue", bottomColor: "red", rotation: 180 }     // Pos 12: 180° (flip 180° from pos 11)
           ],
           [
-            { shape: "circle", color: "split", topColor: "blue", bottomColor: "red", rotation: 270 },    // Pos 13: 270° (shift 90° from last pattern start)
-            { shape: "circle", color: "split", topColor: "blue", bottomColor: "red", rotation: 90 },     // Pos 14: 90° (opposite 180° from pos 13)
-            { shape: "circle", color: "split", topColor: "blue", bottomColor: "red", rotation: 270 },    // Pos 15: 270° (back to pos 13)
-            null                                                                                          // Pos 16: 90° (opposite from pos 15)
+            { shape: "circle", color: "split", topColor: "blue", bottomColor: "red", rotation: 0 },      // Pos 13: 0° (flip back)
+            { shape: "circle", color: "split", topColor: "blue", bottomColor: "red", rotation: 180 },    // Pos 14: 180° (flip)
+            { shape: "circle", color: "split", topColor: "blue", bottomColor: "red", rotation: 0 },      // Pos 15: 0° (flip)
+            null                                                                                          // Pos 16: 180° (flip) - Would rotate after 5 positions at pos 17
           ]
         ],
         options: [
-          { id: "A", shape: "circle", color: "split", topColor: "blue", bottomColor: "red", rotation: 90, label: "Blue/Red circle 90°" },
-          { id: "B", shape: "circle", color: "split", topColor: "blue", bottomColor: "red", rotation: 180, label: "Blue/Red circle 180°" },
+          { id: "A", shape: "circle", color: "split", topColor: "blue", bottomColor: "red", rotation: 180, label: "Blue/Red circle 180°" },
+          { id: "B", shape: "circle", color: "split", topColor: "blue", bottomColor: "red", rotation: 90, label: "Blue/Red circle 90°" },
           { id: "C", shape: "circle", color: "split", topColor: "blue", bottomColor: "red", rotation: 0, label: "Blue/Red circle 0°" },
           { id: "D", shape: "circle", color: "split", topColor: "blue", bottomColor: "red", rotation: 270, label: "Blue/Red circle 270°" },
           { id: "E", label: "I don't know" }
