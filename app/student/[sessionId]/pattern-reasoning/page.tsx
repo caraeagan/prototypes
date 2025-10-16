@@ -1295,6 +1295,46 @@ const QUESTION_GROUPS = {
           { id: "E", label: "I don't know" }
         ],
         correctAnswer: "D"
+      },
+      {
+        id: 56,
+        ageGroup: "15+",
+        type: "matrix_transformation",
+        question: "What goes in the missing position?",
+        grid: [
+          [
+            { shape: "circle", color: "split", topColor: "blue", bottomColor: "red", rotation: 0 },      // Pos 1: 0° (start)
+            { shape: "circle", color: "split", topColor: "blue", bottomColor: "red", rotation: 90 },     // Pos 2: 90° (shift left)
+            { shape: "circle", color: "split", topColor: "blue", bottomColor: "red", rotation: 270 },    // Pos 3: 270° (opposite 180° from pos 2)
+            { shape: "circle", color: "split", topColor: "blue", bottomColor: "red", rotation: 90 }      // Pos 4: 90° (back to pos 2)
+          ],
+          [
+            { shape: "circle", color: "split", topColor: "blue", bottomColor: "red", rotation: 270 },    // Pos 5: 270° (opposite from pos 4)
+            { shape: "circle", color: "split", topColor: "blue", bottomColor: "red", rotation: 90 },     // Pos 6: 90° (back to pos 4)
+            { shape: "circle", color: "split", topColor: "blue", bottomColor: "red", rotation: 180 },    // Pos 7: 180° (shift 90° from last pattern start)
+            { shape: "circle", color: "split", topColor: "blue", bottomColor: "red", rotation: 0 }       // Pos 8: 0° (opposite 180° from pos 7)
+          ],
+          [
+            { shape: "circle", color: "split", topColor: "blue", bottomColor: "red", rotation: 180 },    // Pos 9: 180° (back to pos 7)
+            { shape: "circle", color: "split", topColor: "blue", bottomColor: "red", rotation: 0 },      // Pos 10: 0° (opposite from pos 9)
+            { shape: "circle", color: "split", topColor: "blue", bottomColor: "red", rotation: 180 },    // Pos 11: 180° (back to pos 9)
+            { shape: "circle", color: "split", topColor: "blue", bottomColor: "red", rotation: 0 }       // Pos 12: 0° (opposite from pos 11)
+          ],
+          [
+            { shape: "circle", color: "split", topColor: "blue", bottomColor: "red", rotation: 270 },    // Pos 13: 270° (shift 90° from last pattern start)
+            { shape: "circle", color: "split", topColor: "blue", bottomColor: "red", rotation: 90 },     // Pos 14: 90° (opposite 180° from pos 13)
+            { shape: "circle", color: "split", topColor: "blue", bottomColor: "red", rotation: 270 },    // Pos 15: 270° (back to pos 13)
+            null                                                                                          // Pos 16: 90° (opposite from pos 15)
+          ]
+        ],
+        options: [
+          { id: "A", shape: "circle", color: "split", topColor: "blue", bottomColor: "red", rotation: 90, label: "Blue/Red circle 90°" },
+          { id: "B", shape: "circle", color: "split", topColor: "blue", bottomColor: "red", rotation: 180, label: "Blue/Red circle 180°" },
+          { id: "C", shape: "circle", color: "split", topColor: "blue", bottomColor: "red", rotation: 0, label: "Blue/Red circle 0°" },
+          { id: "D", shape: "circle", color: "split", topColor: "blue", bottomColor: "red", rotation: 270, label: "Blue/Red circle 270°" },
+          { id: "E", label: "I don't know" }
+        ],
+        correctAnswer: "A"
       }
     ]
   }
