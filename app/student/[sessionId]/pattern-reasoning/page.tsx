@@ -1855,10 +1855,10 @@ export default function StudentPatternReasoning() {
     
     console.log('Test completion - URL filter:', filter)
     console.log('Test completion - window.location.href:', window.location.href)
-    
-    // ALWAYS redirect to CSV download page to avoid completion page errors
-    console.log('Redirecting to CSV download page - ALWAYS for pattern-reasoning')
-    window.location.href = '/csv-download'
+
+    // Redirect to dashboard after test completion
+    console.log('Redirecting to dashboard - test complete')
+    window.location.href = '/dashboard'
   }
 
   // Render triangle with rotation - make it fill the available space
