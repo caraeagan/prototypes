@@ -63,7 +63,7 @@ export default function PatternTestEntryNew() {
           <div className="bg-blue-50 rounded-lg p-4">
             <h3 className="font-semibold text-blue-900 mb-2">Test Information:</h3>
             <ul className="text-sm text-blue-800 space-y-1">
-              <li>• 7 advanced visual pattern questions</li>
+              <li>• 8 advanced visual pattern questions</li>
               <li>• Questions designed for ages 15 and up</li>
               <li>• No time limit - work at your own pace</li>
               <li>• Results automatically saved to database</li>

@@ -1054,7 +1054,11 @@ const QUESTION_GROUPS = {
           { id: "D", shape: "star", color: "split", topColor: "purple", bottomColor: "yellow", rotation: 270, size: "medium", label: "Purple/Yellow star, 270°" }
         ],
         correctAnswer: "A"
-      },
+      }
+    ]
+  },
+  "15+": {
+    questions: [
       {
         id: 49,
         ageGroup: "15+",
@@ -1094,11 +1098,7 @@ const QUESTION_GROUPS = {
           { id: "E", label: "I don't know" }
         ],
         correctAnswer: "A"
-      }
-    ]
-  },
-  "15+": {
-    questions: [
+      },
       {
         id: 50,
         ageGroup: "15+",
