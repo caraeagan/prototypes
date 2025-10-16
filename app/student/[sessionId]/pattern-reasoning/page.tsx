@@ -1059,32 +1059,39 @@ const QUESTION_GROUPS = {
         id: 49,
         ageGroup: "15+",
         type: "matrix_transformation",
-        question: "What goes in position 8?",
+        question: "What would be the first shape in the next row?",
         grid: [
           [
-            { shape: "arrow", color: "red", reflected: false, size: "small", direction: "left", strokeWidth: 1 },     // Pos 1: Red arrow, Left, Thin
-            { shape: "arrow", color: "blue", reflected: true, size: "small", direction: "right", strokeWidth: 3 },   // Pos 2: Blue arrow, Right, Thick  
-            { shape: "arrow", color: "green", reflected: false, size: "small", direction: "left", strokeWidth: 3 },  // Pos 3: Green arrow, Left, Thick
-            { shape: "arrow", color: "red", reflected: true, size: "small", direction: "right", strokeWidth: 1 }     // Pos 4: Red arrow, Right, Thin
+            { shape: "arrow", color: "red", rotation: 0, size: "small", strokeWidth: 2 },      // Pos 1: 0° (right), rotating clockwise
+            { shape: "arrow", color: "blue", rotation: 45, size: "small", strokeWidth: 1 },    // Pos 2: 45° (up-right), clockwise
+            { shape: "arrow", color: "green", rotation: 90, size: "small", strokeWidth: 3 },   // Pos 3: 90° (up), clockwise
+            { shape: "arrow", color: "red", rotation: 270, size: "small", strokeWidth: 2 }     // Pos 4: 270° (down), Position 3→4 flips 180° (90→270), counter-clockwise
           ],
           [
-            { shape: "arrow", color: "blue", reflected: false, size: "small", direction: "left", strokeWidth: 1 },   // Pos 5: Blue arrow, Left, Thin
-            { shape: "arrow", color: "green", reflected: true, size: "small", direction: "right", strokeWidth: 3 },  // Pos 6: Green arrow, Right, Thick
-            { shape: "arrow", color: "red", reflected: false, size: "small", direction: "left", strokeWidth: 3 },    // Pos 7: Red arrow, Left, Thick
-            null // Pos 8: Missing - Blue arrow, Right, Thick
+            { shape: "arrow", color: "blue", rotation: 225, size: "small", strokeWidth: 3 },   // Pos 5: 225° (down-left), counter-clockwise after flip at pos 3→4
+            { shape: "arrow", color: "green", rotation: 180, size: "small", strokeWidth: 2 },  // Pos 6: 180° (left), counter-clockwise
+            null,  // Pos 7: Missing - Position 6→7 flips 180° (180→0), should be Red arrow, 0°, Thin, clockwise
+            { shape: "arrow", color: "blue", rotation: 45, size: "small", strokeWidth: 3 }     // Pos 8: 45° (up-right), clockwise
           ],
           [
-            { shape: "arrow", color: "green", reflected: false, size: "small", direction: "left", strokeWidth: 1 },  // Pos 9: Green arrow, Left, Thin
-            { shape: "arrow", color: "red", reflected: true, size: "small", direction: "right", strokeWidth: 3 },    // Pos 10: Red arrow, Right, Thick
-            { shape: "arrow", color: "blue", reflected: false, size: "small", direction: "left", strokeWidth: 3 },   // Pos 11: Blue arrow, Left, Thick
-            { shape: "arrow", color: "green", reflected: true, size: "small", direction: "right", strokeWidth: 1 }   // Pos 12: Green arrow, Right, Thin
+            { shape: "arrow", color: "green", rotation: 90, size: "small", strokeWidth: 2 },   // Pos 9: 90° (up), clockwise
+            { shape: "arrow", color: "red", rotation: 270, size: "small", strokeWidth: 1 },    // Pos 10: 270° (down), Position 9→10 flips 180° (90→270), counter-clockwise
+            { shape: "arrow", color: "blue", rotation: 225, size: "small", strokeWidth: 3 },   // Pos 11: 225° (down-left), counter-clockwise
+            { shape: "arrow", color: "green", rotation: 180, size: "small", strokeWidth: 2 }   // Pos 12: 180° (left), counter-clockwise
+          ],
+          [
+            { shape: "arrow", color: "red", rotation: 0, size: "small", strokeWidth: 1 },      // Pos 13: 0° (right), Position 12→13 flips 180° (180→0), clockwise
+            { shape: "arrow", color: "blue", rotation: 45, size: "small", strokeWidth: 3 },    // Pos 14: 45° (up-right), clockwise
+            { shape: "arrow", color: "green", rotation: 90, size: "small", strokeWidth: 2 },   // Pos 15: 90° (up), clockwise
+            { shape: "arrow", color: "red", rotation: 270, size: "small", strokeWidth: 1 }     // Pos 16: 270° (down), Position 15→16 flips 180° (90→270)
           ]
         ],
         options: [
-          { id: "A", shape: "arrow", color: "blue", reflected: true, size: "small", direction: "right", strokeWidth: 1, label: "Blue arrow, Right, Thin" },
-          { id: "B", shape: "arrow", color: "blue", reflected: true, size: "small", direction: "right", strokeWidth: 3, label: "Blue arrow, Right, Thick" },
-          { id: "C", shape: "arrow", color: "green", reflected: true, size: "small", direction: "right", strokeWidth: 1, label: "Green arrow, Right, Thin" },
-          { id: "D", shape: "arrow", color: "blue", reflected: false, size: "small", direction: "left", strokeWidth: 1, label: "Blue arrow, Left, Thin" }
+          { id: "A", shape: "arrow", color: "red", rotation: 0, size: "small", strokeWidth: 1, label: "Red arrow, right, Thin" },
+          { id: "B", shape: "arrow", color: "red", rotation: 225, size: "small", strokeWidth: 1, label: "Red arrow, down-left, Thin" },
+          { id: "C", shape: "arrow", color: "red", rotation: 0, size: "small", strokeWidth: 1, label: "Red arrow, right, Thin" },
+          { id: "D", shape: "arrow", color: "red", rotation: 270, size: "small", strokeWidth: 1, label: "Red arrow, down, Thin" },
+          { id: "E", label: "I don't know" }
         ],
         correctAnswer: "A"
       }
@@ -1115,49 +1122,51 @@ const QUESTION_GROUPS = {
           ]
         ],
         options: [
-          { id: "A", shape: "diamond", color: "split", topColor: "yellow", bottomColor: "orange", rotation: 135, strokeWidth: 3, size: "medium", label: "Yellow/Orange split diamond, 135° rotation" },
-          { id: "B", shape: "diamond", color: "split", topColor: "green", bottomColor: "orange", rotation: 135, strokeWidth: 3, size: "medium", label: "Green/Orange split diamond" },
+          { id: "A", shape: "diamond", color: "split", topColor: "green", bottomColor: "orange", rotation: 135, strokeWidth: 3, size: "medium", label: "Green/Orange split diamond" },
+          { id: "B", shape: "diamond", color: "split", topColor: "yellow", bottomColor: "orange", rotation: 135, strokeWidth: 3, size: "medium", label: "Yellow/Orange split diamond, 135° rotation" },
           { id: "C", shape: "diamond", color: "split", topColor: "yellow", bottomColor: "purple", rotation: 135, strokeWidth: 3, size: "medium", label: "Yellow/Purple split diamond" },
-          { id: "D", shape: "diamond", color: "split", topColor: "orange", bottomColor: "yellow", rotation: 180, strokeWidth: 3, size: "medium", label: "Orange/Yellow split diamond, wrong rotation" }
+          { id: "D", shape: "diamond", color: "split", topColor: "orange", bottomColor: "yellow", rotation: 180, strokeWidth: 3, size: "medium", label: "Orange/Yellow split diamond, wrong rotation" },
+          { id: "E", label: "I don't know" }
         ],
-        correctAnswer: "A"
+        correctAnswer: "B"
       },
       {
         id: 51,
         ageGroup: "15+",
-        type: "matrix_transformation", 
+        type: "matrix_transformation",
         question: "What goes in the missing position?",
         grid: [
           [
-            { shape: "triangle", color: "split", topColor: "red", bottomColor: "blue", rotation: 20, size: "small" },       // R1C1: Red/Blue small triangle 20°
-            { shape: "triangle", color: "split", topColor: "green", bottomColor: "yellow", rotation: 40, size: "medium" },  // R1C2: Green/Yellow medium triangle 40°
-            { shape: "triangle", color: "split", topColor: "blue", bottomColor: "red", rotation: 60, size: "large" },       // R1C3: Blue/Red large triangle 60°
-            { shape: "triangle", color: "split", topColor: "yellow", bottomColor: "green", rotation: 80, size: "small" }    // R1C4: Yellow/Green small triangle 80°
+            { shape: "triangle", color: "split", topColor: "red", bottomColor: "blue", rotation: 0, size: "small", modifier: "dot" },        // R1C1: Start 0°, Row 1 rotates clockwise
+            { shape: "triangle", color: "split", topColor: "green", bottomColor: "yellow", rotation: 30, size: "medium" },                   // R1C2: +30° clockwise
+            { shape: "triangle", color: "split", topColor: "blue", bottomColor: "red", rotation: 60, size: "big", modifier: "dot" },         // R1C3: +30° clockwise
+            { shape: "triangle", color: "split", topColor: "yellow", bottomColor: "green", rotation: 90, size: "small" }                     // R1C4: +30° clockwise
           ],
           [
-            { shape: "triangle", color: "split", topColor: "blue", bottomColor: "red", rotation: 100, size: "medium" },     // R2C1: Blue/Red medium triangle 100°
-            { shape: "triangle", color: "split", topColor: "yellow", bottomColor: "green", rotation: 120, size: "large" },  // R2C2: Yellow/Green large triangle 120°
-            { shape: "triangle", color: "split", topColor: "red", bottomColor: "blue", rotation: 140, size: "small" },      // R2C3: Red/Blue small triangle 140°
-            { shape: "triangle", color: "split", topColor: "green", bottomColor: "yellow", rotation: 160, size: "medium" }  // R2C4: Green/Yellow medium triangle 160°
+            { shape: "triangle", color: "split", topColor: "blue", bottomColor: "red", rotation: 60, size: "medium", modifier: "dot" },      // R2C1: Row 2 rotates counter-clockwise from 90°: 90-30=60°
+            { shape: "triangle", color: "split", topColor: "yellow", bottomColor: "green", rotation: 30, size: "big" },                      // R2C2: -30° counter-clockwise: 60-30=30°
+            { shape: "triangle", color: "split", topColor: "red", bottomColor: "blue", rotation: 0, size: "small", modifier: "dot" },        // R2C3: -30° counter-clockwise: 30-30=0°
+            { shape: "triangle", color: "split", topColor: "green", bottomColor: "yellow", rotation: 330, size: "medium" }                   // R2C4: -30° counter-clockwise: 0-30=330°
           ],
           [
-            { shape: "triangle", color: "split", topColor: "yellow", bottomColor: "green", rotation: 180, size: "large" },  // R3C1: Yellow/Green large triangle 180°
-            { shape: "triangle", color: "split", topColor: "red", bottomColor: "blue", rotation: 200, size: "small" },      // R3C2: Red/Blue small triangle 200°
-            { shape: "triangle", color: "split", topColor: "green", bottomColor: "yellow", rotation: 220, size: "medium" }, // R3C3: Green/Yellow medium triangle 220°
-            { shape: "triangle", color: "split", topColor: "blue", bottomColor: "red", rotation: 240, size: "large" }       // R3C4: Blue/Red large triangle 240°
+            { shape: "triangle", color: "split", topColor: "yellow", bottomColor: "green", rotation: 0, size: "big", modifier: "dot" },      // R3C1: Row 3 rotates clockwise from 330°: 330+30=360°=0°
+            null,                                                                                                                              // R3C2: Missing - should be 30° clockwise
+            { shape: "triangle", color: "split", topColor: "green", bottomColor: "yellow", rotation: 60, size: "medium", modifier: "dot" },  // R3C3: +30° clockwise: 30+30=60°
+            { shape: "triangle", color: "split", topColor: "blue", bottomColor: "red", rotation: 90, size: "big" }                           // R3C4: +30° clockwise: 60+30=90°
           ],
           [
-            { shape: "triangle", color: "split", topColor: "green", bottomColor: "yellow", rotation: 260, size: "small" },  // R4C1: Green/Yellow small triangle 260°
-            { shape: "triangle", color: "split", topColor: "blue", bottomColor: "red", rotation: 280, size: "medium" },     // R4C2: Blue/Red medium triangle 280°
-            { shape: "triangle", color: "split", topColor: "yellow", bottomColor: "green", rotation: 300, size: "large" },  // R4C3: Yellow/Green large triangle 300°
-            null                                                                                                             // R4C4: Missing - should be Red/Blue small triangle 320°
+            { shape: "triangle", color: "split", topColor: "green", bottomColor: "yellow", rotation: 60, size: "small", modifier: "dot" },   // R4C1: Row 4 rotates counter-clockwise from 90°: 90-30=60°
+            { shape: "triangle", color: "split", topColor: "blue", bottomColor: "red", rotation: 30, size: "medium" },                       // R4C2: -30° counter-clockwise: 60-30=30°
+            { shape: "triangle", color: "split", topColor: "yellow", bottomColor: "green", rotation: 0, size: "big", modifier: "dot" },      // R4C3: -30° counter-clockwise: 30-30=0°
+            { shape: "triangle", color: "split", topColor: "red", bottomColor: "blue", rotation: 330, size: "small" }                        // R4C4: -30° counter-clockwise: 0-30=330°
           ]
         ],
         options: [
-          { id: "A", shape: "triangle", color: "split", topColor: "red", bottomColor: "blue", rotation: 320, size: "small", label: "Red-Blue small triangle 320°" },
-          { id: "B", shape: "triangle", color: "split", topColor: "red", bottomColor: "blue", rotation: 320, size: "medium", label: "Red-Blue medium triangle 320°" },
-          { id: "C", shape: "triangle", color: "split", topColor: "blue", bottomColor: "red", rotation: 320, size: "small", label: "Blue-Red small triangle 320°" },
-          { id: "D", shape: "triangle", color: "split", topColor: "red", bottomColor: "blue", rotation: 300, size: "small", label: "Red-Blue small triangle 300°" }
+          { id: "A", shape: "triangle", color: "split", topColor: "red", bottomColor: "blue", rotation: 30, size: "small", label: "Red-Blue small triangle 30° plain" },
+          { id: "B", shape: "triangle", color: "split", topColor: "red", bottomColor: "blue", rotation: 330, size: "small", label: "Red-Blue small triangle 330° plain" },
+          { id: "C", shape: "triangle", color: "split", topColor: "blue", bottomColor: "red", rotation: 30, size: "small", label: "Blue-Red small triangle 30° plain" },
+          { id: "D", shape: "triangle", color: "split", topColor: "red", bottomColor: "blue", rotation: 60, size: "small", label: "Red-Blue small triangle 60° plain" },
+          { id: "E", label: "I don't know" }
         ],
         correctAnswer: "A"
       },
@@ -1187,12 +1196,13 @@ const QUESTION_GROUPS = {
           ]
         ],
         options: [
-          { id: "A", shapes: [{shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}], label: "15 blue circles" },
-          { id: "B", shapes: [{shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}], label: "12 blue circles" },
-          { id: "C", shapes: [{shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}], label: "10 blue circles" },
-          { id: "D", shapes: [{shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}], label: "13 blue circles" }
+          { id: "A", shapes: [{shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}], label: "12 blue circles" },
+          { id: "B", shapes: [{shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}], label: "10 blue circles" },
+          { id: "C", shapes: [{shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}], label: "13 blue circles" },
+          { id: "D", shapes: [{shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}, {shape: "circle", color: "blue"}], label: "15 blue circles" },
+          { id: "E", label: "I don't know" }
         ],
-        correctAnswer: "A"
+        correctAnswer: "D"
       },
       {
         id: 53,
@@ -1207,12 +1217,13 @@ const QUESTION_GROUPS = {
           null // Next: 12 blue triangles (8+4=12, triangle has 3 sides)
         ],
         options: [
-          { id: "A", shapes: Array.from({length: 12}, () => ({shape: "triangle", color: "blue"})), label: "12 blue triangles" },
-          { id: "B", shapes: Array.from({length: 11}, () => ({shape: "triangle", color: "blue"})), label: "11 blue triangles" },
-          { id: "C", shapes: Array.from({length: 10}, () => ({shape: "triangle", color: "blue"})), label: "10 blue triangles" },
-          { id: "D", shapes: Array.from({length: 13}, () => ({shape: "triangle", color: "blue"})), label: "13 blue triangles" }
+          { id: "A", shapes: Array.from({length: 10}, () => ({shape: "triangle", color: "blue"})), label: "10 blue triangles" },
+          { id: "B", shapes: Array.from({length: 13}, () => ({shape: "triangle", color: "blue"})), label: "13 blue triangles" },
+          { id: "C", shapes: Array.from({length: 12}, () => ({shape: "triangle", color: "blue"})), label: "12 blue triangles" },
+          { id: "D", shapes: Array.from({length: 11}, () => ({shape: "triangle", color: "blue"})), label: "11 blue triangles" },
+          { id: "E", label: "I don't know" }
         ],
-        correctAnswer: "A"
+        correctAnswer: "C"
       },
       {
         id: 54,
@@ -1237,12 +1248,13 @@ const QUESTION_GROUPS = {
           ]
         ],
         options: [
-          { id: "A", shape: "star", color: "split", topColor: "yellow", bottomColor: "green", rotation: 120, label: "Yellow-Green star 120°" },
-          { id: "B", shape: "star", color: "split", topColor: "green", bottomColor: "yellow", rotation: 240, label: "Green-Yellow star 240°" },
-          { id: "C", shape: "star", color: "split", topColor: "yellow", bottomColor: "green", rotation: 240, label: "Yellow-Green star 240°" },
-          { id: "D", shape: "star", color: "split", topColor: "green", bottomColor: "yellow", rotation: 180, label: "Green-Yellow star 180°" }
+          { id: "A", shape: "star", color: "split", topColor: "green", bottomColor: "yellow", rotation: 240, label: "Green-Yellow star 240°" },
+          { id: "B", shape: "star", color: "split", topColor: "yellow", bottomColor: "green", rotation: 120, label: "Yellow-Green star 120°" },
+          { id: "C", shape: "star", color: "split", topColor: "green", bottomColor: "yellow", rotation: 120, label: "Green-Yellow star 120°" },
+          { id: "D", shape: "star", color: "split", topColor: "green", bottomColor: "yellow", rotation: 180, label: "Green-Yellow star 180°" },
+          { id: "E", label: "I don't know" }
         ],
-        correctAnswer: "A"
+        correctAnswer: "B"
       },
       {
         id: 55,
@@ -1276,12 +1288,13 @@ const QUESTION_GROUPS = {
           ]
         ],
         options: [
-          { id: "A", shape: "square", color: "split", topColor: "green", bottomColor: "yellow", rotation: 270, label: "Green-Yellow square 270°" },
-          { id: "B", shape: "square", color: "split", topColor: "yellow", bottomColor: "green", rotation: 270, label: "Yellow-Green square 270°" },
-          { id: "C", shape: "square", color: "split", topColor: "green", bottomColor: "yellow", rotation: 315, label: "Green-Yellow square 315°" },
-          { id: "D", shape: "diamond", color: "split", topColor: "green", bottomColor: "yellow", rotation: 270, label: "Green-Yellow diamond 270°" }
+          { id: "A", shape: "square", color: "split", topColor: "yellow", bottomColor: "green", rotation: 270, label: "Yellow-Green square 270°" },
+          { id: "B", shape: "square", color: "split", topColor: "green", bottomColor: "yellow", rotation: 315, label: "Green-Yellow square 315°" },
+          { id: "C", shape: "diamond", color: "split", topColor: "green", bottomColor: "yellow", rotation: 270, label: "Green-Yellow diamond 270°" },
+          { id: "D", shape: "square", color: "split", topColor: "green", bottomColor: "yellow", rotation: 270, label: "Green-Yellow square 270°" },
+          { id: "E", label: "I don't know" }
         ],
-        correctAnswer: "A"
+        correctAnswer: "D"
       }
     ]
   }
@@ -1556,6 +1569,8 @@ export default function StudentPatternReasoning() {
   const [answers, setAnswers] = useState<{[key: number]: any}>({})
   const [testState, setTestState] = useState("active")
   const [showOptions, setShowOptions] = useState(true)
+  const [subtestSessionId, setSubtestSessionId] = useState<string | null>(null)
+  const [questionStartTime, setQuestionStartTime] = useState<number>(Date.now())
 
 
   useEffect(() => {
@@ -1563,18 +1578,41 @@ export default function StudentPatternReasoning() {
     if (typeof window !== 'undefined') {
       const studentData = localStorage.getItem(`student_${sessionId}`)
       if (studentData) {
-        setStudentInfo(JSON.parse(studentData))
-      }
-      
-      // Check URL parameters for filtering
-      const urlParams = new URLSearchParams(window.location.search)
-      const filter = urlParams.get('filter')
-      if (filter === '12plus') {
-        setIsFiltered(true)
-        setQuestions(FILTERED_QUESTIONS_12_PLUS)
-      } else {
-        setIsFiltered(false)
-        setQuestions(ALL_QUESTIONS)
+        const student = JSON.parse(studentData)
+        setStudentInfo(student)
+
+        // Check URL parameters for filtering
+        const urlParams = new URLSearchParams(window.location.search)
+        const filter = urlParams.get('filter')
+        const ageFilter = filter === '12plus' ? '12plus' : 'all'
+
+        if (filter === '12plus') {
+          setIsFiltered(true)
+          setQuestions(FILTERED_QUESTIONS_12_PLUS)
+        } else {
+          setIsFiltered(false)
+          setQuestions(ALL_QUESTIONS)
+        }
+
+        // Start database session
+        fetch('/api/subtest/start', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sessionId,
+            firstName: student.firstName,
+            lastName: student.lastName || '',
+            subtestName: 'pattern-reasoning',
+            ageFilter
+          })
+        })
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            setSubtestSessionId(data.subtestSessionId)
+          }
+        })
+        .catch(err => console.error('Failed to start database session:', err))
       }
     }
   }, [sessionId])
@@ -1604,16 +1642,38 @@ export default function StudentPatternReasoning() {
     }
   }, [testState, sessionId, router])
 
-  const handleAnswer = (answer: string) => {
+  const handleAnswer = async (answer: string) => {
+    const timeSpentSeconds = Math.floor((Date.now() - questionStartTime) / 1000)
+    const question = QUESTIONS[currentQuestion]
+
     const newAnswers = { ...answers }
     newAnswers[currentQuestion] = {
       answer: answer,
       isComplete: true,
       timestamp: new Date().toISOString()
     }
-    
+
     setAnswers(newAnswers)
-    
+
+    // Save to database
+    if (subtestSessionId) {
+      try {
+        await fetch('/api/subtest/response', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            subtestSessionId,
+            questionId: question.id,
+            studentAnswer: answer,
+            correctAnswer: question.correctAnswer,
+            timeSpentSeconds
+          })
+        })
+      } catch (err) {
+        console.error('Failed to save response to database:', err)
+      }
+    }
+
     // Update test state for examiner
     if (typeof window !== 'undefined') {
       const currentTestState = {
@@ -1629,12 +1689,14 @@ export default function StudentPatternReasoning() {
   const handleNext = () => {
     if (currentQuestion < QUESTIONS.length - 1) {
       setCurrentQuestion(currentQuestion + 1)
+      setQuestionStartTime(Date.now())
     }
   }
 
   const handlePrevious = () => {
     if (currentQuestion > 0) {
       setCurrentQuestion(currentQuestion - 1)
+      setQuestionStartTime(Date.now())
     }
   }
 
@@ -1690,7 +1752,7 @@ export default function StudentPatternReasoning() {
         },
         body: JSON.stringify(submissionData)
       })
-      
+
       if (response.ok) {
         console.log('Test results submitted successfully!')
       } else {
@@ -1698,6 +1760,19 @@ export default function StudentPatternReasoning() {
       }
     } catch (error) {
       console.error('Error submitting test results:', error)
+    }
+
+    // Mark database session as complete
+    if (subtestSessionId) {
+      try {
+        await fetch('/api/subtest/complete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ subtestSessionId })
+        })
+      } catch (err) {
+        console.error('Failed to complete database session:', err)
+      }
     }
     
     if (typeof window !== 'undefined') {
@@ -1977,6 +2052,10 @@ export default function StudentPatternReasoning() {
     const viewBoxSize = 80
 
     switch (item.shape) {
+      case 'placeholder':
+        // Render nothing for placeholder tiles
+        return null
+
       case 'circle':
         const circleCount = item.count || 1
         if (circleCount > 1) {
@@ -2602,14 +2681,20 @@ export default function StudentPatternReasoning() {
         const arrowSize = size * 1.2 // Make arrows 20% larger
         // Create longer arrow path pointing right, then rotate/reflect as needed
         const arrowPath = `M ${-arrowSize/1.5} ${-arrowSize/6} L ${arrowSize/3} ${-arrowSize/6} L ${arrowSize/3} ${-arrowSize/3} L ${arrowSize/1.5} 0 L ${arrowSize/3} ${arrowSize/3} L ${arrowSize/3} ${arrowSize/6} L ${-arrowSize/1.5} ${arrowSize/6} Z`
-        
+
+        // Build transform string with rotation and reflection
+        const transforms = []
+        if (item.rotation) transforms.push(`rotate(${item.rotation})`)
+        if (item.reflected) transforms.push(`scale(-1, 1)`)
+        const transformStr = transforms.length > 0 ? transforms.join(' ') : undefined
+
         return (
-          <path 
+          <path
             d={arrowPath}
             fill={colors.fill}
-            stroke={colors.stroke} 
+            stroke={colors.stroke}
             strokeWidth={arrowStrokeWidth}
-            transform={item.reflected ? `scale(-1, 1)` : undefined}
+            transform={transformStr}
           />
         )
       
@@ -3297,7 +3382,7 @@ export default function StudentPatternReasoning() {
           </div>
           
           <h2 className="text-xl font-bold text-gray-900 mb-4 text-center mt-6">
-            What's the missing pattern?
+            {question.question}
           </h2>
 
           {/* Pattern Sequence */}
@@ -3475,25 +3560,38 @@ export default function StudentPatternReasoning() {
             {showOptions && (
               <div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-2xl mx-auto">
-                  {question.options.map((option: any) => (
-                    <div key={option.id} className="flex flex-col items-center">
-                      <div className="relative group">
+                  {question.options.map((option: any, index: number) => (
+                    <div key={option.id} className={`flex flex-col items-center ${!option.shape && !option.shapes ? 'col-span-2 md:col-span-4' : ''}`}>
+                      {option.shape || option.shapes ? (
+                        <div className="relative group">
+                          <button
+                            onClick={() => handleAnswer(option.id)}
+                            className="transition-all mb-2 hover:scale-105"
+                          >
+                            {renderSVGTile(option, false, answers[currentQuestion]?.answer === option.id)}
+                          </button>
+                          {/* Export button - appears on hover */}
+                          <button
+                            onClick={() => exportShapeAsSVG(option, `pattern_q${currentQuestion + 1}_option${option.id}.svg`)}
+                            className="absolute -top-1 -right-1 bg-blue-600 text-white text-xs px-1.5 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-blue-700"
+                            title="Export as SVG"
+                          >
+                            ↓
+                          </button>
+                        </div>
+                      ) : (
                         <button
                           onClick={() => handleAnswer(option.id)}
-                          className="transition-all mb-2 hover:scale-105"
+                          className={`px-6 py-3 rounded-lg font-medium transition-all ${
+                            answers[currentQuestion]?.answer === option.id
+                              ? 'bg-blue-600 text-white'
+                              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                          }`}
                         >
-                          {renderSVGTile(option, false, answers[currentQuestion]?.answer === option.id)}
+                          {option.label}
                         </button>
-                        {/* Export button - appears on hover */}
-                        <button
-                          onClick={() => exportShapeAsSVG(option, `pattern_q${currentQuestion + 1}_option${option.id}.svg`)}
-                          className="absolute -top-1 -right-1 bg-blue-600 text-white text-xs px-1.5 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-blue-700"
-                          title="Export as SVG"
-                        >
-                          ↓
-                        </button>
-                      </div>
-                      <p className="text-lg font-bold text-gray-900">{option.id}</p>
+                      )}
+                      <p className="text-lg font-bold text-gray-900 mt-2">{option.id}</p>
                     </div>
                   ))}
                 </div>

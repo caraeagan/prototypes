@@ -53,6 +53,7 @@ export default function Dashboard() {
   const [selectedSubtests, setSelectedSubtests] = useState<string[]>([])
   const [completedStudent, setCompletedStudent] = useState<Student | null>(null)
   const [showCompletionModal, setShowCompletionModal] = useState(false)
+  const [availableSubtests, setAvailableSubtests] = useState<Array<{subtest_name: string, response_count: number}>>([])
   
   // Student form state
   const [firstName, setFirstName] = useState("")
@@ -76,36 +77,53 @@ export default function Dashboard() {
       // Save migrated data back to localStorage
       localStorage.setItem('students', JSON.stringify(migratedStudents))
     }
+
+    // Fetch available subtests from database
+    fetch('/api/export/subtests')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          setAvailableSubtests(data.subtests)
+        }
+      })
+      .catch(err => console.error('Failed to fetch subtests:', err))
   }, [])
 
   // Check for test completions and update student status
   useEffect(() => {
+    if (students.length === 0) return
+
     const checkCompletions = () => {
+      const savedStudents = localStorage.getItem('students')
+      if (!savedStudents) return
+
+      const currentStudents = JSON.parse(savedStudents)
       let updated = false
-      const updatedStudents = students.map((student) => {
+
+      const updatedStudents = currentStudents.map((student: Student) => {
         if (student.sessionId && student.testStatus !== 'completed') {
           const completionStatus = localStorage.getItem(`test_completed_${student.sessionId}`)
           if (completionStatus) {
             const completion = JSON.parse(completionStatus)
-            
+
             // Update completed subtests (avoid duplicates)
             const currentCompleted = student.completedSubtests || []
-            const updatedCompletedSubtests = currentCompleted.includes(completion.subtest) 
-              ? currentCompleted 
+            const updatedCompletedSubtests = currentCompleted.includes(completion.subtest)
+              ? currentCompleted
               : [...currentCompleted, completion.subtest]
-            
+
             // Check if all assigned subtests are completed
-            const allCompleted = student.assignedSubtests.every(subtest => 
+            const allCompleted = student.assignedSubtests.every((subtest: string) =>
               updatedCompletedSubtests.includes(subtest)
             )
-            
+
             updated = true
             const updatedStudent = {
               ...student,
               completedSubtests: updatedCompletedSubtests,
               testStatus: allCompleted ? 'completed' as const : 'in-progress' as const
             }
-            
+
             // Show completion modal if all subtests are completed
             if (allCompleted && student.testStatus !== 'completed') {
               // Add to completion history
@@ -115,38 +133,35 @@ export default function Dashboard() {
                 completedAt: new Date().toISOString(),
                 subtests: updatedCompletedSubtests
               }
-              
+
               const updatedStudentWithHistory = {
                 ...updatedStudent,
                 completionHistory: [...completionHistory, newCompletionEntry]
               }
-              
+
               setCompletedStudent(updatedStudentWithHistory)
               setShowCompletionModal(true)
               // Clear the completion flag to avoid showing modal again
               localStorage.removeItem(`test_completed_${student.sessionId}`)
-              
+
               return updatedStudentWithHistory
             }
-            
+
             return updatedStudent
           }
         }
         return student
       })
-      
+
       if (updated) {
-        setStudents(updatedStudents)
         localStorage.setItem('students', JSON.stringify(updatedStudents))
+        setStudents(updatedStudents)
       }
     }
 
-    if (students.length > 0) {
-      checkCompletions()
-      const interval = setInterval(checkCompletions, 2000)
-      return () => clearInterval(interval)
-    }
-  }, [students])
+    const interval = setInterval(checkCompletions, 2000)
+    return () => clearInterval(interval)
+  }, [students.length])
 
 
   // Save students to localStorage
@@ -267,6 +282,10 @@ export default function Dashboard() {
     }
   }
 
+  const handleExportCSV = (subtestName: string) => {
+    window.location.href = `/api/export/csv?subtest=${subtestName}`
+  }
+
   return (
     <div className="min-h-screen bg-blue-50">
       <header className="bg-white shadow-sm border-b">
@@ -284,6 +303,46 @@ export default function Dashboard() {
       </header>
 
       <main className="max-w-6xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+        {/* Database Export Section */}
+        {availableSubtests.length > 0 && (
+          <div className="bg-white rounded-lg shadow mb-6">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h2 className="text-lg font-semibold text-gray-900">Export Test Data</h2>
+              <p className="text-sm text-gray-500 mt-1">Download CSV files for each subtest with all student responses</p>
+            </div>
+            <div className="px-6 py-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {availableSubtests.map((subtest) => (
+                  <div key={subtest.subtest_name} className="border border-gray-200 rounded-lg p-4 hover:border-blue-500 transition-colors">
+                    <div className="flex items-start justify-between mb-3">
+                      <div>
+                        <h3 className="font-medium text-gray-900 capitalize">
+                          {subtest.subtest_name.replace(/-/g, ' ')}
+                        </h3>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {subtest.response_count} responses
+                        </p>
+                      </div>
+                      <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                    </div>
+                    <button
+                      onClick={() => handleExportCSV(subtest.subtest_name)}
+                      className="w-full px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                      </svg>
+                      Download CSV
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Student List */}
         <div className="bg-white rounded-lg shadow">
           <div className="px-6 py-4 border-b border-gray-200">
