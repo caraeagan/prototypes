@@ -79,23 +79,6 @@ const QUESTION_GROUPS = {
         correctAnswer: "4"
       },
       {
-        id: 5,
-        ageGroup: "2.5-3.5",
-        type: "repetition_pattern",
-        question: "What comes next in the pattern?",
-        sequence: [
-          { shape: "square", color: "peach", label: "Square" },
-          { shape: "square", color: "peach", label: "Square" }
-        ],
-        options: [
-          { id: "1", shape: "circle", color: "navy", label: "Circle" },
-          { id: "2", shape: "triangle", color: "maroon", label: "Triangle" },
-          { id: "3", shape: "square", color: "peach", label: "Square" },
-          { id: "4", shape: "star", color: "aqua", label: "Star" }
-        ],
-        correctAnswer: "3"
-      },
-      {
         id: 6,
         ageGroup: "2.5-3.5",
         type: "repetition_pattern",
