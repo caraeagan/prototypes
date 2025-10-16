@@ -1317,6 +1317,10 @@ const FILTERED_QUESTIONS_12_PLUS = [
   ...QUESTION_GROUPS["15+"].questions
 ]
 
+const FILTERED_QUESTIONS_15_PLUS = [
+  ...QUESTION_GROUPS["15+"].questions
+]
+
 // Function to render pure SVG shapes without tile wrapper for export - clean without borders
 const renderPureSVG = (item: any, size = 100) => {
   if (!item) return null
@@ -1564,6 +1568,7 @@ export default function StudentPatternReasoning() {
   
   // Check for 12+ filter in URL
   const [isFiltered, setIsFiltered] = useState(false)
+  const [filterType, setFilterType] = useState('all')
   const [QUESTIONS, setQuestions] = useState(ALL_QUESTIONS)
   const [currentQuestion, setCurrentQuestion] = useState(0)
   const [answers, setAnswers] = useState<{[key: number]: any}>({})
@@ -1584,13 +1589,21 @@ export default function StudentPatternReasoning() {
         // Check URL parameters for filtering
         const urlParams = new URLSearchParams(window.location.search)
         const filter = urlParams.get('filter')
-        const ageFilter = filter === '12plus' ? '12plus' : 'all'
+        let ageFilter = 'all'
 
-        if (filter === '12plus') {
+        if (filter === '15plus') {
           setIsFiltered(true)
+          setFilterType('15plus')
+          setQuestions(FILTERED_QUESTIONS_15_PLUS)
+          ageFilter = '15plus'
+        } else if (filter === '12plus') {
+          setIsFiltered(true)
+          setFilterType('12plus')
           setQuestions(FILTERED_QUESTIONS_12_PLUS)
+          ageFilter = '12plus'
         } else {
           setIsFiltered(false)
+          setFilterType('all')
           setQuestions(ALL_QUESTIONS)
         }
 
@@ -1730,7 +1743,7 @@ export default function StudentPatternReasoning() {
       correctAnswers: correctCount,
       score: scorePercentage,
       isFiltered: isFiltered,
-      filterType: isFiltered ? '12plus' : 'all',
+      filterType: filterType,
       answers: testResults.reduce((acc: any, result, index) => {
         acc[index + 1] = {
           answer: result.userAnswer,
