@@ -79,6 +79,45 @@ const QUESTION_GROUPS = {
         correctAnswer: "4"
       },
       {
+        id: 5,
+        ageGroup: "2.5-3.5",
+        type: "matrix_transformation",
+        question: "What goes in the missing position?",
+        grid: [
+          [
+            { shape: "square", color: "purple", innerShape: "hexagon", innerColor: "yellow", rotation: 0 },
+            { shape: "square", color: "blue", innerShape: "triangle", innerColor: "yellow", rotation: 0 },
+            { shape: "diamond", color: "purple", innerShape: "hexagon", innerColor: "green", rotation: 45 },
+            { shape: "diamond", color: "blue", innerShape: "triangle", innerColor: "green", rotation: 45 }
+          ],
+          [
+            { shape: "square", color: "blue", innerShape: "hexagon", innerColor: "green", rotation: 0 },
+            { shape: "square", color: "purple", innerShape: "triangle", innerColor: "green", rotation: 0 },
+            { shape: "diamond", color: "blue", innerShape: "hexagon", innerColor: "yellow", rotation: 45 },
+            { shape: "diamond", color: "purple", innerShape: "triangle", innerColor: "yellow", rotation: 45 }
+          ],
+          [
+            { shape: "diamond", color: "purple", innerShape: "triangle", innerColor: "green", rotation: 45 },
+            { shape: "diamond", color: "blue", innerShape: "hexagon", innerColor: "green", rotation: 45 },
+            { shape: "square", color: "purple", innerShape: "triangle", innerColor: "yellow", rotation: 0 },
+            { shape: "square", color: "blue", innerShape: "hexagon", innerColor: "yellow", rotation: 0 }
+          ],
+          [
+            { shape: "diamond", color: "blue", innerShape: "triangle", innerColor: "yellow", rotation: 45 },
+            { shape: "diamond", color: "purple", innerShape: "hexagon", innerColor: "yellow", rotation: 45 },
+            { shape: "square", color: "blue", innerShape: "triangle", innerColor: "green", rotation: 0 },
+            null
+          ]
+        ],
+        options: [
+          { id: "A", shape: "square", color: "purple", innerShape: "hexagon", innerColor: "green", rotation: 0 },
+          { id: "B", shape: "square", color: "blue", innerShape: "hexagon", innerColor: "yellow", rotation: 0 },
+          { id: "C", shape: "diamond", color: "purple", innerShape: "triangle", innerColor: "green", rotation: 45 },
+          { id: "D", shape: "square", color: "purple", innerShape: "triangle", innerColor: "yellow", rotation: 0 }
+        ],
+        correctAnswer: "A"
+      },
+      {
         id: 6,
         ageGroup: "2.5-3.5",
         type: "repetition_pattern",
