@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="160" height="160" viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg">
+  <g transform="rotate(-90 80 80)">
+    <rect x="30" y="30" width="100" height="100" fill="#ec4899" stroke="#334155" stroke-width="3"/>
+    
+  </g>
+  <g transform="rotate(-180 80 80)">
+    <polygon points="80,45 105,62.5 105,97.5 80,115 55,97.5 55,62.5" fill="#10b981" stroke="none" stroke-width="0" opacity="0.95"/>
+  </g>
+  <g transform="rotate(-180 80 80)">
+    <polygon points="80,58 98,92 62,92" fill="#8b5cf6" stroke="#ec4899" stroke-width="2.5"/>
+    
+  </g>
+</svg>

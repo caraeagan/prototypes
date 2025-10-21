@@ -79,45 +79,6 @@ const QUESTION_GROUPS = {
         correctAnswer: "4"
       },
       {
-        id: 5,
-        ageGroup: "2.5-3.5",
-        type: "matrix_transformation",
-        question: "What goes in the missing position?",
-        grid: [
-          [
-            { shape: "square", color: "purple", innerShape: "hexagon", innerColor: "yellow", rotation: 0 },
-            { shape: "square", color: "blue", innerShape: "triangle", innerColor: "yellow", rotation: 0 },
-            { shape: "diamond", color: "purple", innerShape: "hexagon", innerColor: "green", rotation: 45 },
-            { shape: "diamond", color: "blue", innerShape: "triangle", innerColor: "green", rotation: 45 }
-          ],
-          [
-            { shape: "square", color: "blue", innerShape: "hexagon", innerColor: "green", rotation: 0 },
-            { shape: "square", color: "purple", innerShape: "triangle", innerColor: "green", rotation: 0 },
-            { shape: "diamond", color: "blue", innerShape: "hexagon", innerColor: "yellow", rotation: 45 },
-            { shape: "diamond", color: "purple", innerShape: "triangle", innerColor: "yellow", rotation: 45 }
-          ],
-          [
-            { shape: "diamond", color: "purple", innerShape: "triangle", innerColor: "green", rotation: 45 },
-            { shape: "diamond", color: "blue", innerShape: "hexagon", innerColor: "green", rotation: 45 },
-            { shape: "square", color: "purple", innerShape: "triangle", innerColor: "yellow", rotation: 0 },
-            { shape: "square", color: "blue", innerShape: "hexagon", innerColor: "yellow", rotation: 0 }
-          ],
-          [
-            { shape: "diamond", color: "blue", innerShape: "triangle", innerColor: "yellow", rotation: 45 },
-            { shape: "diamond", color: "purple", innerShape: "hexagon", innerColor: "yellow", rotation: 45 },
-            { shape: "square", color: "blue", innerShape: "triangle", innerColor: "green", rotation: 0 },
-            null
-          ]
-        ],
-        options: [
-          { id: "A", shape: "square", color: "purple", innerShape: "hexagon", innerColor: "green", rotation: 0 },
-          { id: "B", shape: "square", color: "blue", innerShape: "hexagon", innerColor: "yellow", rotation: 0 },
-          { id: "C", shape: "diamond", color: "purple", innerShape: "triangle", innerColor: "green", rotation: 45 },
-          { id: "D", shape: "square", color: "purple", innerShape: "triangle", innerColor: "yellow", rotation: 0 }
-        ],
-        correctAnswer: "A"
-      },
-      {
         id: 6,
         ageGroup: "2.5-3.5",
         type: "repetition_pattern",
@@ -1184,10 +1145,10 @@ const QUESTION_GROUPS = {
           ]
         ],
         options: [
-          { id: "A", shape: "diamond", color: "split", topColor: "green", bottomColor: "orange", rotation: 135, strokeWidth: 3, size: "medium", label: "Green/Orange split diamond" },
+          { id: "A", shape: "diamond", color: "split", topColor: "orange", bottomColor: "purple", rotation: 135, strokeWidth: 3, size: "medium", label: "Orange/Purple split diamond" },
           { id: "B", shape: "diamond", color: "split", topColor: "yellow", bottomColor: "orange", rotation: 135, strokeWidth: 3, size: "medium", label: "Yellow/Orange split diamond, 135° rotation" },
           { id: "C", shape: "diamond", color: "split", topColor: "yellow", bottomColor: "purple", rotation: 135, strokeWidth: 3, size: "medium", label: "Yellow/Purple split diamond" },
-          { id: "D", shape: "diamond", color: "split", topColor: "orange", bottomColor: "yellow", rotation: 180, strokeWidth: 3, size: "medium", label: "Orange/Yellow split diamond, wrong rotation" },
+          { id: "D", shape: "diamond", color: "split", topColor: "red", bottomColor: "purple", rotation: 180, strokeWidth: 3, size: "medium", label: "Red/Purple split diamond, wrong rotation" },
           { id: "E", label: "I don't know" }
         ],
         correctAnswer: "B"
@@ -1273,26 +1234,38 @@ const QUESTION_GROUPS = {
         question: "What goes in the missing position?",
         grid: [
           [
-            { shapes: [{shape: "triangle", color: "blue"}] },                                    // R1C1: 1 blue triangle (3 sides)
-            { shapes: [{shape: "square", color: "yellow"}, {shape: "square", color: "yellow"}, {shape: "square", color: "yellow"}, {shape: "square", color: "yellow"}] },  // R1C2: 4 yellow squares (1+3=4, square has 4 sides)
-            { shapes: [{shape: "circle", color: "pink"}, {shape: "circle", color: "pink"}, {shape: "circle", color: "pink"}, {shape: "circle", color: "pink"}, {shape: "circle", color: "pink"}, {shape: "circle", color: "pink"}, {shape: "circle", color: "pink"}, {shape: "circle", color: "pink"}] }, // R1C3: 8 pink circles (4+4=8, circle has 0 sides)
-            { shapes: [{shape: "diamond", color: "green"}, {shape: "diamond", color: "green"}, {shape: "diamond", color: "green"}, {shape: "diamond", color: "green"}, {shape: "diamond", color: "green"}, {shape: "diamond", color: "green"}, {shape: "diamond", color: "green"}, {shape: "diamond", color: "green"}] } // R1C4: 8 green diamonds (8+0=8, diamond has 4 sides)
+            { svgPath: "/svg/q53/shape-row1-col1.svg" },
+            { svgPath: "/svg/q53/shape-row1-col2.svg" },
+            { svgPath: "/svg/q53/shape-row1-col3.svg" },
+            { svgPath: "/svg/q53/shape-row1-col4.svg" }
           ],
           [
-            { shapes: Array.from({length: 12}, () => ({shape: "triangle", color: "blue"})) },  // R2C1: 12 blue triangles (8+4=12, triangle has 3 sides)
-            { shapes: Array.from({length: 15}, () => ({shape: "square", color: "yellow"})) },  // R2C2: 15 yellow squares (12+3=15, square has 4 sides)
-            { shapes: Array.from({length: 19}, () => ({shape: "circle", color: "pink"})) },    // R2C3: 19 pink circles (15+4=19, circle has 0 sides)
-            null                                                                                 // R2C4: 19 green diamonds (19+0=19, diamond has 4 sides)
+            { svgPath: "/svg/q53/shape-row2-col1.svg" },
+            { svgPath: "/svg/q53/shape-row2-col2.svg" },
+            { svgPath: "/svg/q53/shape-row2-col3.svg" },
+            { svgPath: "/svg/q53/shape-row2-col4.svg" }
+          ],
+          [
+            { svgPath: "/svg/q53/shape-row3-col1.svg" },
+            { svgPath: "/svg/q53/shape-row3-col2.svg" },
+            { svgPath: "/svg/q53/shape-row3-col3.svg" },
+            { svgPath: "/svg/q53/shape-row3-col4.svg" }
+          ],
+          [
+            { svgPath: "/svg/q53/shape-row4-col1.svg" },
+            { svgPath: "/svg/q53/shape-row4-col2.svg" },
+            { svgPath: "/svg/q53/shape-row4-col3.svg" },
+            null
           ]
         ],
         options: [
-          { id: "A", shapes: Array.from({length: 18}, () => ({shape: "diamond", color: "green"})), label: "18 green diamonds" },
-          { id: "B", shapes: Array.from({length: 20}, () => ({shape: "diamond", color: "green"})), label: "20 green diamonds" },
-          { id: "C", shapes: Array.from({length: 19}, () => ({shape: "diamond", color: "green"})), label: "19 green diamonds" },
-          { id: "D", shapes: Array.from({length: 21}, () => ({shape: "diamond", color: "green"})), label: "21 green diamonds" },
+          { id: "A", svgPath: "/svg/q53/option-A.svg" },
+          { id: "B", svgPath: "/svg/q53/option-B.svg" },
+          { id: "C", svgPath: "/svg/q53/option-C.svg" },
+          { id: "D", svgPath: "/svg/q53/option-D.svg" },
           { id: "E", label: "I don't know" }
         ],
-        correctAnswer: "C"
+        correctAnswer: "A"
       },
       {
         id: 54,
@@ -1946,9 +1919,19 @@ export default function StudentPatternReasoning() {
         
         {/* Shape content */}
         {item ? (
-          <g transform={`translate(${tileSize / 2}, ${tileSize / 2})`}>
-            {item.shapes ? renderStackedShapes(item.shapes) : renderShapeContent(item)}
-          </g>
+          item.svgPath ? (
+            <image
+              href={item.svgPath}
+              x="0"
+              y="0"
+              width={tileSize}
+              height={tileSize}
+            />
+          ) : (
+            <g transform={`translate(${tileSize / 2}, ${tileSize / 2})`}>
+              {item.shapes ? renderStackedShapes(item.shapes) : renderShapeContent(item)}
+            </g>
+          )
         ) : isQuestionMark ? (
           <text
             x={tileSize / 2}
@@ -2338,17 +2321,99 @@ export default function StudentPatternReasoning() {
                 </pattern>
               </defs>
             )}
-            <rect 
-              x={-size / 2} 
-              y={-size / 2} 
-              width={size} 
+            <rect
+              x={-size / 2}
+              y={-size / 2}
+              width={size}
               height={size}
               fill={item.style === 'outline' ? 'none' : (item.modifier === 'stripe' || item.modifier === 'horizontal-stripe' ? `url(#stripePatternSquare_${item.modifier || 'stripe'})` : colors.fill)}
-              stroke={customStroke} 
+              stroke={customStroke}
               strokeWidth="2"
               rx="3"
               transform={item.reflected ? `scale(-1, 1)` : undefined}
             />
+            {/* Render inner shape if present */}
+            {item.innerShape && item.innerColor && (() => {
+              const innerColors = colorMap[item.innerColor] || { fill: '#2563EB', stroke: '#1D4ED8' }
+              const innerSize = size * 0.5 // Inner shape is 50% of outer shape
+              const innerInnerSize = size * 0.25 // Inner-inner shape is 25% of outer shape
+
+              if (item.innerShape === 'hexagon') {
+                const hexPoints = `${innerSize/2},${0} ${innerSize/4},${-innerSize/2} ${-innerSize/4},${-innerSize/2} ${-innerSize/2},${0} ${-innerSize/4},${innerSize/2} ${innerSize/4},${innerSize/2}`
+                return (
+                  <>
+                    <polygon
+                      points={hexPoints}
+                      fill={innerColors.fill}
+                      stroke={innerColors.stroke}
+                      strokeWidth="1.5"
+                    />
+                    {/* Render inner-inner shape if present */}
+                    {item.innerInnerShape && item.innerInnerColor && (() => {
+                      const innerInnerColors = colorMap[item.innerInnerColor] || { fill: '#2563EB', stroke: '#1D4ED8' }
+                      if (item.innerInnerShape === 'triangle') {
+                        return (
+                          <polygon
+                            points={`0,${-innerInnerSize / 2} ${innerInnerSize / 2},${innerInnerSize / 2} ${-innerInnerSize / 2},${innerInnerSize / 2}`}
+                            fill={innerInnerColors.fill}
+                            stroke={innerInnerColors.stroke}
+                            strokeWidth="1"
+                          />
+                        )
+                      } else if (item.innerInnerShape === 'hexagon') {
+                        const innerInnerHexPoints = `${innerInnerSize/2},${0} ${innerInnerSize/4},${-innerInnerSize/2} ${-innerInnerSize/4},${-innerInnerSize/2} ${-innerInnerSize/2},${0} ${-innerInnerSize/4},${innerInnerSize/2} ${innerInnerSize/4},${innerInnerSize/2}`
+                        return (
+                          <polygon
+                            points={innerInnerHexPoints}
+                            fill={innerInnerColors.fill}
+                            stroke={innerInnerColors.stroke}
+                            strokeWidth="1"
+                          />
+                        )
+                      }
+                      return null
+                    })()}
+                  </>
+                )
+              } else if (item.innerShape === 'triangle') {
+                return (
+                  <>
+                    <polygon
+                      points={`0,${-innerSize / 2} ${innerSize / 2},${innerSize / 2} ${-innerSize / 2},${innerSize / 2}`}
+                      fill={innerColors.fill}
+                      stroke={innerColors.stroke}
+                      strokeWidth="1.5"
+                    />
+                    {/* Render inner-inner shape if present */}
+                    {item.innerInnerShape && item.innerInnerColor && (() => {
+                      const innerInnerColors = colorMap[item.innerInnerColor] || { fill: '#2563EB', stroke: '#1D4ED8' }
+                      if (item.innerInnerShape === 'hexagon') {
+                        const innerInnerHexPoints = `${innerInnerSize/2},${0} ${innerInnerSize/4},${-innerInnerSize/2} ${-innerInnerSize/4},${-innerInnerSize/2} ${-innerInnerSize/2},${0} ${-innerInnerSize/4},${innerInnerSize/2} ${innerInnerSize/4},${innerInnerSize/2}`
+                        return (
+                          <polygon
+                            points={innerInnerHexPoints}
+                            fill={innerInnerColors.fill}
+                            stroke={innerInnerColors.stroke}
+                            strokeWidth="1"
+                          />
+                        )
+                      } else if (item.innerInnerShape === 'triangle') {
+                        return (
+                          <polygon
+                            points={`0,${-innerInnerSize / 2} ${innerInnerSize / 2},${innerInnerSize / 2} ${-innerInnerSize / 2},${innerInnerSize / 2}`}
+                            fill={innerInnerColors.fill}
+                            stroke={innerInnerColors.stroke}
+                            strokeWidth="1"
+                          />
+                        )
+                      }
+                      return null
+                    })()}
+                  </>
+                )
+              }
+              return null
+            })()}
           </>
         )
 
@@ -2476,13 +2541,101 @@ export default function StudentPatternReasoning() {
         
         return (
           <>
-              <polygon 
+              <polygon
                 points={`0,${-size / 2} ${size * 0.6 / 2},0 0,${size / 2} ${-size * 0.6 / 2},0`}
-                fill={colors.fill} 
-                stroke={colors.stroke} 
+                fill={colors.fill}
+                stroke={colors.stroke}
                 strokeWidth="2"
                 transform={item.rotation ? `rotate(${item.rotation})` : undefined}
               />
+              {/* Render inner shape if present */}
+              {item.innerShape && item.innerColor && (() => {
+                const innerColors = colorMap[item.innerColor] || { fill: '#2563EB', stroke: '#1D4ED8' }
+                const innerSize = size * 0.5 // Inner shape is 50% of outer shape
+                const innerInnerSize = size * 0.25 // Inner-inner shape is 25% of outer shape
+
+                if (item.innerShape === 'hexagon') {
+                  const hexPoints = `${innerSize/2},${0} ${innerSize/4},${-innerSize/2} ${-innerSize/4},${-innerSize/2} ${-innerSize/2},${0} ${-innerSize/4},${innerSize/2} ${innerSize/4},${innerSize/2}`
+                  return (
+                    <>
+                      <polygon
+                        points={hexPoints}
+                        fill={innerColors.fill}
+                        stroke={innerColors.stroke}
+                        strokeWidth="1.5"
+                        transform={item.rotation ? `rotate(${item.rotation})` : undefined}
+                      />
+                      {/* Render inner-inner shape if present */}
+                      {item.innerInnerShape && item.innerInnerColor && (() => {
+                        const innerInnerColors = colorMap[item.innerInnerColor] || { fill: '#2563EB', stroke: '#1D4ED8' }
+                        if (item.innerInnerShape === 'triangle') {
+                          return (
+                            <polygon
+                              points={`0,${-innerInnerSize / 2} ${innerInnerSize / 2},${innerInnerSize / 2} ${-innerInnerSize / 2},${innerInnerSize / 2}`}
+                              fill={innerInnerColors.fill}
+                              stroke={innerInnerColors.stroke}
+                              strokeWidth="1"
+                              transform={item.rotation ? `rotate(${item.rotation})` : undefined}
+                            />
+                          )
+                        } else if (item.innerInnerShape === 'hexagon') {
+                          const innerInnerHexPoints = `${innerInnerSize/2},${0} ${innerInnerSize/4},${-innerInnerSize/2} ${-innerInnerSize/4},${-innerInnerSize/2} ${-innerInnerSize/2},${0} ${-innerInnerSize/4},${innerInnerSize/2} ${innerInnerSize/4},${innerInnerSize/2}`
+                          return (
+                            <polygon
+                              points={innerInnerHexPoints}
+                              fill={innerInnerColors.fill}
+                              stroke={innerInnerColors.stroke}
+                              strokeWidth="1"
+                              transform={item.rotation ? `rotate(${item.rotation})` : undefined}
+                            />
+                          )
+                        }
+                        return null
+                      })()}
+                    </>
+                  )
+                } else if (item.innerShape === 'triangle') {
+                  return (
+                    <>
+                      <polygon
+                        points={`0,${-innerSize / 2} ${innerSize / 2},${innerSize / 2} ${-innerSize / 2},${innerSize / 2}`}
+                        fill={innerColors.fill}
+                        stroke={innerColors.stroke}
+                        strokeWidth="1.5"
+                        transform={item.rotation ? `rotate(${item.rotation})` : undefined}
+                      />
+                      {/* Render inner-inner shape if present */}
+                      {item.innerInnerShape && item.innerInnerColor && (() => {
+                        const innerInnerColors = colorMap[item.innerInnerColor] || { fill: '#2563EB', stroke: '#1D4ED8' }
+                        if (item.innerInnerShape === 'hexagon') {
+                          const innerInnerHexPoints = `${innerInnerSize/2},${0} ${innerInnerSize/4},${-innerInnerSize/2} ${-innerInnerSize/4},${-innerInnerSize/2} ${-innerInnerSize/2},${0} ${-innerInnerSize/4},${innerInnerSize/2} ${innerInnerSize/4},${innerInnerSize/2}`
+                          return (
+                            <polygon
+                              points={innerInnerHexPoints}
+                              fill={innerInnerColors.fill}
+                              stroke={innerInnerColors.stroke}
+                              strokeWidth="1"
+                              transform={item.rotation ? `rotate(${item.rotation})` : undefined}
+                            />
+                          )
+                        } else if (item.innerInnerShape === 'triangle') {
+                          return (
+                            <polygon
+                              points={`0,${-innerInnerSize / 2} ${innerInnerSize / 2},${innerInnerSize / 2} ${-innerInnerSize / 2},${innerInnerSize / 2}`}
+                              fill={innerInnerColors.fill}
+                              stroke={innerInnerColors.stroke}
+                              strokeWidth="1"
+                              transform={item.rotation ? `rotate(${item.rotation})` : undefined}
+                            />
+                          )
+                        }
+                        return null
+                      })()}
+                    </>
+                  )
+                }
+                return null
+              })()}
           </>
         )
 
@@ -3637,8 +3790,8 @@ export default function StudentPatternReasoning() {
               <div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-2xl mx-auto">
                   {question.options.map((option: any, index: number) => (
-                    <div key={option.id} className={`flex flex-col items-center ${!option.shape && !option.shapes ? 'col-span-2 md:col-span-4' : ''}`}>
-                      {option.shape || option.shapes ? (
+                    <div key={option.id} className={`flex flex-col items-center ${!option.shape && !option.shapes && !option.svgPath ? 'col-span-2 md:col-span-4' : ''}`}>
+                      {option.shape || option.shapes || option.svgPath ? (
                         <div className="relative group">
                           <button
                             onClick={() => handleAnswer(option.id)}
