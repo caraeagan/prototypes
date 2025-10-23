@@ -67,6 +67,8 @@ export default function StudentInterface() {
           window.location.href = `/student/${sessionId}/math-concepts`
         } else if (selectedTests?.includes("figure-reproduction")) {
           window.location.href = `/student/${sessionId}/figure-reproduction`
+        } else if (selectedTests?.includes("visual-recognition-memory")) {
+          window.location.href = `/student/${sessionId}/visual-recognition-memory`
         }
       }
     }

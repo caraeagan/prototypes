@@ -142,6 +142,12 @@ const SUBTESTS = [
     phase: "Pilot: Phase 3"
   },
   {
+    id: "visual-recognition-memory",
+    name: "Visual Recognition Memory",
+    description: "Assess student's ability to recognize and recall visual patterns",
+    phase: "Pilot: Phase 3"
+  },
+  {
     id: "visual-discrimination",
     name: "Visual Discrimination",
     description: "Assess visual discrimination abilities",

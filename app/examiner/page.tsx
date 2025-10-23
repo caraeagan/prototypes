@@ -211,6 +211,8 @@ function ExaminerInterfaceContent() {
                     window.location.href = `/examiner/math-concepts?session=${sessionId}`
                   } else if (tests.includes("figure-reproduction")) {
                     window.location.href = `/examiner/figure-reproduction?session=${sessionId}`
+                  } else if (tests.includes("visual-recognition-memory")) {
+                    window.location.href = `/examiner/visual-recognition-memory?session=${sessionId}`
                   }
                 }}
                 className="w-full px-6 py-3 bg-blue-900 text-white rounded-lg font-medium hover:bg-blue-800"

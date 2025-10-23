@@ -42,6 +42,11 @@ const SUBTESTS = [
     id: "figure-reproduction",
     name: "Figure Reproduction",
     description: "Student completes figure drawings in a physical booklet"
+  },
+  {
+    id: "visual-recognition-memory",
+    name: "Visual Recognition Memory",
+    description: "Assess student's ability to recognize and recall visual patterns"
   }
 ]
 
