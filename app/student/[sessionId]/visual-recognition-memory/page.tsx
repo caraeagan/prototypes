@@ -26,6 +26,19 @@ const QUESTIONS = [
   {
     id: 2,
     pattern: [
+      { type: 'circle' as const, color: '#10b981' },  // green circle
+      { type: 'circle' as const, color: '#ef4444' }   // red circle
+    ],
+    options: [
+      { type: 'circle' as const, color: '#10b981' },  // green circle (correct)
+      { type: 'circle' as const, color: '#ef4444' },  // red circle (correct)
+      { type: 'circle' as const, color: '#3b82f6' },  // blue circle (distractor)
+      { type: 'circle' as const, color: '#f59e0b' }   // orange circle (distractor)
+    ]
+  },
+  {
+    id: 3,
+    pattern: [
       { type: 'striped-shape' as const, color: '#000000' },  // striped diagonal shape
       { type: 'figure8' as const, color: '#000000' },        // figure-8 with dots
       { type: 'infinity' as const, color: '#000000' },       // infinity symbol
