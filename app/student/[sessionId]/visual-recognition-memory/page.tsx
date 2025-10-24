@@ -11,16 +11,19 @@ interface Shape {
   color: string
 }
 
-// Sample questions - starting with 1 shape (easiest)
+// Sample questions - progressively difficult with discrimination challenges
 const QUESTIONS = [
   {
     id: 1,
     pattern: [
-      { type: 'circle' as const, color: '#10b981' }  // green circle
+      { type: 'circle' as const, color: '#10b981' },  // green circle
+      { type: 'circle' as const, color: '#ef4444' }   // red circle
     ],
     options: [
-      { type: 'circle' as const, color: '#10b981' }, // green circle (correct)
-      { type: 'square' as const, color: '#3b82f6' }  // blue square (distractor)
+      { type: 'circle' as const, color: '#10b981' },  // green circle (correct)
+      { type: 'circle' as const, color: '#ef4444' },  // red circle (correct)
+      { type: 'circle' as const, color: '#3b82f6' },  // blue circle (distractor)
+      { type: 'circle' as const, color: '#f59e0b' }   // orange circle (distractor)
     ]
   },
   {
@@ -30,10 +33,12 @@ const QUESTIONS = [
       { type: 'square' as const, color: '#3b82f6' }  // blue square
     ],
     options: [
-      { type: 'circle' as const, color: '#ef4444' },
-      { type: 'square' as const, color: '#3b82f6' },
-      { type: 'triangle' as const, color: '#10b981' },
-      { type: 'star' as const, color: '#f59e0b' }
+      { type: 'circle' as const, color: '#ef4444' },  // red circle (correct)
+      { type: 'square' as const, color: '#3b82f6' },  // blue square (correct)
+      { type: 'circle' as const, color: '#f97316' },  // orange circle (distractor - similar to red)
+      { type: 'square' as const, color: '#06b6d4' },  // cyan square (distractor - similar to blue)
+      { type: 'circle' as const, color: '#10b981' },  // green circle (distractor)
+      { type: 'square' as const, color: '#8b5cf6' }   // purple square (distractor)
     ]
   },
   {
