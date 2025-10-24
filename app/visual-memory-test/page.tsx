@@ -16,33 +16,15 @@ const QUESTIONS = [
   {
     id: 1,
     pattern: [
-      { type: 'circle' as const, color: '#10b981' },  // green circle
-      { type: 'circle' as const, color: '#ef4444' }   // red circle
+      { type: 'circle' as const, color: '#10b981' }  // green circle
     ],
     options: [
       { type: 'circle' as const, color: '#10b981' },  // green circle (correct)
-      { type: 'circle' as const, color: '#ef4444' },  // red circle (correct)
-      { type: 'circle' as const, color: '#3b82f6' },  // blue circle (distractor)
-      { type: 'circle' as const, color: '#f59e0b' }   // orange circle (distractor)
+      { type: 'circle' as const, color: '#ef4444' }   // red circle (distractor)
     ]
   },
   {
     id: 2,
-    pattern: [
-      { type: 'circle' as const, color: '#ef4444' }, // red circle
-      { type: 'square' as const, color: '#3b82f6' }  // blue square
-    ],
-    options: [
-      { type: 'circle' as const, color: '#ef4444' },  // red circle (correct)
-      { type: 'square' as const, color: '#3b82f6' },  // blue square (correct)
-      { type: 'circle' as const, color: '#f97316' },  // orange circle (distractor - similar to red)
-      { type: 'square' as const, color: '#06b6d4' },  // cyan square (distractor - similar to blue)
-      { type: 'circle' as const, color: '#10b981' },  // green circle (distractor)
-      { type: 'square' as const, color: '#8b5cf6' }   // purple square (distractor)
-    ]
-  },
-  {
-    id: 3,
     pattern: [
       { type: 'striped-shape' as const, color: '#000000' },  // striped diagonal shape
       { type: 'figure8' as const, color: '#000000' },        // figure-8 with dots
