@@ -69,6 +69,10 @@ export default function StudentInterface() {
           window.location.href = `/student/${sessionId}/figure-reproduction`
         } else if (selectedTests?.includes("visual-recognition-memory")) {
           window.location.href = `/student/${sessionId}/visual-recognition-memory`
+        } else if (selectedTests?.includes("visual-pattern-reasoning-v2")) {
+          window.location.href = `/student/${sessionId}/visual-pattern-reasoning-v2`
+        } else if (selectedTests?.includes("associative-learning")) {
+          window.location.href = `/student/${sessionId}/associative-learning`
         }
       }
     }
