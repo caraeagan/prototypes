@@ -383,6 +383,270 @@ const QUESTIONS = [
     ],
     wrongCellRow: 1,
     wrongCellCol: 0  // Placeholder - change to the correct position
+  },
+  {
+    id: 65,
+    ageGroup: "15+",
+    type: "find_wrong_one",
+    question: "Click on the shape that doesn't belong in the pattern",
+    grid: [
+      [
+        { svgPath: "/svg/q65/octagon-row1-col1.svg", row: 0, col: 0 },
+        { svgPath: "/svg/q65/octagon-row1-col2.svg", row: 0, col: 1 },
+        { svgPath: "/svg/q65/octagon-row1-col3.svg", row: 0, col: 2 },
+        { svgPath: "/svg/q65/octagon-row1-col4.svg", row: 0, col: 3 }
+      ],
+      [
+        { svgPath: "/svg/q65/octagon-row2-col1.svg", row: 1, col: 0 },
+        { svgPath: "/svg/q65/octagon-row2-col2.svg", row: 1, col: 1 },
+        { svgPath: "/svg/q65/octagon-row2-col3.svg", row: 1, col: 2 },
+        { svgPath: "/svg/q65/octagon-row2-col4.svg", row: 1, col: 3 }
+      ],
+      [
+        { svgPath: "/svg/q65/octagon-row3-col1.svg", row: 2, col: 0 },
+        { svgPath: "/svg/q65/octagon-row3-col2.svg", row: 2, col: 1 },
+        { svgPath: "/svg/q65/octagon-row3-col3.svg", row: 2, col: 2 },
+        { svgPath: "/svg/q65/octagon-row3-col4.svg", row: 2, col: 3 }
+      ],
+      [
+        { svgPath: "/svg/q65/octagon-row4-col1.svg", row: 3, col: 0 },
+        { svgPath: "/svg/q65/octagon-row4-col2.svg", row: 3, col: 1 },
+        { svgPath: "/svg/q65/octagon-row4-col3.svg", row: 3, col: 2 },
+        { svgPath: "/svg/q65/octagon-row4-col4.svg", row: 3, col: 3 }
+      ]
+    ],
+    wrongCellRow: 1,
+    wrongCellCol: 1  // Placeholder - change to the correct position
+  },
+  {
+    id: 66,
+    ageGroup: "15+",
+    type: "find_wrong_one",
+    question: "Click on the shape that doesn't belong in the pattern",
+    grid: [
+      [
+        { svgPath: "/svg/q66/triangle-row1-col1.svg", row: 0, col: 0 },
+        { svgPath: "/svg/q66/triangle-row1-col2.svg", row: 0, col: 1 },
+        { svgPath: "/svg/q66/triangle-row1-col3.svg", row: 0, col: 2 },
+        { svgPath: "/svg/q66/triangle-row1-col4.svg", row: 0, col: 3 }
+      ],
+      [
+        { svgPath: "/svg/q66/triangle-row2-col1.svg", row: 1, col: 0 },
+        { svgPath: "/svg/q66/triangle-row2-col2.svg", row: 1, col: 1 },
+        { svgPath: "/svg/q66/triangle-row2-col3.svg", row: 1, col: 2 },
+        { svgPath: "/svg/q66/triangle-row2-col4.svg", row: 1, col: 3 }
+      ],
+      [
+        { svgPath: "/svg/q66/triangle-row3-col1.svg", row: 2, col: 0 },
+        { svgPath: "/svg/q66/triangle-row3-col2.svg", row: 2, col: 1 },
+        { svgPath: "/svg/q66/triangle-row3-col3.svg", row: 2, col: 2 },
+        { svgPath: "/svg/q66/triangle-row3-col4.svg", row: 2, col: 3 }
+      ],
+      [
+        { svgPath: "/svg/q66/triangle-row4-col1.svg", row: 3, col: 0 },
+        { svgPath: "/svg/q66/triangle-row4-col2.svg", row: 3, col: 1 },
+        { svgPath: "/svg/q66/triangle-row4-col3.svg", row: 3, col: 2 },
+        { svgPath: "/svg/q66/triangle-row4-col4.svg", row: 3, col: 3 }
+      ]
+    ],
+    wrongCellRow: 2,
+    wrongCellCol: 0  // Placeholder - change to the correct position
+  },
+  {
+    id: 67,
+    ageGroup: "15+",
+    type: "find_wrong_one",
+    question: "Click on the shape that doesn't belong in the pattern",
+    grid: [
+      [
+        { svgPath: "/svg/q67/triangle-row1-col1.svg", row: 0, col: 0 },
+        { svgPath: "/svg/q67/triangle-row1-col2.svg", row: 0, col: 1 },
+        { svgPath: "/svg/q67/triangle-row1-col3.svg", row: 0, col: 2 },
+        { svgPath: "/svg/q67/triangle-row1-col4.svg", row: 0, col: 3 }
+      ],
+      [
+        { svgPath: "/svg/q67/triangle-row2-col1.svg", row: 1, col: 0 },
+        { svgPath: "/svg/q67/triangle-row2-col2.svg", row: 1, col: 1 },
+        { svgPath: "/svg/q67/triangle-row2-col3.svg", row: 1, col: 2 },
+        { svgPath: "/svg/q67/triangle-row2-col4.svg", row: 1, col: 3 }
+      ],
+      [
+        { svgPath: "/svg/q67/triangle-row3-col1.svg", row: 2, col: 0 },
+        { svgPath: "/svg/q67/triangle-row3-col2.svg", row: 2, col: 1 },
+        { svgPath: "/svg/q67/triangle-row3-col3.svg", row: 2, col: 2 },
+        { svgPath: "/svg/q67/triangle-row3-col4.svg", row: 2, col: 3 }
+      ],
+      [
+        { svgPath: "/svg/q67/triangle-row4-col1.svg", row: 3, col: 0 },
+        { svgPath: "/svg/q67/triangle-row4-col2.svg", row: 3, col: 1 },
+        { svgPath: "/svg/q67/triangle-row4-col3.svg", row: 3, col: 2 },
+        { svgPath: "/svg/q67/triangle-row4-col4.svg", row: 3, col: 3 }
+      ]
+    ],
+    wrongCellRow: 0,
+    wrongCellCol: 2  // Placeholder - change to the correct position
+  },
+  {
+    id: 68,
+    ageGroup: "15+",
+    type: "find_wrong_one",
+    question: "Click on the shape that doesn't belong in the pattern",
+    grid: [
+      [
+        { svgPath: "/svg/q68/star-circle-row1-col1.svg", row: 0, col: 0 },
+        { svgPath: "/svg/q68/star-circle-row1-col2.svg", row: 0, col: 1 },
+        { svgPath: "/svg/q68/star-circle-row1-col3.svg", row: 0, col: 2 },
+        { svgPath: "/svg/q68/star-circle-row1-col4.svg", row: 0, col: 3 }
+      ],
+      [
+        { svgPath: "/svg/q68/star-circle-row2-col1.svg", row: 1, col: 0 },
+        { svgPath: "/svg/q68/star-circle-row2-col2.svg", row: 1, col: 1 },
+        { svgPath: "/svg/q68/star-circle-row2-col3.svg", row: 1, col: 2 },
+        { svgPath: "/svg/q68/star-circle-row2-col4.svg", row: 1, col: 3 }
+      ],
+      [
+        { svgPath: "/svg/q68/star-circle-row3-col1.svg", row: 2, col: 0 },
+        { svgPath: "/svg/q68/star-circle-row3-col2.svg", row: 2, col: 1 },
+        { svgPath: "/svg/q68/star-circle-row3-col3.svg", row: 2, col: 2 },
+        { svgPath: "/svg/q68/star-circle-row3-col4.svg", row: 2, col: 3 }
+      ],
+      [
+        { svgPath: "/svg/q68/star-circle-row4-col1.svg", row: 3, col: 0 },
+        { svgPath: "/svg/q68/star-circle-row4-col2.svg", row: 3, col: 1 },
+        { svgPath: "/svg/q68/star-circle-row4-col3.svg", row: 3, col: 2 },
+        { svgPath: "/svg/q68/star-circle-row4-col4.svg", row: 3, col: 3 }
+      ]
+    ],
+    wrongCellRow: 1,
+    wrongCellCol: 3  // Placeholder - change to the correct position
+  },
+  {
+    id: 69,
+    ageGroup: "15+",
+    type: "find_wrong_one",
+    question: "Click on the shape that doesn't belong in the pattern",
+    grid: [
+      [
+        { svgPath: "/svg/q69/star-circle-row1-col1.svg", row: 0, col: 0 },
+        { svgPath: "/svg/q69/star-circle-row1-col2.svg", row: 0, col: 1 },
+        { svgPath: "/svg/q69/star-circle-row1-col3.svg", row: 0, col: 2 },
+        { svgPath: "/svg/q69/star-circle-row1-col4.svg", row: 0, col: 3 }
+      ],
+      [
+        { svgPath: "/svg/q69/star-circle-row2-col1.svg", row: 1, col: 0 },
+        { svgPath: "/svg/q69/star-circle-row2-col2.svg", row: 1, col: 1 },
+        { svgPath: "/svg/q69/star-circle-row2-col3.svg", row: 1, col: 2 },
+        { svgPath: "/svg/q69/star-circle-row2-col4.svg", row: 1, col: 3 }
+      ],
+      [
+        { svgPath: "/svg/q69/star-circle-row3-col1.svg", row: 2, col: 0 },
+        { svgPath: "/svg/q69/star-circle-row3-col2.svg", row: 2, col: 1 },
+        { svgPath: "/svg/q69/star-circle-row3-col3.svg", row: 2, col: 2 },
+        { svgPath: "/svg/q69/star-circle-row3-col4.svg", row: 2, col: 3 }
+      ],
+      [
+        { svgPath: "/svg/q69/star-circle-row4-col1.svg", row: 3, col: 0 },
+        { svgPath: "/svg/q69/star-circle-row4-col2.svg", row: 3, col: 1 },
+        { svgPath: "/svg/q69/star-circle-row4-col3.svg", row: 3, col: 2 },
+        { svgPath: "/svg/q69/star-circle-row4-col4.svg", row: 3, col: 3 }
+      ]
+    ],
+    wrongCellRow: 2,
+    wrongCellCol: 1  // Placeholder - change to the correct position
+  },
+  {
+    id: 70,
+    ageGroup: "15+",
+    type: "find_wrong_one",
+    question: "Click on the shape that doesn't belong in the pattern",
+    grid: [
+      [
+        { svgPath: "/svg/q70/star-circle-row1-col1.svg", row: 0, col: 0 },
+        { svgPath: "/svg/q70/star-circle-row1-col2.svg", row: 0, col: 1 },
+        { svgPath: "/svg/q70/star-circle-row1-col3.svg", row: 0, col: 2 },
+        { svgPath: "/svg/q70/star-circle-row1-col4.svg", row: 0, col: 3 }
+      ],
+      [
+        { svgPath: "/svg/q70/star-circle-row2-col1.svg", row: 1, col: 0 },
+        { svgPath: "/svg/q70/star-circle-row2-col2.svg", row: 1, col: 1 },
+        { svgPath: "/svg/q70/star-circle-row2-col3.svg", row: 1, col: 2 },
+        { svgPath: "/svg/q70/star-circle-row2-col4.svg", row: 1, col: 3 }
+      ],
+      [
+        { svgPath: "/svg/q70/star-circle-row3-col1.svg", row: 2, col: 0 },
+        { svgPath: "/svg/q70/star-circle-row3-col2.svg", row: 2, col: 1 },
+        { svgPath: "/svg/q70/star-circle-row3-col3.svg", row: 2, col: 2 },
+        { svgPath: "/svg/q70/star-circle-row3-col4.svg", row: 2, col: 3 }
+      ],
+      [
+        { svgPath: "/svg/q70/star-circle-row4-col1.svg", row: 3, col: 0 },
+        { svgPath: "/svg/q70/star-circle-row4-col2.svg", row: 3, col: 1 },
+        { svgPath: "/svg/q70/star-circle-row4-col3.svg", row: 3, col: 2 },
+        { svgPath: "/svg/q70/star-circle-row4-col4.svg", row: 3, col: 3 }
+      ]
+    ],
+    wrongCellRow: 3,
+    wrongCellCol: 2  // Placeholder - change to the correct position
+  },
+  {
+    id: 71,
+    ageGroup: "15+",
+    type: "find_wrong_one",
+    question: "Click on the shape that doesn't belong in the pattern",
+    gridSize: "3x3",
+    grid: [
+      [
+        { svgPath: "/svg/q71/hexagon-row1-col1.svg", row: 0, col: 0 },
+        { svgPath: "/svg/q71/hexagon-row1-col2.svg", row: 0, col: 1 },
+        { svgPath: "/svg/q71/hexagon-row1-col3.svg", row: 0, col: 2 }
+      ],
+      [
+        { svgPath: "/svg/q71/hexagon-row2-col1.svg", row: 1, col: 0 },
+        { svgPath: "/svg/q71/hexagon-row2-col2.svg", row: 1, col: 1 },
+        { svgPath: "/svg/q71/hexagon-row2-col3.svg", row: 1, col: 2 }
+      ],
+      [
+        { svgPath: "/svg/q71/hexagon-row3-col1.svg", row: 2, col: 0 },
+        { svgPath: "/svg/q71/hexagon-row3-col2.svg", row: 2, col: 1 },
+        { svgPath: "/svg/q71/hexagon-row3-col3.svg", row: 2, col: 2 }
+      ]
+    ],
+    wrongCellRow: 1,
+    wrongCellCol: 1  // Placeholder - change to the correct position
+  },
+  {
+    id: 72,
+    ageGroup: "15+",
+    type: "find_wrong_one",
+    question: "Click on the shape that doesn't belong in the pattern",
+    grid: [
+      [
+        { svgPath: "/svg/q72/pentagon-row1-col1.svg", row: 0, col: 0 },
+        { svgPath: "/svg/q72/pentagon-row1-col2.svg", row: 0, col: 1 },
+        { svgPath: "/svg/q72/pentagon-row1-col3.svg", row: 0, col: 2 },
+        { svgPath: "/svg/q72/pentagon-row1-col4.svg", row: 0, col: 3 }
+      ],
+      [
+        { svgPath: "/svg/q72/pentagon-row2-col1.svg", row: 1, col: 0 },
+        { svgPath: "/svg/q72/pentagon-row2-col2.svg", row: 1, col: 1 },
+        { svgPath: "/svg/q72/pentagon-row2-col3.svg", row: 1, col: 2 },
+        { svgPath: "/svg/q72/pentagon-row2-col4.svg", row: 1, col: 3 }
+      ],
+      [
+        { svgPath: "/svg/q72/pentagon-row3-col1.svg", row: 2, col: 0 },
+        { svgPath: "/svg/q72/pentagon-row3-col2.svg", row: 2, col: 1 },
+        { svgPath: "/svg/q72/pentagon-row3-col3.svg", row: 2, col: 2 },
+        { svgPath: "/svg/q72/pentagon-row3-col4.svg", row: 2, col: 3 }
+      ],
+      [
+        { svgPath: "/svg/q72/pentagon-row4-col1.svg", row: 3, col: 0 },
+        { svgPath: "/svg/q72/pentagon-row4-col2.svg", row: 3, col: 1 },
+        { svgPath: "/svg/q72/pentagon-row4-col3.svg", row: 3, col: 2 },
+        { svgPath: "/svg/q72/pentagon-row4-col4.svg", row: 3, col: 3 }
+      ]
+    ],
+    wrongCellRow: 0,
+    wrongCellCol: 1  // Placeholder - change to the correct position
   }
 ]
 
