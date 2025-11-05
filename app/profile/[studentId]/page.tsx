@@ -58,8 +58,8 @@ const SUBTESTS = [
     phase: "Pilot: Phase 3"
   },
   {
-    id: "associate-learning",
-    name: "Associate Learning",
+    id: "associative-learning",
+    name: "Associative Learning",
     description: "Assess associative learning capabilities",
     phase: "Pilot: Phase 3"
   },
@@ -481,7 +481,7 @@ export default function StudentProfile() {
     if (!student) return
 
     const newSessionId = Math.random().toString(36).substring(2, 15)
-    
+
     // Archive current session if it exists and was completed
     let updatedCompletionHistory = student.completionHistory || []
     if (student.sessionId && student.testStatus === 'completed') {
@@ -506,11 +506,19 @@ export default function StudentProfile() {
     const savedStudents = localStorage.getItem('students')
     if (savedStudents) {
       const students = JSON.parse(savedStudents)
-      const updatedStudents = students.map((s: Student) => 
+      const updatedStudents = students.map((s: Student) =>
         s.id === studentId ? updatedStudent : s
       )
       localStorage.setItem('students', JSON.stringify(updatedStudents))
     }
+
+    // Store student info for student interface
+    localStorage.setItem(`session_${newSessionId}_studentInfo`, JSON.stringify({
+      firstName: student.firstName,
+      lastName: student.lastName,
+      grade: student.grade,
+      age: student.age
+    }))
 
     // Store student info for examiner interface
     localStorage.setItem('examinerStudentInfo', JSON.stringify({
@@ -520,9 +528,26 @@ export default function StudentProfile() {
       age: student.age
     }))
 
-    // Navigate to examiner interface
     const tests = selectedSubtests.join(",")
-    window.location.href = `/examiner?tests=${tests}&session=${newSessionId}`
+
+    // For student-only tests like associative learning, go directly to the test
+    if (selectedSubtests.length === 1 && selectedSubtests[0] === 'associative-learning') {
+      // Set up student connection
+      localStorage.setItem(`student_${newSessionId}`, JSON.stringify({
+        name: `${student.firstName} ${student.lastName}`,
+        firstName: student.firstName,
+        lastName: student.lastName,
+        grade: student.grade,
+        age: student.age,
+        joinedAt: new Date().toISOString(),
+        sessionId: newSessionId
+      }))
+      // Navigate directly to the test
+      window.location.href = `/student/${newSessionId}/associative-learning`
+    } else {
+      // Navigate to examiner interface for other tests
+      window.location.href = `/examiner?tests=${tests}&session=${newSessionId}`
+    }
   }
 
   const continueCurrentSession = () => {
