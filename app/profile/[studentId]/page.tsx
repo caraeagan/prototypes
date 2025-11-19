@@ -994,12 +994,23 @@ export default function StudentProfile() {
                   {/* Simple flat list of all subtests - Fixed height to leave room for button */}
                   <div className="space-y-2 h-64 overflow-y-auto border border-gray-200 rounded-lg mb-4">
                     {SUBTESTS
-                      .filter(subtest => 
-                        !searchTerm || 
+                      .filter(subtest =>
+                        !searchTerm ||
                         subtest.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                         subtest.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
                         subtest.phase.toLowerCase().includes(searchTerm.toLowerCase())
                       )
+                      .sort((a, b) => {
+                        // Extract phase numbers for sorting
+                        const getPhaseValue = (phase: string) => {
+                          if (phase.includes('Phase 3')) return 3
+                          if (phase.includes('Phase 2')) return 2
+                          if (phase.includes('Phase 1')) return 1
+                          if (phase.includes('Pre Pilot')) return 0
+                          return -1
+                        }
+                        return getPhaseValue(b.phase) - getPhaseValue(a.phase)
+                      })
                       .map((subtest) => (
                         <div key={subtest.id} className="flex items-center space-x-3 p-4 hover:bg-gray-50 border-b border-gray-100 last:border-b-0">
                           <input
