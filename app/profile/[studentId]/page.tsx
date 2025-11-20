@@ -64,6 +64,12 @@ const SUBTESTS = [
     phase: "Pilot: Phase 3"
   },
   {
+    id: "associative-learning-v2",
+    name: "Associative Learning V2",
+    description: "Enhanced associative learning with multi-phase testing and corrections",
+    phase: "Pilot: Phase 3"
+  },
+  {
     id: "handwritten-alphabetic-fluency",
     name: "Handwritten Alphabetic Fluency",
     description: "Assess handwritten alphabet fluency",
@@ -531,7 +537,7 @@ export default function StudentProfile() {
     const tests = selectedSubtests.join(",")
 
     // For student-only tests like associative learning, go directly to the test
-    if (selectedSubtests.length === 1 && selectedSubtests[0] === 'associative-learning') {
+    if (selectedSubtests.length === 1 && (selectedSubtests[0] === 'associative-learning' || selectedSubtests[0] === 'associative-learning-v2')) {
       // Set up student connection
       localStorage.setItem(`student_${newSessionId}`, JSON.stringify({
         name: `${student.firstName} ${student.lastName}`,
@@ -543,7 +549,8 @@ export default function StudentProfile() {
         sessionId: newSessionId
       }))
       // Navigate directly to the test
-      window.location.href = `/student/${newSessionId}/associative-learning`
+      const testId = selectedSubtests[0]
+      window.location.href = `/student/${newSessionId}/${testId}`
     } else {
       // Navigate to examiner interface for other tests
       window.location.href = `/examiner?tests=${tests}&session=${newSessionId}`
