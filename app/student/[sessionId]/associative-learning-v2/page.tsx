@@ -37,7 +37,7 @@ const ALL_SYMBOLS = [
 const DISTRACTORS = {
   1: ["/images/associative-learning/symbol2.png", "/images/associative-learning/symbol4.png", "/images/associative-learning/symbol5.png"],
   2: ["/images/associative-learning/symbol1.png", "/images/associative-learning/symbol4.png", "/images/associative-learning/symbol6.png"],
-  3: ["/images/associative-learning/symbol1.png", "/images/associative-learning/symbol3.png", "/images/associative-learning/symbol5.png"],
+  3: ["/images/associative-learning/symbol1.png", "/images/associative-learning/symbol4.png", "/images/associative-learning/symbol6.png"],
 }
 
 // Correct sentence order (matches SYMBOLS order: symbol1, symbol3, symbol2)
@@ -65,7 +65,7 @@ export default function AssociativeLearningV2() {
   const [isCorrect, setIsCorrect] = useState(false)
 
   // Correction animation
-  const [correctionStep, setCorrectionStep] = useState(0) // 0: show incorrect, 1: transition, 2: show correct
+  const [correctionStep, setCorrectionStep] = useState(0) // 0: show incorrect, 1: move incorrect back, 2: move correct up, 3: show correct and play audio
 
   // Sentence building
   const [sentenceSlots, setSentenceSlots] = useState<(string | null)[]>([null, null, null])
@@ -75,8 +75,9 @@ export default function AssociativeLearningV2() {
   const [sentenceCorrect, setSentenceCorrect] = useState(false)
 
   // Sentence correction animation
-  const [sentenceCorrectionStep, setSentenceCorrectionStep] = useState(0) // 0: show incorrect, 1: rebuild correct, 2: side-by-side
+  const [sentenceCorrectionStep, setSentenceCorrectionStep] = useState(0) // 0: show incorrect, 1-3: show tiles one by one, 4: play audio
   const [studentAnswer, setStudentAnswer] = useState<string[]>([])
+  const [correctTilesShown, setCorrectTilesShown] = useState(0) // Number of correct tiles shown (0-3)
 
   const audioRef = useRef<HTMLAudioElement>(null)
 
@@ -114,7 +115,12 @@ export default function AssociativeLearningV2() {
       await new Promise<void>((resolve) => {
         if (audioRef.current) {
           audioRef.current.src = SYMBOLS[i].sound
-          audioRef.current.onended = () => resolve()
+          audioRef.current.onended = () => {
+            if (audioRef.current) {
+              audioRef.current.onended = null // Clear the event handler
+            }
+            resolve()
+          }
           audioRef.current.play()
         } else {
           resolve()
@@ -174,7 +180,10 @@ export default function AssociativeLearningV2() {
     setIsCorrect(correct)
     setShowFeedback(true)
 
-    if (!correct) {
+    if (correct) {
+      // Play audio for correct answer
+      playAudio(currentSymbol.sound)
+    } else {
       // Start correction animation on same screen
       setCorrectionStep(0)
     }
@@ -198,11 +207,23 @@ export default function AssociativeLearningV2() {
   useEffect(() => {
     if (showFeedback && !isCorrect) {
       if (correctionStep === 0) {
-        // Show incorrect choice for 1 second, then animate in correct answer
+        // Show incorrect choice for 1 second
         const timer = setTimeout(() => setCorrectionStep(1), 1000)
         return () => clearTimeout(timer)
+      } else if (correctionStep === 1) {
+        // Move incorrect answer back (800ms animation)
+        const timer = setTimeout(() => setCorrectionStep(2), 800)
+        return () => clearTimeout(timer)
+      } else if (correctionStep === 2) {
+        // Move correct answer up (800ms animation)
+        const timer = setTimeout(() => {
+          setCorrectionStep(3)
+          // Play audio when correct answer appears in slot
+          playAudio(SYMBOLS[currentSymbolIndex].sound)
+        }, 800)
+        return () => clearTimeout(timer)
       }
-      // correctionStep === 1: show correct answer next to incorrect with button
+      // correctionStep === 3: show correct answer with button
     }
   }, [showFeedback, isCorrect, correctionStep])
 
@@ -266,8 +287,10 @@ export default function AssociativeLearningV2() {
       setStudentAnswer(answer)
       setSentenceCorrectionStep(0)
     } else {
-      // Test complete - don't auto-redirect, show restart option
-      setPhase('complete')
+      // Wait a moment to show correct feedback, then play audio
+      setTimeout(() => {
+        playCombinedAudio()
+      }, 300)
     }
   }
 
@@ -275,11 +298,29 @@ export default function AssociativeLearningV2() {
   useEffect(() => {
     if (sentenceSubmitted && !sentenceCorrect) {
       if (sentenceCorrectionStep === 0) {
-        // Show incorrect answer for 1 second, then show correct answer
-        const timer = setTimeout(() => setSentenceCorrectionStep(1), 1000)
+        // Show incorrect answer for 1 second
+        const timer = setTimeout(() => {
+          setSentenceCorrectionStep(1)
+          setCorrectTilesShown(1) // Show first tile
+        }, 1000)
+        return () => clearTimeout(timer)
+      } else if (sentenceCorrectionStep >= 1 && sentenceCorrectionStep <= 2) {
+        // Show tiles one by one (500ms between each)
+        const timer = setTimeout(() => {
+          setSentenceCorrectionStep(sentenceCorrectionStep + 1)
+          setCorrectTilesShown(sentenceCorrectionStep + 1)
+        }, 500)
+        return () => clearTimeout(timer)
+      } else if (sentenceCorrectionStep === 3) {
+        // Show final tile, then play audio after a brief pause
+        const timer = setTimeout(() => {
+          setCorrectTilesShown(3)
+          playCombinedAudio()
+          setSentenceCorrectionStep(4)
+        }, 500)
         return () => clearTimeout(timer)
       }
-      // sentenceCorrectionStep === 1: show correct answer next to incorrect
+      // sentenceCorrectionStep === 4: all tiles shown, audio playing, show buttons
     }
   }, [sentenceSubmitted, sentenceCorrect, sentenceCorrectionStep])
 
@@ -329,9 +370,6 @@ export default function AssociativeLearningV2() {
                     fill
                     className="object-contain p-4"
                   />
-                  <div className="absolute top-2 right-2 bg-blue-500 text-white rounded-full w-8 h-8 flex items-center justify-center text-xs">
-                    🔊
-                  </div>
                 </div>
 
                 <button
@@ -353,73 +391,104 @@ export default function AssociativeLearningV2() {
 
               {/* Answer slot at the top */}
               <div className="mb-8">
-                <div className="flex justify-center items-start gap-8">
-                  {/* Student's answer */}
-                  <div>
-                    <p className="text-sm text-gray-600 mb-2">Your answer:</p>
-                    <div
-                      onDragOver={(e) => e.preventDefault()}
-                      onDrop={handleAnswerSlotDrop}
-                      onClick={() => selectedAnswer && !showFeedback && setSelectedAnswer(null)}
-                      className={`relative w-48 h-48 border-4 border-dashed rounded-lg transition-colors ${
-                        selectedAnswer
-                          ? showFeedback
-                            ? isCorrect
-                              ? 'border-green-500 bg-green-50'
-                              : 'border-red-500 bg-red-50'
-                            : 'border-blue-400 bg-blue-50 cursor-pointer'
-                          : 'border-gray-400 bg-gray-50'
-                      }`}
-                    >
-                      {selectedAnswer ? (
+                <p className="text-sm text-gray-600 mb-2 text-center">Your answer:</p>
+                <div className="flex justify-center">
+                  <div
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={handleAnswerSlotDrop}
+                    onClick={() => selectedAnswer && !showFeedback && setSelectedAnswer(null)}
+                    className={`relative w-48 h-48 border-4 border-dashed rounded-lg transition-colors ${
+                      // Show correct answer in slot at step 3
+                      (showFeedback && !isCorrect && correctionStep === 3)
+                        ? 'border-green-500 bg-green-50'
+                        : selectedAnswer
+                        ? showFeedback
+                          ? isCorrect
+                            ? 'border-green-500 bg-green-50'
+                            : correctionStep === 0
+                            ? 'border-red-500 bg-red-50'
+                            : 'border-gray-400 bg-gray-50'
+                          : 'border-blue-400 bg-blue-50 cursor-pointer'
+                        : 'border-gray-400 bg-gray-50'
+                    }`}
+                  >
+                    {/* Show incorrect answer moving down during step 1 */}
+                    {showFeedback && !isCorrect && correctionStep === 1 && selectedAnswer ? (
+                      <div className="animate-move-down">
                         <Image
                           src={selectedAnswer}
                           alt="Your answer"
                           fill
                           className="object-contain p-4"
                         />
-                      ) : (
-                        <div className="absolute inset-0 flex items-center justify-center text-gray-400 text-lg">
-                          Drag or click a symbol
-                        </div>
-                      )}
-                    </div>
-                    {showFeedback && isCorrect && (
-                      <p className="text-xl font-semibold text-green-600 mt-4">
-                        ✓ Correct!
-                      </p>
-                    )}
-                    {showFeedback && !isCorrect && (
-                      <p className="text-xl font-semibold text-red-600 mt-4">
-                        ✗ Incorrect
-                      </p>
+                      </div>
+                    ) : (showFeedback && !isCorrect && correctionStep === 3) ? (
+                      /* Show correct answer at step 3 */
+                      <Image
+                        src={SYMBOLS[currentSymbolIndex].image}
+                        alt="Correct answer"
+                        fill
+                        className="object-contain p-4"
+                      />
+                    ) : selectedAnswer && correctionStep !== 1 ? (
+                      /* Show selected answer normally */
+                      <Image
+                        src={selectedAnswer}
+                        alt="Your answer"
+                        fill
+                        className="object-contain p-4"
+                      />
+                    ) : (
+                      <div className="absolute inset-0 flex items-center justify-center text-gray-400 text-lg">
+                        Drag or click a symbol
+                      </div>
                     )}
                   </div>
-
-                  {/* Correct answer - animate in after delay */}
-                  {showFeedback && !isCorrect && correctionStep === 1 && (
-                    <div className="animate-fade-in">
-                      <p className="text-sm text-gray-600 mb-2">Correct answer:</p>
-                      <div className="relative w-48 h-48 border-4 border-green-500 rounded-lg bg-green-50">
-                        <Image
-                          src={SYMBOLS[currentSymbolIndex].image}
-                          alt="Correct answer"
-                          fill
-                          className="object-contain p-4"
-                        />
-                      </div>
-                      <p className="text-xl font-semibold text-green-600 mt-4">
-                        ✓ Correct
-                      </p>
-                    </div>
-                  )}
                 </div>
+                {showFeedback && isCorrect && (
+                  <div className="flex justify-center mt-4">
+                    <div className="w-12 h-12 rounded-full bg-green-500 flex items-center justify-center">
+                      <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                  </div>
+                )}
+                {showFeedback && !isCorrect && correctionStep === 0 && (
+                  <div className="flex justify-center mt-4">
+                    <div className="w-12 h-12 rounded-full bg-red-500 flex items-center justify-center">
+                      <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </div>
+                  </div>
+                )}
+                {showFeedback && !isCorrect && correctionStep === 3 && (
+                  <div className="flex justify-center mt-4">
+                    <div className="w-12 h-12 rounded-full bg-green-500 flex items-center justify-center">
+                      <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Answer choices */}
               <div className="grid grid-cols-4 gap-4 max-w-4xl mx-auto mb-8">
                 {shuffledChoices.map((choice, index) => {
                   const isSelected = selectedAnswer === choice
+                  const isCorrectAnswer = choice === SYMBOLS[currentSymbolIndex].image
+
+                  // Show incorrect answer coming back during step 1
+                  const showIncorrectReturning = isSelected && showFeedback && !isCorrect && correctionStep === 1
+                  // Show correct answer moving up during step 2
+                  const showCorrectMoving = isCorrectAnswer && showFeedback && !isCorrect && correctionStep === 2
+                  // Hide tiles at various stages
+                  const shouldHide = (isSelected && showFeedback && !isCorrect && correctionStep === 0) ||
+                                     (isCorrectAnswer && showFeedback && !isCorrect && (correctionStep === 0 || correctionStep === 1)) ||
+                                     (isSelected && showFeedback && !isCorrect && correctionStep >= 2) ||
+                                     (isCorrectAnswer && showFeedback && !isCorrect && correctionStep === 3)
 
                   return (
                     <div
@@ -427,11 +496,13 @@ export default function AssociativeLearningV2() {
                       draggable={!showFeedback}
                       onDragStart={() => !showFeedback && setDraggedSymbol(choice)}
                       onClick={() => !showFeedback && handleAnswerSelect(choice)}
-                      className={`relative w-full aspect-square border-4 rounded-lg transition-all ${
+                      className={`relative w-full aspect-square border-4 rounded-lg transition-opacity duration-300 ${
                         !showFeedback
                           ? 'border-gray-300 hover:border-blue-400 cursor-pointer'
                           : 'border-gray-300 opacity-50'
-                      } ${isSelected && !showFeedback ? 'opacity-50' : ''}`}
+                      } ${isSelected && !showFeedback ? 'opacity-50' : ''} ${
+                        shouldHide ? 'opacity-0' : ''
+                      } ${showCorrectMoving ? 'animate-move-up' : ''}`}
                     >
                       <Image
                         src={choice}
@@ -465,7 +536,7 @@ export default function AssociativeLearningV2() {
               )}
 
               {/* Next button for incorrect answers - show after correction */}
-              {showFeedback && !isCorrect && correctionStep === 1 && (
+              {showFeedback && !isCorrect && correctionStep === 3 && (
                 <div className="text-center mt-8">
                   <button
                     onClick={handleTestNext}
@@ -517,36 +588,63 @@ export default function AssociativeLearningV2() {
                     ))}
                   </div>
                   {sentenceSubmitted && !sentenceCorrect && (
-                    <p className="text-xl font-semibold text-red-600 mt-4 text-center">
-                      ✗ Incorrect
-                    </p>
+                    <div className="flex justify-center mt-4">
+                      <div className="w-12 h-12 rounded-full bg-red-500 flex items-center justify-center">
+                        <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </div>
+                    </div>
                   )}
                   {sentenceSubmitted && sentenceCorrect && (
-                    <p className="text-xl font-semibold text-green-600 mt-4 text-center">
-                      ✓ Correct!
-                    </p>
+                    <div className="flex justify-center mt-4">
+                      <div className="w-12 h-12 rounded-full bg-green-500 flex items-center justify-center">
+                        <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                        </svg>
+                      </div>
+                    </div>
                   )}
                 </div>
 
-                {/* Correct answer - animate in after delay if incorrect */}
-                {sentenceSubmitted && !sentenceCorrect && sentenceCorrectionStep === 1 && (
-                  <div className="animate-fade-in">
+                {/* Correct answer - animate in tiles one by one if incorrect */}
+                {sentenceSubmitted && !sentenceCorrect && sentenceCorrectionStep >= 1 && (
+                  <div>
                     <p className="text-sm text-gray-600 mb-2 text-center">Correct answer:</p>
                     <div className="flex justify-center gap-4">
                       {CORRECT_SENTENCE.map((symbol, index) => (
-                        <div key={index} className="relative w-32 h-32 border-4 border-green-500 rounded-lg bg-green-50">
-                          <Image
-                            src={symbol}
-                            alt={`Correct ${index + 1}`}
-                            fill
-                            className="object-contain p-2"
-                          />
+                        <div
+                          key={index}
+                          className={`relative w-32 h-32 border-4 rounded-lg transition-all duration-300 ${
+                            index < correctTilesShown
+                              ? 'border-green-500 bg-green-50 opacity-100 scale-100'
+                              : 'border-gray-300 bg-gray-50 opacity-30 scale-90'
+                          }`}
+                        >
+                          {index < correctTilesShown ? (
+                            <Image
+                              src={symbol}
+                              alt={`Correct ${index + 1}`}
+                              fill
+                              className="object-contain p-2"
+                            />
+                          ) : (
+                            <div className="absolute inset-0 flex items-center justify-center text-gray-400 text-4xl">
+                              {index + 1}
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>
-                    <p className="text-xl font-semibold text-green-600 mt-4 text-center">
-                      ✓ Correct
-                    </p>
+                    {sentenceCorrectionStep === 4 && (
+                      <div className="flex justify-center mt-4">
+                        <div className="w-12 h-12 rounded-full bg-green-500 flex items-center justify-center">
+                          <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -599,7 +697,7 @@ export default function AssociativeLearningV2() {
                 </div>
               )}
 
-              {sentenceSubmitted && !sentenceCorrect && sentenceCorrectionStep === 1 && (
+              {sentenceSubmitted && !sentenceCorrect && sentenceCorrectionStep === 4 && (
                 <div className="flex gap-4 justify-center mt-4">
                   <button
                     onClick={handleRestartTest}

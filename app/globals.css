@@ -26,3 +26,36 @@ body {
   color: var(--foreground);
   font-family: var(--font-lexend), sans-serif;
 }
+
+/* Animation for incorrect answer moving back down to grid */
+@keyframes move-down-to-grid {
+  from {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(250px);
+    opacity: 0;
+  }
+}
+
+.animate-move-down {
+  animation: move-down-to-grid 0.8s ease-in-out forwards;
+}
+
+/* Animation for correct answer moving up from grid to answer slot */
+@keyframes move-up-from-grid {
+  from {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(-250px);
+    opacity: 0;
+  }
+}
+
+.animate-move-up {
+  animation: move-up-from-grid 0.8s ease-in-out forwards;
+  z-index: 50;
+}
