@@ -114,13 +114,18 @@ export default function AssociativeLearningV2() {
     for (let i = 0; i < SYMBOLS.length; i++) {
       await new Promise<void>((resolve) => {
         if (audioRef.current) {
+          // Clear any existing handler first
+          audioRef.current.onended = null
           audioRef.current.src = SYMBOLS[i].sound
-          audioRef.current.onended = () => {
+
+          const handleEnded = () => {
             if (audioRef.current) {
-              audioRef.current.onended = null // Clear the event handler
+              audioRef.current.removeEventListener('ended', handleEnded)
             }
             resolve()
           }
+
+          audioRef.current.addEventListener('ended', handleEnded, { once: true })
           audioRef.current.play()
         } else {
           resolve()
