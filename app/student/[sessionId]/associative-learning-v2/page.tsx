@@ -80,13 +80,14 @@ export default function AssociativeLearningV2() {
   const [correctTilesShown, setCorrectTilesShown] = useState(0) // Number of correct tiles shown (0-3)
 
   const audioRef = useRef<HTMLAudioElement>(null)
+  const isPlayingAudioRef = useRef(false) // Flag to prevent concurrent audio playback
 
   // Initialize question choices when entering test phase
   useEffect(() => {
-    if (phase === 'test' && shuffledChoices.length === 0) {
+    if (phase === 'test') {
       initializeQuestion(currentSymbolIndex)
     }
-  }, [phase])
+  }, [phase, currentSymbolIndex])
 
   // Auto-play audio for current question in test phase
   useEffect(() => {
@@ -110,27 +111,46 @@ export default function AssociativeLearningV2() {
   }
 
   const playCombinedAudio = async () => {
-    // Play all three audio files in sequence
-    for (let i = 0; i < SYMBOLS.length; i++) {
-      await new Promise<void>((resolve) => {
-        if (audioRef.current) {
-          // Clear any existing handler first
-          audioRef.current.onended = null
-          audioRef.current.src = SYMBOLS[i].sound
+    // Prevent concurrent playback
+    if (isPlayingAudioRef.current) return
+    if (!audioRef.current) return
 
-          const handleEnded = () => {
-            if (audioRef.current) {
-              audioRef.current.removeEventListener('ended', handleEnded)
-            }
+    isPlayingAudioRef.current = true
+
+    try {
+      // Play all three audio files in sequence
+      for (let i = 0; i < SYMBOLS.length; i++) {
+        await new Promise<void>((resolve) => {
+          if (!audioRef.current) {
+            resolve()
+            return
+          }
+
+          const audio = audioRef.current
+
+          // Fully reset the audio element
+          audio.pause()
+          audio.onended = null
+          audio.currentTime = 0
+
+          // Set new source
+          audio.src = SYMBOLS[i].sound
+          audio.load()
+
+          // Use a simple onended handler that only fires once
+          let hasEnded = false
+          audio.onended = () => {
+            if (hasEnded) return
+            hasEnded = true
+            audio.onended = null
             resolve()
           }
 
-          audioRef.current.addEventListener('ended', handleEnded, { once: true })
-          audioRef.current.play()
-        } else {
-          resolve()
-        }
-      })
+          audio.play().catch(() => resolve())
+        })
+      }
+    } finally {
+      isPlayingAudioRef.current = false
     }
   }
 
@@ -143,6 +163,8 @@ export default function AssociativeLearningV2() {
     setShuffledChoices(shuffled)
     setSelectedAnswer(null)
     setShowFeedback(false)
+    setCorrectionStep(0) // Reset correction step for new question
+    setIsCorrect(false) // Reset correct state for new question
   }
 
   // Auto-play audio when entering intro phase
