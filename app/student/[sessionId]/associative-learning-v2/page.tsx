@@ -529,20 +529,8 @@ export default function AssociativeLearningV2() {
       return
     }
 
-    const correct = answer.every((symbol, i) => symbol === CORRECT_SENTENCE[i])
-    setSentenceSubmitted(true)
-    setSentenceCorrect(correct)
-
-    if (!correct) {
-      // Save student's answer and show correction inline
-      setStudentAnswer(answer)
-      setSentenceCorrectionStep(0)
-    } else {
-      // Wait a moment to show correct feedback, then play audio
-      setTimeout(() => {
-        playCombinedAudio()
-      }, 300)
-    }
+    // Go directly to test ended screen without showing correction
+    setPhase('complete')
   }
 
   // PHASE 5: Sentence Correction Animation (shown inline on sentence screen)
@@ -990,9 +978,8 @@ export default function AssociativeLearningV2() {
           {/* PHASE 4: Sentence Building */}
           {phase === 'sentence' && (
             <div className="text-center">
-              {/* Sentence slots - show student's answer and correction side by side */}
+              {/* Sentence slots */}
               <div className="flex justify-center items-start gap-8 mb-12">
-                {/* Student's answer */}
                 <div>
                   <p className="text-sm text-gray-600 mb-2 text-center">Your answer:</p>
                   <div className="flex justify-center gap-4">
@@ -1000,15 +987,9 @@ export default function AssociativeLearningV2() {
                       <div
                         key={index}
                         onDragOver={(e) => e.preventDefault()}
-                        onDrop={() => !sentenceSubmitted && handleDrop(index)}
-                        onClick={() => !sentenceSubmitted && slot && handleRemoveFromSlot(index)}
-                        className={`relative w-32 h-32 border-4 rounded-lg transition-colors ${
-                          sentenceSubmitted
-                            ? sentenceCorrect
-                              ? 'border-green-500 bg-green-50'
-                              : 'border-red-500 bg-red-50'
-                            : 'border-dashed border-gray-400 bg-gray-50 hover:bg-gray-100 cursor-pointer'
-                        }`}
+                        onDrop={() => handleDrop(index)}
+                        onClick={() => slot && handleRemoveFromSlot(index)}
+                        className="relative w-32 h-32 border-4 rounded-lg transition-colors border-dashed border-gray-400 bg-gray-50 hover:bg-gray-100 cursor-pointer"
                       >
                         {slot ? (
                           <Image
@@ -1025,66 +1006,7 @@ export default function AssociativeLearningV2() {
                       </div>
                     ))}
                   </div>
-                  {sentenceSubmitted && !sentenceCorrect && (
-                    <div className="flex justify-center mt-4">
-                      <div className="w-12 h-12 rounded-full bg-red-500 flex items-center justify-center">
-                        <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </div>
-                    </div>
-                  )}
-                  {sentenceSubmitted && sentenceCorrect && (
-                    <div className="flex justify-center mt-4">
-                      <div className="w-12 h-12 rounded-full bg-green-500 flex items-center justify-center">
-                        <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                        </svg>
-                      </div>
-                    </div>
-                  )}
                 </div>
-
-                {/* Correct answer - animate in tiles one by one if incorrect */}
-                {sentenceSubmitted && !sentenceCorrect && sentenceCorrectionStep >= 1 && (
-                  <div>
-                    <p className="text-sm text-gray-600 mb-2 text-center">Correct answer:</p>
-                    <div className="flex justify-center gap-4">
-                      {CORRECT_SENTENCE.map((symbol, index) => (
-                        <div
-                          key={index}
-                          className={`relative w-32 h-32 border-4 rounded-lg transition-all duration-300 ${
-                            index < correctTilesShown
-                              ? 'border-green-500 bg-green-50 opacity-100 scale-100'
-                              : 'border-gray-300 bg-gray-50 opacity-30 scale-90'
-                          }`}
-                        >
-                          {index < correctTilesShown ? (
-                            <Image
-                              src={symbol}
-                              alt={`Correct ${index + 1}`}
-                              fill
-                              className="object-contain p-2"
-                            />
-                          ) : (
-                            <div className="absolute inset-0 flex items-center justify-center text-gray-400 text-4xl">
-                              {index + 1}
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                    {sentenceCorrectionStep === 4 && (
-                      <div className="flex justify-center mt-4">
-                        <div className="w-12 h-12 rounded-full bg-green-500 flex items-center justify-center">
-                          <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                          </svg>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
               </div>
 
               {/* Available symbols */}
@@ -1107,50 +1029,13 @@ export default function AssociativeLearningV2() {
                 ))}
               </div>
 
-              {!sentenceSubmitted && (
-                <button
-                  onClick={handleSentenceSubmit}
-                  disabled={sentenceSlots.some(s => s === null)}
-                  className="px-8 py-4 bg-green-500 text-white text-lg rounded-lg hover:bg-green-600 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
-                >
-                  Next
-                </button>
-              )}
-
-              {/* Show restart/end buttons after sentence correction or correct answer */}
-              {sentenceSubmitted && sentenceCorrect && (
-                <div className="flex gap-4 justify-center mt-4">
-                  <button
-                    onClick={handleRestartTest}
-                    className="px-8 py-4 bg-green-500 text-white text-lg rounded-lg hover:bg-green-600 transition-colors"
-                  >
-                    Restart Test
-                  </button>
-                  <button
-                    onClick={handleEndTest}
-                    className="px-8 py-4 bg-blue-500 text-white text-lg rounded-lg hover:bg-blue-600 transition-colors"
-                  >
-                    End Test
-                  </button>
-                </div>
-              )}
-
-              {sentenceSubmitted && !sentenceCorrect && sentenceCorrectionStep === 4 && (
-                <div className="flex gap-4 justify-center mt-4">
-                  <button
-                    onClick={handleRestartTest}
-                    className="px-8 py-4 bg-green-500 text-white text-lg rounded-lg hover:bg-green-600 transition-colors"
-                  >
-                    Restart Test
-                  </button>
-                  <button
-                    onClick={handleEndTest}
-                    className="px-8 py-4 bg-blue-500 text-white text-lg rounded-lg hover:bg-blue-600 transition-colors"
-                  >
-                    End Test
-                  </button>
-                </div>
-              )}
+              <button
+                onClick={handleSentenceSubmit}
+                disabled={sentenceSlots.some(s => s === null)}
+                className="px-8 py-4 bg-green-500 text-white text-lg rounded-lg hover:bg-green-600 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+              >
+                Next
+              </button>
             </div>
           )}
 
@@ -1173,34 +1058,16 @@ export default function AssociativeLearningV2() {
           {/* PHASE 5: Complete */}
           {phase === 'complete' && (
             <div className="text-center">
-              <div className="mb-8">
-                <div className="w-24 h-24 mx-auto mb-6 bg-green-100 rounded-full flex items-center justify-center">
-                  <svg className="w-16 h-16 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                  </svg>
-                </div>
-                <h2 className="text-3xl font-bold text-green-600 mb-4">
-                  Test Complete!
-                </h2>
-                <p className="text-xl text-gray-700 mb-8">
-                  Great job! You answered all questions correctly.
-                </p>
-              </div>
+              <h2 className="text-3xl font-bold text-gray-700 mb-8">
+                Test Ended
+              </h2>
 
-              <div className="flex gap-4 justify-center">
-                <button
-                  onClick={handleRestartTest}
-                  className="px-8 py-4 bg-green-500 text-white text-lg rounded-lg hover:bg-green-600 transition-colors"
-                >
-                  Restart Test
-                </button>
-                <button
-                  onClick={handleEndTest}
-                  className="px-8 py-4 bg-blue-500 text-white text-lg rounded-lg hover:bg-blue-600 transition-colors"
-                >
-                  End Test
-                </button>
-              </div>
+              <button
+                onClick={handleRestartTest}
+                className="px-8 py-4 bg-green-500 text-white text-lg rounded-lg hover:bg-green-600 transition-colors"
+              >
+                Restart Test
+              </button>
             </div>
           )}
         </div>
