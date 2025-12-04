@@ -747,8 +747,8 @@ export default function AssociativeLearningV2() {
                   const isSelectedChoice = selectedAnswer === choice
                   const isCorrectChoice = choice === PRACTICE_SYMBOLS[currentPracticeSymbolIndex].image
 
-                  // Step 1: highlight incorrect answer back in its place
-                  const highlightIncorrect = isSelectedChoice && showFeedback && !isCorrect && correctionStep === 1
+                  // Steps 1-3: highlight incorrect answer back in its place (stays highlighted while user is on screen)
+                  const highlightIncorrect = isSelectedChoice && showFeedback && !isCorrect && correctionStep >= 1
                   // Step 2: highlight correct answer in green
                   const highlightCorrect = isCorrectChoice && showFeedback && !isCorrect && correctionStep === 2
 
@@ -941,8 +941,8 @@ export default function AssociativeLearningV2() {
                   const isSelectedChoice = selectedAnswer === choice
                   const isCorrectChoice = choice === SYMBOLS[currentSymbolIndex].image
 
-                  // Step 1: highlight incorrect answer back in its place
-                  const highlightIncorrect = isSelectedChoice && showFeedback && !isCorrect && correctionStep === 1
+                  // Steps 1-3: highlight incorrect answer back in its place (stays highlighted while user is on screen)
+                  const highlightIncorrect = isSelectedChoice && showFeedback && !isCorrect && correctionStep >= 1
                   // Step 2: highlight correct answer in green
                   const highlightCorrect = isCorrectChoice && showFeedback && !isCorrect && correctionStep === 2
 
