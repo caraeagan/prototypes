@@ -25,22 +25,22 @@ The mural grew over the following weeks. It became a collaborative effort, with 
     {
       id: 1,
       audioPath: "/audio/listening-comprehension/Listening Comp_demo question_1.wav",
-      question: "Where did Mila put her cup at first?",
+      question: "",
       options: [
-        { id: "A", text: "On the floor", audioPath: "/audio/listening-comprehension/Demo Question 1_answer_A.wav" },
-        { id: "B", text: "On the table", audioPath: "/audio/listening-comprehension/Demo Question 1_answer_B.wav" },
-        { id: "C", text: "By the window", audioPath: "/audio/listening-comprehension/Demo Question 1_answer_C.wav" }
+        { id: "A", text: "A", audioPath: "/audio/listening-comprehension/Demo Question 1_answer_A.wav" },
+        { id: "B", text: "B", audioPath: "/audio/listening-comprehension/Demo Question 1_answer_B.wav" },
+        { id: "C", text: "C", audioPath: "/audio/listening-comprehension/Demo Question 1_answer_C.wav" }
       ],
       correctAnswer: "B"
     },
     {
       id: 2,
       audioPath: "/audio/listening-comprehension/Listening Comp_demo question_2.wav",
-      question: "What did Mila do after filling the cup?",
+      question: "",
       options: [
-        { id: "A", text: "Carried it to the couch", audioPath: "/audio/listening-comprehension/Demo Question 2_answer_A.wav" },
-        { id: "B", text: "Put it in the fridge", audioPath: "/audio/listening-comprehension/Demo Question 2_answer_B.wav" },
-        { id: "C", text: "Gave it to someone", audioPath: "/audio/listening-comprehension/Demo Question 2_answer_C.wav" }
+        { id: "A", text: "A", audioPath: "/audio/listening-comprehension/Demo Question 2_answer_A.wav" },
+        { id: "B", text: "B", audioPath: "/audio/listening-comprehension/Demo Question 2_answer_B.wav" },
+        { id: "C", text: "C", audioPath: "/audio/listening-comprehension/Demo Question 2_answer_C.wav" }
       ],
       correctAnswer: "B"
     }
@@ -62,6 +62,7 @@ export default function StudentListeningComprehension() {
   const [audioProgress, setAudioProgress] = useState(0)
   const [hasListenedToPassage, setHasListenedToPassage] = useState(false)
   const [hasStarted, setHasStarted] = useState(false)
+  const [currentlyPlayingOption, setCurrentlyPlayingOption] = useState<string | null>(null)
 
   const audioRef = useRef<HTMLAudioElement>(null)
   const isPlayingSequenceRef = useRef(false)
@@ -93,6 +94,7 @@ export default function StudentListeningComprehension() {
       // Reset the playing flag when question changes
       isPlayingSequenceRef.current = false
       setAudioProgress(0)
+      setCurrentlyPlayingOption(null)
 
       const question = TEST_CONTENT.questions[currentQuestion]
       if (!question) return
@@ -103,14 +105,20 @@ export default function StudentListeningComprehension() {
         isPlayingSequenceRef.current = true
         setIsPlaying(true)
 
-        // Only play question audio (not answer options)
-        const audioFiles = [question.audioPath]
+        // Play question audio first, then each answer option
+        const audioSequence = [
+          { audioPath: question.audioPath, optionId: null },
+          ...question.options.map(opt => ({ audioPath: opt.audioPath, optionId: opt.id }))
+        ]
 
-        const totalFiles = audioFiles.length
+        const totalFiles = audioSequence.length
 
         try {
-          for (let i = 0; i < audioFiles.length; i++) {
-            const audioPath = audioFiles[i]
+          for (let i = 0; i < audioSequence.length; i++) {
+            const { audioPath, optionId } = audioSequence[i]
+
+            // Set which option is currently playing (null for question audio)
+            setCurrentlyPlayingOption(optionId)
 
             await new Promise<void>((resolve) => {
               if (!audioRef.current) {
@@ -157,6 +165,7 @@ export default function StudentListeningComprehension() {
         } finally {
           isPlayingSequenceRef.current = false
           setIsPlaying(false)
+          setCurrentlyPlayingOption(null)
           setAudioProgress(100)
         }
       }, 500)
@@ -508,11 +517,26 @@ export default function StudentListeningComprehension() {
             <div>
               {/* Audio Indicator for Question */}
               <div className="flex justify-center mb-6">
+                <style jsx>{`
+                  @keyframes pulse-scale {
+                    0%, 100% {
+                      transform: scale(1);
+                      opacity: 1;
+                    }
+                    50% {
+                      transform: scale(0.8);
+                      opacity: 0.7;
+                    }
+                  }
+                  .animate-pulse-scale {
+                    animation: pulse-scale 1.5s ease-in-out infinite;
+                  }
+                `}</style>
                 <button
                   onClick={toggleAudio}
                   className={`w-16 h-16 rounded-xl flex items-center justify-center transition-all ${
-                    isPlaying
-                      ? 'bg-blue-200 shadow-lg'
+                    isPlaying && currentlyPlayingOption === null
+                      ? 'bg-blue-200 shadow-lg animate-pulse-scale'
                       : 'bg-blue-100 hover:bg-blue-200'
                   }`}
                 >
@@ -532,22 +556,39 @@ export default function StudentListeningComprehension() {
                 </button>
               </div>
 
-              {/* Question Text */}
-              <h2 className="text-lg font-medium text-gray-900 mb-8 text-center leading-relaxed">
-                {question.question}
-              </h2>
-
-              {/* Multiple Choice Options */}
-              <div className="space-y-4 mb-8">
-                {question.options.map((option) => (
-                  <div key={option.id} className="flex items-start gap-3">
-                    {/* Audio icon button - outside the answer container */}
+              {/* Multiple Choice Options - Horizontal Row */}
+              <div className="flex justify-center gap-6 mb-8">
+                {question.options.map((option) => {
+                  const isOptionPlaying = currentlyPlayingOption === option.id
+                  return (
+                  <div key={option.id} className="flex flex-col items-center gap-3">
+                    {/* Answer choice tile */}
+                    <button
+                      onClick={() => handleAnswerSelect(option.id)}
+                      className={`rounded-xl border-2 transition-all flex items-center justify-center ${
+                        isOptionPlaying
+                          ? 'border-blue-500 bg-blue-200 shadow-lg animate-pulse-scale'
+                          : answers[currentQuestion] === option.id
+                            ? 'border-blue-500 bg-blue-50'
+                            : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
+                      }`}
+                      style={{ width: '240px', height: '140px' }}
+                    >
+                      <span className={`text-2xl font-medium ${isOptionPlaying ? 'text-blue-700' : 'text-gray-700'}`}>
+                        {option.text}
+                      </span>
+                    </button>
+                    {/* Audio icon button - below the tile */}
                     <button
                       onClick={(e) => playAnswerAudio(option.audioPath, e)}
-                      className="w-8 h-8 rounded-lg bg-blue-100 hover:bg-blue-200 flex items-center justify-center flex-shrink-0 transition-colors mt-3"
+                      className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all ${
+                        isOptionPlaying
+                          ? 'bg-blue-200 shadow-lg animate-pulse-scale'
+                          : 'bg-blue-100 hover:bg-blue-200'
+                      }`}
                     >
                       <svg
-                        className="w-4 h-4 text-blue-600"
+                        className={`w-5 h-5 ${isOptionPlaying ? 'text-blue-700' : 'text-blue-600'}`}
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -560,34 +601,9 @@ export default function StudentListeningComprehension() {
                         />
                       </svg>
                     </button>
-                    {/* Answer choice container */}
-                    <button
-                      onClick={() => handleAnswerSelect(option.id)}
-                      className={`flex-1 text-left p-4 rounded-xl border-2 transition-all ${
-                        answers[currentQuestion] === option.id
-                          ? 'border-blue-500 bg-blue-50'
-                          : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
-                      }`}
-                    >
-                      <div className="flex items-start gap-3">
-                        {/* Radio circle */}
-                        <div className={`w-5 h-5 rounded-full border-2 flex-shrink-0 mt-0.5 flex items-center justify-center ${
-                          answers[currentQuestion] === option.id
-                            ? 'border-blue-500'
-                            : 'border-gray-300'
-                        }`}>
-                          {answers[currentQuestion] === option.id && (
-                            <div className="w-2.5 h-2.5 rounded-full bg-blue-500" />
-                          )}
-                        </div>
-                        {/* Option text */}
-                        <span className="text-gray-700 leading-relaxed">
-                          {option.text}
-                        </span>
-                      </div>
-                    </button>
                   </div>
-                ))}
+                  )
+                })}
               </div>
 
               {/* Navigation */}
