@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="130" height="130" viewBox="0 0 130 130" xmlns="http://www.w3.org/2000/svg">
+  <g transform="rotate(0 65 65)">
+    <polygon points="111.19397662556435,45.865828381745516 111.19397662556435,84.13417161825448 84.1341716182545,111.19397662556435 45.865828381745516,111.19397662556435 18.80602337443566,84.1341716182545 18.80602337443566,45.865828381745516 45.86582838174549,18.806023374435675 84.1341716182545,18.806023374435668" fill="#8b5cf6" stroke="#8b5cf6" stroke-width="0"/>
+  </g>
+  <g transform="rotate(45 65 65)">
+    <rect x="40" y="40" width="50" height="50" fill="#ef4444" stroke="#1e293b" stroke-width="2.5" transform="rotate(45 65 65)"/>
+  </g>
+  
+  <polygon points="105,20 120,20 120,35" fill="#ef4444" stroke="#1e293b" stroke-width="1.5"/>
+  <line x1="15" y1="65" x2="115" y2="65" stroke="#1e293b" stroke-width="4" opacity="0.7"/>
+</svg>

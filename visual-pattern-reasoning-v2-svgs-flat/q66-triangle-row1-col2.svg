@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="130" height="130" viewBox="0 0 130 130" xmlns="http://www.w3.org/2000/svg">
+  <g transform="rotate(90 65 65)">
+    <polygon points="65,15 108.30127018922194,90 21.698729810778076,90.00000000000001" fill="#ec4899" stroke="#1e293b" stroke-width="2"/>
+  </g>
+  <g transform="rotate(180 65 65)">
+    <polygon points="65,37 89.24871130596429,79 40.75128869403572,79.00000000000001" fill="#3b82f6" stroke="#1e293b" stroke-width="2"/>
+  </g>
+  <circle cx="65" cy="65" r="10" fill="#a855f7" stroke="#1e293b" stroke-width="2"/>
+  
+  
+</svg>
