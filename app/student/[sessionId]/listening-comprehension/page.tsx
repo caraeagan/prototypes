@@ -262,13 +262,15 @@ export default function StudentListeningComprehension() {
     }
   }
 
-  const playAnswerAudio = (audioPath: string, e: React.MouseEvent) => {
+  const playAnswerAudio = (audioPath: string, optionId: string, e: React.MouseEvent) => {
     e.stopPropagation() // Prevent selecting the answer when clicking the audio icon
     if (audioRef.current) {
+      isPlayingSequenceRef.current = false // Stop any playing sequence
       audioRef.current.pause()
       audioRef.current.src = audioPath
       audioRef.current.play()
       setIsPlaying(true)
+      setCurrentlyPlayingOption(optionId)
     }
   }
 
@@ -413,6 +415,7 @@ export default function StudentListeningComprehension() {
 
   const handleAudioEnded = () => {
     setIsPlaying(false)
+    setCurrentlyPlayingOption(null)
     setAudioProgress(100)
     if (phaseRef.current === 'passage') {
       setHasListenedToPassage(true)
@@ -515,23 +518,23 @@ export default function StudentListeningComprehension() {
           {/* Questions Phase */}
           {phase === 'questions' && question && (
             <div>
+              <style jsx global>{`
+                @keyframes pulse-scale {
+                  0%, 100% {
+                    transform: scale(1);
+                    opacity: 1;
+                  }
+                  50% {
+                    transform: scale(0.8);
+                    opacity: 0.7;
+                  }
+                }
+                .animate-pulse-scale {
+                  animation: pulse-scale 1.5s ease-in-out infinite;
+                }
+              `}</style>
               {/* Audio Indicator for Question */}
               <div className="flex justify-center mb-6">
-                <style jsx>{`
-                  @keyframes pulse-scale {
-                    0%, 100% {
-                      transform: scale(1);
-                      opacity: 1;
-                    }
-                    50% {
-                      transform: scale(0.8);
-                      opacity: 0.7;
-                    }
-                  }
-                  .animate-pulse-scale {
-                    animation: pulse-scale 1.5s ease-in-out infinite;
-                  }
-                `}</style>
                 <button
                   onClick={toggleAudio}
                   className={`w-16 h-16 rounded-xl flex items-center justify-center transition-all ${
@@ -567,7 +570,7 @@ export default function StudentListeningComprehension() {
                       onClick={() => handleAnswerSelect(option.id)}
                       className={`rounded-xl border-2 transition-all flex items-center justify-center ${
                         isOptionPlaying
-                          ? 'border-blue-500 bg-blue-200 shadow-lg animate-pulse-scale'
+                          ? 'border-blue-500 bg-blue-200 shadow-lg'
                           : answers[currentQuestion] === option.id
                             ? 'border-blue-500 bg-blue-50'
                             : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
@@ -580,7 +583,7 @@ export default function StudentListeningComprehension() {
                     </button>
                     {/* Audio icon button - below the tile */}
                     <button
-                      onClick={(e) => playAnswerAudio(option.audioPath, e)}
+                      onClick={(e) => playAnswerAudio(option.audioPath, option.id, e)}
                       className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all ${
                         isOptionPlaying
                           ? 'bg-blue-200 shadow-lg animate-pulse-scale'
