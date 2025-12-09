@@ -74,10 +74,18 @@ export default function StudentListeningComprehension() {
   }, [phase])
 
   useEffect(() => {
-    // Get student info
+    // Get student info, or use default anonymous student
     const studentData = localStorage.getItem(`student_${sessionId}`)
     if (studentData) {
       setStudentInfo(JSON.parse(studentData))
+    } else {
+      // Allow anonymous access with default student info
+      setStudentInfo({
+        name: 'Student',
+        firstName: 'Student',
+        lastName: '',
+        sessionId
+      })
     }
   }, [sessionId])
 
