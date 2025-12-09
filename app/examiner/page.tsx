@@ -213,6 +213,10 @@ function ExaminerInterfaceContent() {
                     window.location.href = `/examiner/figure-reproduction?session=${sessionId}`
                   } else if (tests.includes("visual-recognition-memory")) {
                     window.location.href = `/examiner/visual-recognition-memory?session=${sessionId}`
+                  } else if (tests.includes("listening-comprehension")) {
+                    // For listening comprehension, student will auto-navigate
+                    // Examiner stays on this page to monitor
+                    alert("Assessment started! Student has been directed to the Listening Comprehension test.")
                   } else if (tests.includes("associative-learning")) {
                     // For associative learning, student will auto-navigate
                     // Examiner stays on this page to monitor
