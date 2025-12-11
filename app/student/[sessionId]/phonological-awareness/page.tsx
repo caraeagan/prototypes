@@ -11,29 +11,37 @@ type QuestionType = 'rhyme-recognition' | 'rhyme-production' | 'syllabication' |
 interface Question {
   id: number
   type: QuestionType
-  audioPath: string
+  audioPaths: string[]  // Array to support sequential audio playback
 }
 
 // 12 questions total: 2 of each type
 const QUESTIONS: Question[] = [
   // Rhyme Recognition (2 questions)
-  { id: 1, type: 'rhyme-recognition', audioPath: '/audio/phonological-awareness/rhyme-recognition-1.wav' },
-  { id: 2, type: 'rhyme-recognition', audioPath: '/audio/phonological-awareness/rhyme-recognition-2.wav' },
+  { id: 1, type: 'rhyme-recognition', audioPaths: ['/audio/phonological-awareness/Rhyming_1.wav'] },
+  { id: 2, type: 'rhyme-recognition', audioPaths: ['/audio/phonological-awareness/Rhyming_2.wav'] },
   // Rhyme Production (2 questions)
-  { id: 3, type: 'rhyme-production', audioPath: '/audio/phonological-awareness/rhyme-production-1.wav' },
-  { id: 4, type: 'rhyme-production', audioPath: '/audio/phonological-awareness/rhyme-production-2.wav' },
+  { id: 3, type: 'rhyme-production', audioPaths: ['/audio/phonological-awareness/Rhyme Production_1.wav'] },
+  { id: 4, type: 'rhyme-production', audioPaths: ['/audio/phonological-awareness/Rhyme Production_2.wav'] },
   // Syllabication (2 questions)
-  { id: 5, type: 'syllabication', audioPath: '/audio/phonological-awareness/syllabication-1.wav' },
-  { id: 6, type: 'syllabication', audioPath: '/audio/phonological-awareness/syllabication-2.wav' },
+  { id: 5, type: 'syllabication', audioPaths: ['/audio/phonological-awareness/Syllabication_1.wav'] },
+  { id: 6, type: 'syllabication', audioPaths: ['/audio/phonological-awareness/Syllabication_2.wav'] },
   // Sound ID (2 questions)
-  { id: 7, type: 'sound-id', audioPath: '/audio/phonological-awareness/sound-id-1.wav' },
-  { id: 8, type: 'sound-id', audioPath: '/audio/phonological-awareness/sound-id-2.wav' },
-  // Blending (2 questions)
-  { id: 9, type: 'blending', audioPath: '/audio/phonological-awareness/blending-1.wav' },
-  { id: 10, type: 'blending', audioPath: '/audio/phonological-awareness/blending-2.wav' },
+  { id: 7, type: 'sound-id', audioPaths: ['/audio/phonological-awareness/Sound ID_1.wav'] },
+  { id: 8, type: 'sound-id', audioPaths: ['/audio/phonological-awareness/Sound ID_2.wav'] },
+  // Blending (2 questions) - plays sequence of audio files
+  { id: 9, type: 'blending', audioPaths: [
+    '/audio/phonological-awareness/Blending_1.mp3',
+    '/audio/phonological-awareness/Blending_1.1.mp3',
+    '/audio/phonological-awareness/Blending_1.2.mp3'
+  ]},
+  { id: 10, type: 'blending', audioPaths: [
+    '/audio/phonological-awareness/Blending_2.mp3',
+    '/audio/phonological-awareness/Blending_2.1.mp3',
+    '/audio/phonological-awareness/Blending_2.2.mp3'
+  ]},
   // Segmenting (2 questions)
-  { id: 11, type: 'segmenting', audioPath: '/audio/phonological-awareness/segmenting-1.wav' },
-  { id: 12, type: 'segmenting', audioPath: '/audio/phonological-awareness/segmenting-2.wav' },
+  { id: 11, type: 'segmenting', audioPaths: ['/audio/phonological-awareness/Segmenting_1.wav'] },
+  { id: 12, type: 'segmenting', audioPaths: ['/audio/phonological-awareness/Segmenting_2.wav'] },
 ]
 
 export default function StudentPhonologicalAwareness() {
@@ -46,6 +54,7 @@ export default function StudentPhonologicalAwareness() {
   const [isPlaying, setIsPlaying] = useState(false)
   const [testEnded, setTestEnded] = useState(false)
   const [hasStarted, setHasStarted] = useState(false)
+  const [currentAudioIndex, setCurrentAudioIndex] = useState(0)
 
   const audioRef = useRef<HTMLAudioElement>(null)
 
@@ -68,9 +77,10 @@ export default function StudentPhonologicalAwareness() {
   useEffect(() => {
     if (hasStarted && !testEnded && audioRef.current) {
       const question = QUESTIONS[currentQuestion]
-      audioRef.current.src = question.audioPath
+      setCurrentAudioIndex(0)
+      audioRef.current.src = question.audioPaths[0]
       audioRef.current.play().catch(() => {
-        console.log('Audio file not found:', question.audioPath)
+        console.log('Audio file not found:', question.audioPaths[0])
       })
     }
   }, [currentQuestion, hasStarted, testEnded])
@@ -78,9 +88,10 @@ export default function StudentPhonologicalAwareness() {
   const playAudio = () => {
     if (audioRef.current) {
       const question = QUESTIONS[currentQuestion]
-      audioRef.current.src = question.audioPath
+      setCurrentAudioIndex(0)
+      audioRef.current.src = question.audioPaths[0]
       audioRef.current.play().catch(() => {
-        console.log('Audio file not found:', question.audioPath)
+        console.log('Audio file not found:', question.audioPaths[0])
       })
     }
   }
@@ -160,7 +171,20 @@ export default function StudentPhonologicalAwareness() {
   }
 
   const handleAudioEnded = () => {
-    setIsPlaying(false)
+    const question = QUESTIONS[currentQuestion]
+    const nextIndex = currentAudioIndex + 1
+
+    // If there are more audio files in the sequence, play the next one
+    if (nextIndex < question.audioPaths.length && audioRef.current) {
+      setCurrentAudioIndex(nextIndex)
+      audioRef.current.src = question.audioPaths[nextIndex]
+      audioRef.current.play().catch(() => {
+        console.log('Audio file not found:', question.audioPaths[nextIndex])
+      })
+    } else {
+      // All audio files have been played
+      setIsPlaying(false)
+    }
   }
 
   if (!studentInfo) {

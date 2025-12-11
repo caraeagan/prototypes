@@ -77,6 +77,8 @@ export default function StudentInterface() {
           window.location.href = `/student/${sessionId}/associative-learning`
         } else if (selectedTests?.includes("listening-comprehension")) {
           window.location.href = `/student/${sessionId}/listening-comprehension`
+        } else if (selectedTests?.includes("phonological-awareness")) {
+          window.location.href = `/student/${sessionId}/phonological-awareness`
         }
       }
     }

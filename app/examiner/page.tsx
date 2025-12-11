@@ -221,6 +221,10 @@ function ExaminerInterfaceContent() {
                     // For associative learning, student will auto-navigate
                     // Examiner stays on this page to monitor
                     alert("Assessment started! Student has been directed to the Associative Learning test.")
+                  } else if (tests.includes("phonological-awareness")) {
+                    // For phonological awareness, student will auto-navigate
+                    // Examiner stays on this page to monitor
+                    alert("Assessment started! Student has been directed to the Phonological Awareness test.")
                   }
                 }}
                 className="w-full px-6 py-3 bg-blue-900 text-white rounded-lg font-medium hover:bg-blue-800"

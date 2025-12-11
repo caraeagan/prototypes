@@ -434,11 +434,6 @@ export default function StudentProfile() {
     setSelectedPhases([])
     setSelectedSubtests([])
     setExpandedPhases([])
-    
-    // If switching back to recommended, auto-select phases
-    if (customSelection) {
-      setTimeout(autoSelectPhases, 0)
-    }
   }
 
   const initializeAssessmentModal = () => {
@@ -456,7 +451,6 @@ export default function StudentProfile() {
     // Set step based on student's language type
     if (student?.languageType === 'monolingual') {
       setAssessmentStep(5) // Skip to phase selection for monolingual
-      setTimeout(autoSelectPhases, 0)
     } else {
       setAssessmentStep(2) // Start MUL questionnaire for multilingual
     }
@@ -474,7 +468,6 @@ export default function StudentProfile() {
       setAssessmentStep(4)
     } else if (assessmentStep === 4 && schoolStart && usSchoolStart && englishLearningGaps) {
       setAssessmentStep(5)
-      setTimeout(autoSelectPhases, 0) // Auto-select phases after state updates
     }
   }
 
