@@ -12,6 +12,7 @@ interface Question {
   id: number
   type: QuestionType
   audioPaths: string[]  // Array to support sequential audio playback
+  videoPaths?: string[]  // Optional array for video clips (used in blending)
 }
 
 // 12 questions total: 2 of each type
@@ -40,16 +41,24 @@ const QUESTIONS: Question[] = [
     '/audio/phonological-awareness/Sound ID_2.1.wav',
     '/audio/phonological-awareness/Sound ID_2.2.wav'
   ]},
-  // Blending (2 questions) - plays sequence of audio files
+  // Blending (2 questions) - plays sequence of video clips with paired audio
   { id: 9, type: 'blending', audioPaths: [
     '/audio/phonological-awareness/Blending_1.mp3',
     '/audio/phonological-awareness/Blending_1.1.mp3',
     '/audio/phonological-awareness/Blending_1.2.mp3'
+  ], videoPaths: [
+    '/video/phonological-awareness/Phoneme_s.mov',
+    '/video/phonological-awareness/Phoneme_a.mov',
+    '/video/phonological-awareness/Phoneme_t.mov'
   ]},
   { id: 10, type: 'blending', audioPaths: [
     '/audio/phonological-awareness/Blending_2.mp3',
     '/audio/phonological-awareness/Blending_2.1.mp3',
     '/audio/phonological-awareness/Blending_2.2.mp3'
+  ], videoPaths: [
+    '/video/phonological-awareness/placeholder_1.mov',
+    '/video/phonological-awareness/placeholder_2.mov',
+    '/video/phonological-awareness/placeholder_3.mov'
   ]},
   // Segmenting (2 questions)
   { id: 11, type: 'segmenting', audioPaths: ['/audio/phonological-awareness/Segmenting_1.wav'] },
@@ -68,8 +77,10 @@ export default function StudentPhonologicalAwareness() {
   const [audioSequenceComplete, setAudioSequenceComplete] = useState(false)
   const [hasStarted, setHasStarted] = useState(false)
   const [currentAudioIndex, setCurrentAudioIndex] = useState(0)
+  const [currentVideoIndex, setCurrentVideoIndex] = useState(-1)  // -1 means no video playing
 
   const audioRef = useRef<HTMLAudioElement>(null)
+  const videoRefs = useRef<(HTMLVideoElement | null)[]>([null, null, null])
 
   useEffect(() => {
     // Get student info, or use default anonymous student
@@ -86,12 +97,26 @@ export default function StudentPhonologicalAwareness() {
     }
   }, [sessionId])
 
-  // Auto-play audio when question changes (after user clicks start)
+  // Auto-play audio/video when question changes (after user clicks start)
   useEffect(() => {
     if (hasStarted && !testEnded && audioRef.current) {
       const question = QUESTIONS[currentQuestion]
       setCurrentAudioIndex(0)
       setAudioSequenceComplete(false)
+      setCurrentVideoIndex(-1)
+
+      // For blending questions, play video and audio together
+      if (question.type === 'blending' && question.videoPaths) {
+        setCurrentVideoIndex(0)
+        const video = videoRefs.current[0]
+        if (video) {
+          video.currentTime = 0
+          video.play().catch(() => {
+            console.log('Video file not found:', question.videoPaths?.[0])
+          })
+        }
+      }
+
       audioRef.current.src = question.audioPaths[0]
       audioRef.current.play().catch(() => {
         console.log('Audio file not found:', question.audioPaths[0])
@@ -188,10 +213,16 @@ export default function StudentPhonologicalAwareness() {
     const question = QUESTIONS[currentQuestion]
     const nextIndex = currentAudioIndex + 1
 
-    // For rhyme-production, sound-id, and blending, auto-play the next audio in sequence
-    if ((question.type === 'blending' || question.type === 'rhyme-production' || question.type === 'sound-id') && nextIndex < question.audioPaths.length && audioRef.current) {
+    // For blending, video ending controls the sequence (not audio)
+    if (question.type === 'blending') {
+      // Don't do anything here - let handleVideoEnded control the sequence
+      return
+    }
+
+    // For rhyme-production and sound-id, auto-play the next audio in sequence
+    if ((question.type === 'rhyme-production' || question.type === 'sound-id') && nextIndex < question.audioPaths.length && audioRef.current) {
       // Add 1 second delay for rhyme-production and sound-id between audio files
-      const delay = (question.type === 'rhyme-production' || question.type === 'sound-id') ? 1000 : 0
+      const delay = 1000
       setTimeout(() => {
         if (audioRef.current) {
           setCurrentAudioIndex(nextIndex)
@@ -204,12 +235,43 @@ export default function StudentPhonologicalAwareness() {
     } else {
       // Audio finished playing
       setIsPlaying(false)
+      setCurrentVideoIndex(-1)
       // Mark sequence complete for rhyme-production and sound-id to highlight question mark tile (after 1 second delay)
       if (question.type === 'rhyme-production' || question.type === 'sound-id') {
         setTimeout(() => {
           setAudioSequenceComplete(true)
         }, 1000)
       }
+    }
+  }
+
+  const handleVideoEnded = (videoIndex: number) => {
+    const question = QUESTIONS[currentQuestion]
+    const nextIndex = videoIndex + 1
+
+    // Play the next video/audio pair if there are more
+    if (question.type === 'blending' && question.videoPaths && nextIndex < question.videoPaths.length) {
+      setCurrentAudioIndex(nextIndex)
+      setCurrentVideoIndex(nextIndex)
+
+      const video = videoRefs.current[nextIndex]
+      if (video) {
+        video.currentTime = 0
+        video.play().catch(() => {
+          console.log('Video file not found:', question.videoPaths?.[nextIndex])
+        })
+      }
+
+      if (audioRef.current) {
+        audioRef.current.src = question.audioPaths[nextIndex]
+        audioRef.current.play().catch(() => {
+          console.log('Audio file not found:', question.audioPaths[nextIndex])
+        })
+      }
+    } else {
+      // All videos finished playing
+      setIsPlaying(false)
+      setCurrentVideoIndex(-1)
     }
   }
 
@@ -675,6 +737,91 @@ export default function StudentPhonologicalAwareness() {
         )
 
       case 'blending':
+        // Video tiles in a row with paired audio
+        return (
+          <div className="space-y-6">
+            <style jsx>{`
+              @keyframes pulse-scale {
+                0%, 100% {
+                  transform: scale(1);
+                  opacity: 1;
+                }
+                50% {
+                  transform: scale(0.8);
+                  opacity: 0.7;
+                }
+              }
+              .animate-pulse-scale {
+                animation: pulse-scale 1.5s ease-in-out infinite;
+              }
+            `}</style>
+            {/* Video Tiles Row */}
+            <div className="flex justify-center gap-4">
+              {question.videoPaths?.map((videoPath, index) => (
+                <div
+                  key={index}
+                  className={`relative w-32 h-32 rounded-xl overflow-hidden transition-all cursor-pointer ${
+                    currentVideoIndex === index
+                      ? 'ring-4 ring-blue-500 shadow-lg'
+                      : 'ring-2 ring-gray-200'
+                  }`}
+                  onClick={() => {
+                    // Play this specific video and its paired audio
+                    setCurrentVideoIndex(index)
+                    setCurrentAudioIndex(index)
+                    const video = videoRefs.current[index]
+                    if (video) {
+                      video.currentTime = 0
+                      video.play().catch(() => {
+                        console.log('Video file not found:', videoPath)
+                      })
+                    }
+                    if (audioRef.current) {
+                      audioRef.current.src = question.audioPaths[index]
+                      audioRef.current.play().catch(() => {
+                        console.log('Audio file not found:', question.audioPaths[index])
+                      })
+                    }
+                  }}
+                >
+                  <video
+                    ref={(el) => { videoRefs.current[index] = el }}
+                    src={videoPath}
+                    className="w-full h-full object-cover pointer-events-none"
+                    onEnded={() => handleVideoEnded(index)}
+                    muted
+                    playsInline
+                  />
+                  {/* Play overlay when not playing */}
+                  {currentVideoIndex !== index && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/20 pointer-events-none">
+                      <div className="w-10 h-10 rounded-full bg-white/80 flex items-center justify-center">
+                        <svg
+                          className="w-5 h-5 text-gray-700 ml-0.5"
+                          fill="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path d="M8 5v14l11-7z" />
+                        </svg>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* Next Button */}
+            <div className="flex justify-center">
+              <button
+                onClick={handleNext}
+                className="px-8 py-4 bg-blue-900 text-white rounded-xl text-lg font-medium hover:bg-blue-800 transition-colors"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )
+
       case 'segmenting':
         // Verbal response: Audio icon + Next button
         return (
