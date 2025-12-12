@@ -78,6 +78,7 @@ export default function StudentPhonologicalAwareness() {
   const [hasStarted, setHasStarted] = useState(false)
   const [currentAudioIndex, setCurrentAudioIndex] = useState(0)
   const [currentVideoIndex, setCurrentVideoIndex] = useState(-1)  // -1 means no video playing
+  const [isAutoPlaySequence, setIsAutoPlaySequence] = useState(false)  // Track if we're in auto-play mode
 
   const audioRef = useRef<HTMLAudioElement>(null)
   const videoRefs = useRef<(HTMLVideoElement | null)[]>([null, null, null])
@@ -107,6 +108,7 @@ export default function StudentPhonologicalAwareness() {
 
       // For blending questions, play video and audio together
       if (question.type === 'blending' && question.videoPaths) {
+        setIsAutoPlaySequence(true)  // Enable auto-play sequence
         setCurrentVideoIndex(0)
         const video = videoRefs.current[0]
         if (video) {
@@ -249,8 +251,8 @@ export default function StudentPhonologicalAwareness() {
     const question = QUESTIONS[currentQuestion]
     const nextIndex = videoIndex + 1
 
-    // Play the next video/audio pair if there are more
-    if (question.type === 'blending' && question.videoPaths && nextIndex < question.videoPaths.length) {
+    // Only auto-play the next video if we're in auto-play sequence mode
+    if (isAutoPlaySequence && question.type === 'blending' && question.videoPaths && nextIndex < question.videoPaths.length) {
       setCurrentAudioIndex(nextIndex)
       setCurrentVideoIndex(nextIndex)
 
@@ -269,9 +271,10 @@ export default function StudentPhonologicalAwareness() {
         })
       }
     } else {
-      // All videos finished playing
+      // Video finished playing (either single replay or end of sequence)
       setIsPlaying(false)
       setCurrentVideoIndex(-1)
+      setIsAutoPlaySequence(false)
     }
   }
 
@@ -760,13 +763,14 @@ export default function StudentPhonologicalAwareness() {
               {question.videoPaths?.map((videoPath, index) => (
                 <div
                   key={index}
-                  className={`relative w-32 h-32 rounded-xl overflow-hidden transition-all cursor-pointer ${
+                  className={`relative w-64 h-64 rounded-xl overflow-hidden transition-all cursor-pointer ${
                     currentVideoIndex === index
                       ? 'ring-4 ring-blue-500 shadow-lg'
                       : 'ring-2 ring-gray-200'
                   }`}
                   onClick={() => {
-                    // Play this specific video and its paired audio
+                    // Play this specific video and its paired audio (manual replay, not auto-sequence)
+                    setIsAutoPlaySequence(false)
                     setCurrentVideoIndex(index)
                     setCurrentAudioIndex(index)
                     const video = videoRefs.current[index]
