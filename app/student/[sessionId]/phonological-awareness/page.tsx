@@ -2,6 +2,7 @@
 
 import { useParams } from "next/navigation"
 import { useState, useEffect, useRef } from "react"
+import { CheckCircle, XCircle } from "@phosphor-icons/react"
 
 // Force dynamic rendering to prevent static generation
 export const dynamic = 'force-dynamic'
@@ -400,22 +401,24 @@ export default function StudentPhonologicalAwareness() {
             <div className="flex justify-center gap-6">
               <button
                 onClick={() => handleAnswerSelect('yes')}
-                className={`px-8 py-4 rounded-xl text-lg font-medium transition-all ${
+                className={`px-8 py-4 rounded-xl text-lg font-medium transition-all flex items-center gap-2 ${
                   answers[currentQuestion] === 'yes'
                     ? 'bg-blue-500 text-white border-2 border-blue-500'
                     : 'bg-white border-2 border-gray-200 text-gray-700 hover:border-gray-300 hover:bg-gray-50'
                 }`}
               >
+                <CheckCircle size={24} weight="fill" />
                 Yes, they rhyme
               </button>
               <button
                 onClick={() => handleAnswerSelect('no')}
-                className={`px-8 py-4 rounded-xl text-lg font-medium transition-all ${
+                className={`px-8 py-4 rounded-xl text-lg font-medium transition-all flex items-center gap-2 ${
                   answers[currentQuestion] === 'no'
                     ? 'bg-blue-500 text-white border-2 border-blue-500'
                     : 'bg-white border-2 border-gray-200 text-gray-700 hover:border-gray-300 hover:bg-gray-50'
                 }`}
               >
+                <XCircle size={24} weight="fill" />
                 No, they don't rhyme
               </button>
             </div>
