@@ -2,7 +2,7 @@
 
 import { useParams } from "next/navigation"
 import { useState, useEffect, useRef } from "react"
-import { CheckCircle, XCircle } from "@phosphor-icons/react"
+import { CheckCircle, XCircle } from "@phosphor-icons/react/dist/ssr"
 
 // Force dynamic rendering to prevent static generation
 export const dynamic = 'force-dynamic'
