@@ -19,15 +19,27 @@ const QUESTIONS: Question[] = [
   // Rhyme Recognition (2 questions)
   { id: 1, type: 'rhyme-recognition', audioPaths: ['/audio/phonological-awareness/Rhyming_1.wav'] },
   { id: 2, type: 'rhyme-recognition', audioPaths: ['/audio/phonological-awareness/Rhyming_2.wav'] },
-  // Rhyme Production (2 questions)
-  { id: 3, type: 'rhyme-production', audioPaths: ['/audio/phonological-awareness/Rhyme Production_1.wav'] },
-  { id: 4, type: 'rhyme-production', audioPaths: ['/audio/phonological-awareness/Rhyme Production_2.wav'] },
+  // Rhyme Production (2 questions) - plays two audio files in sequence
+  { id: 3, type: 'rhyme-production', audioPaths: [
+    '/audio/phonological-awareness/Rhyme Production_1.1.wav',
+    '/audio/phonological-awareness/Rhyme Production_1.2.wav'
+  ]},
+  { id: 4, type: 'rhyme-production', audioPaths: [
+    '/audio/phonological-awareness/Rhyme Production_2.1.wav',
+    '/audio/phonological-awareness/Rhyme Production_2.2.wav'
+  ]},
   // Syllabication (2 questions)
   { id: 5, type: 'syllabication', audioPaths: ['/audio/phonological-awareness/Syllabication_1.wav'] },
   { id: 6, type: 'syllabication', audioPaths: ['/audio/phonological-awareness/Syllabication_2.wav'] },
-  // Sound ID (2 questions)
-  { id: 7, type: 'sound-id', audioPaths: ['/audio/phonological-awareness/Sound ID_1.wav'] },
-  { id: 8, type: 'sound-id', audioPaths: ['/audio/phonological-awareness/Sound ID_2.wav'] },
+  // Sound ID (2 questions) - plays two audio files in sequence with Venn diagram layout
+  { id: 7, type: 'sound-id', audioPaths: [
+    '/audio/phonological-awareness/Sound ID_1.1.wav',
+    '/audio/phonological-awareness/Sound ID_1.2.wav'
+  ]},
+  { id: 8, type: 'sound-id', audioPaths: [
+    '/audio/phonological-awareness/Sound ID_2.1.wav',
+    '/audio/phonological-awareness/Sound ID_2.2.wav'
+  ]},
   // Blending (2 questions) - plays sequence of audio files
   { id: 9, type: 'blending', audioPaths: [
     '/audio/phonological-awareness/Blending_1.mp3',
@@ -53,6 +65,7 @@ export default function StudentPhonologicalAwareness() {
   const [answers, setAnswers] = useState<{[key: number]: string}>({})
   const [isPlaying, setIsPlaying] = useState(false)
   const [testEnded, setTestEnded] = useState(false)
+  const [audioSequenceComplete, setAudioSequenceComplete] = useState(false)
   const [hasStarted, setHasStarted] = useState(false)
   const [currentAudioIndex, setCurrentAudioIndex] = useState(0)
 
@@ -78,6 +91,7 @@ export default function StudentPhonologicalAwareness() {
     if (hasStarted && !testEnded && audioRef.current) {
       const question = QUESTIONS[currentQuestion]
       setCurrentAudioIndex(0)
+      setAudioSequenceComplete(false)
       audioRef.current.src = question.audioPaths[0]
       audioRef.current.play().catch(() => {
         console.log('Audio file not found:', question.audioPaths[0])
@@ -174,16 +188,28 @@ export default function StudentPhonologicalAwareness() {
     const question = QUESTIONS[currentQuestion]
     const nextIndex = currentAudioIndex + 1
 
-    // If there are more audio files in the sequence, play the next one
-    if (nextIndex < question.audioPaths.length && audioRef.current) {
-      setCurrentAudioIndex(nextIndex)
-      audioRef.current.src = question.audioPaths[nextIndex]
-      audioRef.current.play().catch(() => {
-        console.log('Audio file not found:', question.audioPaths[nextIndex])
-      })
+    // For rhyme-production, sound-id, and blending, auto-play the next audio in sequence
+    if ((question.type === 'blending' || question.type === 'rhyme-production' || question.type === 'sound-id') && nextIndex < question.audioPaths.length && audioRef.current) {
+      // Add 1 second delay for rhyme-production and sound-id between audio files
+      const delay = (question.type === 'rhyme-production' || question.type === 'sound-id') ? 1000 : 0
+      setTimeout(() => {
+        if (audioRef.current) {
+          setCurrentAudioIndex(nextIndex)
+          audioRef.current.src = question.audioPaths[nextIndex]
+          audioRef.current.play().catch(() => {
+            console.log('Audio file not found:', question.audioPaths[nextIndex])
+          })
+        }
+      }, delay)
     } else {
-      // All audio files have been played
+      // Audio finished playing
       setIsPlaying(false)
+      // Mark sequence complete for rhyme-production and sound-id to highlight question mark tile (after 1 second delay)
+      if (question.type === 'rhyme-production' || question.type === 'sound-id') {
+        setTimeout(() => {
+          setAudioSequenceComplete(true)
+        }, 1000)
+      }
     }
   }
 
@@ -396,7 +422,258 @@ export default function StudentPhonologicalAwareness() {
         )
 
       case 'rhyme-production':
+        // Two audio tiles + question mark tile for verbal response
+        return (
+          <div className="space-y-6">
+            <style jsx>{`
+              @keyframes pulse-scale {
+                0%, 100% {
+                  transform: scale(1);
+                  opacity: 1;
+                }
+                50% {
+                  transform: scale(0.8);
+                  opacity: 0.7;
+                }
+              }
+              .animate-pulse-scale {
+                animation: pulse-scale 1.5s ease-in-out infinite;
+              }
+              .animate-pulse-twice {
+                animation: pulse-scale 0.5s ease-in-out 2;
+              }
+            `}</style>
+            {/* Three tiles in a row: Audio 1, Audio 2, Question Mark */}
+            <div className="flex justify-center gap-4">
+              {/* First Audio Tile */}
+              <button
+                onClick={() => {
+                  if (audioRef.current) {
+                    setCurrentAudioIndex(0)
+                    audioRef.current.src = question.audioPaths[0]
+                    audioRef.current.play().catch(() => {
+                      console.log('Audio file not found:', question.audioPaths[0])
+                    })
+                  }
+                }}
+                className={`w-20 h-20 rounded-xl flex items-center justify-center transition-all ${
+                  isPlaying && currentAudioIndex === 0
+                    ? 'bg-blue-200 shadow-lg animate-pulse-scale'
+                    : 'bg-blue-100 hover:bg-blue-200'
+                }`}
+              >
+                <svg
+                  className={`w-10 h-10 ${isPlaying && currentAudioIndex === 0 ? 'text-blue-700' : 'text-blue-500'}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"
+                  />
+                </svg>
+              </button>
+
+              {/* Second Audio Tile */}
+              <button
+                onClick={() => {
+                  if (audioRef.current) {
+                    setCurrentAudioIndex(1)
+                    audioRef.current.src = question.audioPaths[1]
+                    audioRef.current.play().catch(() => {
+                      console.log('Audio file not found:', question.audioPaths[1])
+                    })
+                  }
+                }}
+                className={`w-20 h-20 rounded-xl flex items-center justify-center transition-all ${
+                  isPlaying && currentAudioIndex === 1
+                    ? 'bg-blue-200 shadow-lg animate-pulse-scale'
+                    : 'bg-blue-100 hover:bg-blue-200'
+                }`}
+              >
+                <svg
+                  className={`w-10 h-10 ${isPlaying && currentAudioIndex === 1 ? 'text-blue-700' : 'text-blue-500'}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"
+                  />
+                </svg>
+              </button>
+
+              {/* Question Mark Tile */}
+              <div className={`w-20 h-20 rounded-xl flex items-center justify-center transition-all bg-gray-100 ${
+                audioSequenceComplete
+                  ? 'border-2 border-[#339AF0] animate-pulse-twice'
+                  : 'border-2 border-gray-300'
+              }`}>
+                <svg
+                  className={`w-10 h-10 ${audioSequenceComplete ? 'text-[#339AF0]' : 'text-gray-400'}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+              </div>
+            </div>
+
+            {/* Next Button */}
+            <div className="flex justify-center">
+              <button
+                onClick={handleNext}
+                className="px-8 py-4 bg-blue-900 text-white rounded-xl text-lg font-medium hover:bg-blue-800 transition-colors"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )
+
       case 'sound-id':
+        // Venn diagram with two audio tiles and question tile in intersection
+        return (
+          <div className="space-y-6">
+            <style jsx>{`
+              @keyframes pulse-scale {
+                0%, 100% {
+                  transform: scale(1);
+                  opacity: 1;
+                }
+                50% {
+                  transform: scale(0.8);
+                  opacity: 0.7;
+                }
+              }
+              .animate-pulse-scale {
+                animation: pulse-scale 1.5s ease-in-out infinite;
+              }
+              .animate-pulse-twice {
+                animation: pulse-scale 0.5s ease-in-out 2;
+              }
+            `}</style>
+            {/* Venn Diagram */}
+            <div className="flex justify-center">
+              <div className="relative w-[400px] h-[250px]">
+                {/* Left Circle */}
+                <div className="absolute left-0 top-0 w-[250px] h-[250px] rounded-full border-2 border-blue-200 bg-blue-50/50"></div>
+                {/* Right Circle */}
+                <div className="absolute right-0 top-0 w-[250px] h-[250px] rounded-full border-2 border-blue-200 bg-blue-50/50"></div>
+
+                {/* Left Audio Tile */}
+                <button
+                  onClick={() => {
+                    if (audioRef.current) {
+                      setCurrentAudioIndex(0)
+                      setAudioSequenceComplete(false)
+                      audioRef.current.src = question.audioPaths[0]
+                      audioRef.current.play().catch(() => {
+                        console.log('Audio file not found:', question.audioPaths[0])
+                      })
+                    }
+                  }}
+                  className={`absolute left-[45px] top-1/2 -translate-y-1/2 w-16 h-16 rounded-lg flex items-center justify-center transition-all ${
+                    isPlaying && currentAudioIndex === 0
+                      ? 'bg-blue-200 shadow-lg animate-pulse-scale'
+                      : 'bg-blue-100 hover:bg-blue-200'
+                  }`}
+                >
+                  <svg
+                    className={`w-8 h-8 ${isPlaying && currentAudioIndex === 0 ? 'text-blue-700' : 'text-blue-500'}`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"
+                    />
+                  </svg>
+                </button>
+
+                {/* Right Audio Tile */}
+                <button
+                  onClick={() => {
+                    if (audioRef.current) {
+                      setCurrentAudioIndex(1)
+                      setAudioSequenceComplete(false)
+                      audioRef.current.src = question.audioPaths[1]
+                      audioRef.current.play().catch(() => {
+                        console.log('Audio file not found:', question.audioPaths[1])
+                      })
+                    }
+                  }}
+                  className={`absolute right-[45px] top-1/2 -translate-y-1/2 w-16 h-16 rounded-lg flex items-center justify-center transition-all ${
+                    isPlaying && currentAudioIndex === 1
+                      ? 'bg-blue-200 shadow-lg animate-pulse-scale'
+                      : 'bg-blue-100 hover:bg-blue-200'
+                  }`}
+                >
+                  <svg
+                    className={`w-8 h-8 ${isPlaying && currentAudioIndex === 1 ? 'text-blue-700' : 'text-blue-500'}`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"
+                    />
+                  </svg>
+                </button>
+
+                {/* Question Mark Tile in Center (Intersection) */}
+                <div className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 rounded-lg flex items-center justify-center transition-all bg-gray-100 ${
+                  audioSequenceComplete
+                    ? 'border-2 border-[#339AF0] animate-pulse-twice'
+                    : 'border-2 border-gray-300'
+                }`}>
+                  <svg
+                    className={`w-8 h-8 ${audioSequenceComplete ? 'text-[#339AF0]' : 'text-gray-400'}`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            {/* Next Button */}
+            <div className="flex justify-center">
+              <button
+                onClick={handleNext}
+                className="px-8 py-4 bg-blue-900 text-white rounded-xl text-lg font-medium hover:bg-blue-800 transition-colors"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )
+
       case 'blending':
       case 'segmenting':
         // Verbal response: Audio icon + Next button
