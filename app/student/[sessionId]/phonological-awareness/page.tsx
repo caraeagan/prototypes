@@ -107,17 +107,9 @@ export default function StudentPhonologicalAwareness() {
       setAudioSequenceComplete(false)
       setCurrentVideoIndex(-1)
 
-      // For blending questions, play video and audio together
-      if (question.type === 'blending' && question.videoPaths) {
-        setIsAutoPlaySequence(true)  // Enable auto-play sequence
-        setCurrentVideoIndex(0)
-        const video = videoRefs.current[0]
-        if (video) {
-          video.currentTime = 0
-          video.play().catch(() => {
-            console.log('Video file not found:', question.videoPaths?.[0])
-          })
-        }
+      // For blending questions, enable auto-play sequence for audio
+      if (question.type === 'blending') {
+        setIsAutoPlaySequence(true)
       }
 
       audioRef.current.src = question.audioPaths[0]
@@ -216,15 +208,9 @@ export default function StudentPhonologicalAwareness() {
     const question = QUESTIONS[currentQuestion]
     const nextIndex = currentAudioIndex + 1
 
-    // For blending, video ending controls the sequence (not audio)
-    if (question.type === 'blending') {
-      // Don't do anything here - let handleVideoEnded control the sequence
-      return
-    }
-
-    // For rhyme-production and sound-id, auto-play the next audio in sequence
-    if ((question.type === 'rhyme-production' || question.type === 'sound-id') && nextIndex < question.audioPaths.length && audioRef.current) {
-      // Add 1 second delay for rhyme-production and sound-id between audio files
+    // For rhyme-production, sound-id, and blending, auto-play the next audio in sequence
+    if ((question.type === 'rhyme-production' || question.type === 'sound-id' || (question.type === 'blending' && isAutoPlaySequence)) && nextIndex < question.audioPaths.length && audioRef.current) {
+      // Add 1 second delay between audio files
       const delay = 1000
       setTimeout(() => {
         if (audioRef.current) {
@@ -241,6 +227,13 @@ export default function StudentPhonologicalAwareness() {
       setCurrentVideoIndex(-1)
       // Mark sequence complete for rhyme-production and sound-id to highlight question mark tile (after 1 second delay)
       if (question.type === 'rhyme-production' || question.type === 'sound-id') {
+        setTimeout(() => {
+          setAudioSequenceComplete(true)
+        }, 1000)
+      }
+      // For blending, only highlight question mark if auto-play sequence just completed (not on manual replays)
+      if (question.type === 'blending' && isAutoPlaySequence) {
+        setIsAutoPlaySequence(false)
         setTimeout(() => {
           setAudioSequenceComplete(true)
         }, 1000)
@@ -743,7 +736,7 @@ export default function StudentPhonologicalAwareness() {
         )
 
       case 'blending':
-        // Video tiles in a row with paired audio
+        // Audio icons in a row with plus signs, equals sign, and question mark
         return (
           <div className="space-y-6">
             <style jsx>{`
@@ -760,70 +753,95 @@ export default function StudentPhonologicalAwareness() {
               .animate-pulse-scale {
                 animation: pulse-scale 1.5s ease-in-out infinite;
               }
+              .animate-pulse-twice {
+                animation: pulse-scale 0.5s ease-in-out 2;
+              }
             `}</style>
-            {/* Video Tiles Row */}
-            <div className="flex justify-center gap-4">
-              {question.videoPaths?.map((videoPath, index) => (
-                <div
-                  key={index}
-                  className={`relative w-64 h-64 rounded-xl overflow-hidden transition-all cursor-pointer ${
-                    currentVideoIndex === index
-                      ? 'ring-4 ring-blue-500 shadow-lg'
-                      : 'ring-2 ring-gray-200'
-                  }`}
-                  onClick={() => {
-                    // Play this specific video and its paired audio (manual replay, not auto-sequence)
-                    setIsAutoPlaySequence(false)
-                    setCurrentVideoIndex(index)
-                    setCurrentAudioIndex(index)
-                    const video = videoRefs.current[index]
-                    if (video) {
-                      video.currentTime = 0
-                      video.play().catch(() => {
-                        console.log('Video file not found:', videoPath)
-                      })
-                    }
-                    if (audioRef.current) {
-                      audioRef.current.src = question.audioPaths[index]
-                      audioRef.current.play().catch(() => {
-                        console.log('Audio file not found:', question.audioPaths[index])
-                      })
-                    }
-                  }}
-                >
-                  <video
-                    ref={(el) => { videoRefs.current[index] = el }}
-                    src={videoPath}
-                    className="w-full h-full object-cover pointer-events-none"
-                    onEnded={() => handleVideoEnded(index)}
-                    muted
-                    playsInline
-                  />
-                  {/* Play overlay when not playing */}
-                  {currentVideoIndex !== index && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/20 pointer-events-none">
-                      <div className="w-10 h-10 rounded-full bg-white/80 flex items-center justify-center">
-                        <svg
-                          className="w-5 h-5 text-gray-700 ml-0.5"
-                          fill="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path d="M8 5v14l11-7z" />
-                        </svg>
-                      </div>
-                    </div>
+            {/* Audio Icons Row with Plus Signs, Equals Sign, and Question Mark */}
+            <div className="flex justify-center items-center gap-4">
+              {question.audioPaths.map((audioPath, index) => (
+                <div key={index} className="flex items-center gap-4">
+                  {/* Plus sign before each audio icon (except the first) */}
+                  {index > 0 && (
+                    <span className="text-3xl font-bold text-gray-800">+</span>
                   )}
+                  {/* Audio Icon Tile */}
+                  <button
+                    onClick={() => {
+                      if (audioRef.current) {
+                        setIsAutoPlaySequence(false)
+                        setAudioSequenceComplete(false)
+                        setCurrentAudioIndex(index)
+                        audioRef.current.src = audioPath
+                        audioRef.current.play().catch(() => {
+                          console.log('Audio file not found:', audioPath)
+                        })
+                      }
+                    }}
+                    className={`w-36 h-36 rounded-xl flex items-center justify-center transition-all border-2 ${
+                      isPlaying && currentAudioIndex === index
+                        ? 'bg-blue-200 border-blue-300 shadow-lg animate-pulse-scale'
+                        : 'bg-blue-100 border-blue-200 hover:bg-blue-200'
+                    }`}
+                  >
+                    <div className={`w-16 h-16 rounded-lg flex items-center justify-center ${
+                      isPlaying && currentAudioIndex === index
+                        ? 'bg-blue-300'
+                        : 'bg-blue-200'
+                    }`}>
+                      <svg
+                        className={`w-8 h-8 ${isPlaying && currentAudioIndex === index ? 'text-blue-700' : 'text-blue-500'}`}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"
+                        />
+                      </svg>
+                    </div>
+                  </button>
                 </div>
               ))}
+
+              {/* Equals Sign */}
+              <span className="text-3xl font-bold text-gray-800">=</span>
+
+              {/* Question Mark Tile */}
+              <div className={`w-36 h-36 rounded-xl flex items-center justify-center transition-all ${
+                audioSequenceComplete
+                  ? 'bg-blue-100 border-2 border-[#339AF0] animate-pulse-twice'
+                  : 'bg-gray-100 border-2 border-gray-300'
+              }`}>
+                <svg
+                  className={`w-12 h-12 ${audioSequenceComplete ? 'text-[#339AF0]' : 'text-gray-400'}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+              </div>
             </div>
 
             {/* Next Button */}
             <div className="flex justify-center">
               <button
                 onClick={handleNext}
-                className="px-8 py-4 bg-blue-900 text-white rounded-xl text-lg font-medium hover:bg-blue-800 transition-colors"
+                className="px-8 py-4 bg-blue-900 text-white rounded-xl text-lg font-medium hover:bg-blue-800 transition-colors flex items-center gap-2"
               >
                 Next
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                </svg>
               </button>
             </div>
           </div>
