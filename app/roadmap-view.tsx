@@ -1592,6 +1592,8 @@ function FilterBar({
   onPrint,
   onUndo,
   canUndo,
+  viewMode,
+  onViewMode,
 }: {
   search: string;
   onSearch: (v: string) => void;
@@ -1606,13 +1608,40 @@ function FilterBar({
   onPrint: () => void;
   onUndo: () => void;
   canUndo: boolean;
+  viewMode: "projects" | "subtestEdits";
+  onViewMode: (m: "projects" | "subtestEdits") => void;
 }) {
   return (
     <div className="filter-bar">
       <div className="filter-bar-left">
-        <h1 className="filter-title">Marker Learning Roadmap</h1>
+        <div style={{ display: "flex", alignItems: "center", gap: 0, marginBottom: 4 }}>
+          <button
+            onClick={() => onViewMode("projects")}
+            style={{
+              fontFamily: "var(--font-sans)", fontSize: 15, fontWeight: 700,
+              padding: "8px 20px", cursor: "pointer", border: "none",
+              borderRadius: "8px 0 0 8px",
+              background: viewMode === "projects" ? "#1e293b" : "#f1f5f9",
+              color: viewMode === "projects" ? "white" : "#64748b",
+            }}
+          >
+            Projects
+          </button>
+          <button
+            onClick={() => onViewMode("subtestEdits")}
+            style={{
+              fontFamily: "var(--font-sans)", fontSize: 15, fontWeight: 700,
+              padding: "8px 20px", cursor: "pointer", border: "none",
+              borderRadius: "0 8px 8px 0",
+              background: viewMode === "subtestEdits" ? "#f59e0b" : "#f1f5f9",
+              color: viewMode === "subtestEdits" ? "white" : "#64748b",
+            }}
+          >
+            Subtest Edits
+          </button>
+        </div>
         <span className="filter-counts">
-          {peopleCount} people &middot; {projectCount} projects
+          {peopleCount} people &middot; {projectCount} {viewMode === "projects" ? "projects" : "tasks"}
         </span>
       </div>
       <div className="filter-bar-right">
@@ -1751,6 +1780,7 @@ function newProjId(): string {
 
 export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps) {
   const [search, setSearch] = useState("");
+  const [viewMode, setViewMode] = useState<"projects" | "subtestEdits">("projects");
   const [selected, setSelected] = useState<{
     project: Project;
     personName: string;
@@ -2816,6 +2846,11 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
         onPrint={handlePrint}
         onUndo={handleUndo}
         canUndo={undoStack.length > 0}
+        viewMode={viewMode}
+        onViewMode={(m) => {
+          setViewMode(m);
+          if (m === "subtestEdits") setZoom("week");
+        }}
       />
 
       <div className="roadmap-container">
@@ -2991,6 +3026,8 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
             )}
 
             {/* Project bars */}
+            {viewMode === "projects" &&
+            <>
             {personEntries.map((ri) =>
               ri.lanes.map(({ project, lane }) => {
                 const pos = getProjectPosition(project);
@@ -3158,8 +3195,12 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
                 );
               }),
             )}
+            </>
+            }
 
             {/* Linear bars (Subtest project issues) */}
+            {viewMode === "subtestEdits" &&
+            <>
             {personEntries.map((ri) => {
               const bars = linearBarsPerPerson[ri.person.name];
               if (!bars || bars.length === 0) return null;
@@ -3192,7 +3233,7 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
                   >
                     <span
                       className="project-bar-label linear-bar-label"
-                      style={{ color: bar.state.color }}
+                      style={{ color: "#92400e" }}
                     >
                       {bar.cleanedTitle}
                     </span>
@@ -3200,6 +3241,8 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
                 );
               });
             })}
+            </>
+            }
           </div>
         </div>
       </div>
