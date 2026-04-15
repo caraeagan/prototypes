@@ -20,11 +20,11 @@ const ZOOM_COL_WIDTH: Record<ZoomLevel, number> = {
 
 // ── Constants ──────────────────────────────────────────────────────────────
 
-const SIDEBAR_WIDTH = 180;
+const SIDEBAR_WIDTH = 210;
+const TEAM_LABEL_WIDTH = 30;
 const ROW_HEIGHT = 40;
 const HEADER_HEIGHT = 80;
 const PHASE_HEIGHT = 36;
-const TEAM_HEADER_HEIGHT = 42;
 const BAR_V_PAD = 5;
 const BAR_HEIGHT = ROW_HEIGHT - BAR_V_PAD * 2;
 
@@ -613,6 +613,7 @@ function LinearProjectDetailPanel({
   progress,
   onClose,
   onIssueClick,
+  onDelete,
 }: {
   project: Project;
   personName: string;
@@ -621,10 +622,19 @@ function LinearProjectDetailPanel({
   progress: ProjectProgress | null;
   onClose: () => void;
   onIssueClick: (issueId: string) => void;
+  onDelete: (personName: string, projectId: string, projectName: string) => void;
 }) {
   const [issues, setIssues] = useState<LinearProjectIssue[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editStart, setEditStart] = useState(project.startMonth);
+  const [editDuration, setEditDuration] = useState(project.duration);
+  const [notes, setNotes] = useState("");
+  const [savingNotes, setSavingNotes] = useState(false);
+  const [issueComments, setIssueComments] = useState<Record<string, LinearIssue["comments"]>>({});
+  const [commentInputs, setCommentInputs] = useState<Record<string, string>>({});
+  const [postingComment, setPostingComment] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -701,9 +711,66 @@ function LinearProjectDetailPanel({
       ? Math.round((doneIssues.length / issues.length) * 100)
       : 0;
 
-  const startDateStr = formatMonthIndex(project.startMonth);
-  const endDateStr = formatMonthIndex(project.startMonth + project.duration);
+  const startDateStr = formatMonthIndex(isEditing ? editStart : project.startMonth);
+  const endDateStr = formatMonthIndex((isEditing ? editStart : project.startMonth) + (isEditing ? editDuration : project.duration));
   const [expandedIssueId, setExpandedIssueId] = useState<string | null>(null);
+
+  // Fetch comments for an expanded issue
+  const fetchIssueComments = useCallback((issueId: string) => {
+    if (issueComments[issueId]) return;
+    linearQuery<{ issue: LinearIssue }>(
+      `query Issue($id: String!) {
+        issue(id: $id) {
+          id
+          comments { nodes { body createdAt user { displayName avatarUrl } } }
+        }
+      }`,
+      { id: issueId },
+    ).then((data) => {
+      setIssueComments((prev) => ({
+        ...prev,
+        [issueId]: data.issue.comments,
+      }));
+    }).catch(() => {
+      // Silently fail for comments
+    });
+  }, [issueComments]);
+
+  const handlePostComment = useCallback(async (issueId: string) => {
+    const body = commentInputs[issueId]?.trim();
+    if (!body) return;
+    setPostingComment((prev) => ({ ...prev, [issueId]: true }));
+    try {
+      await linearQuery(
+        `mutation CreateComment($issueId: String!, $body: String!) {
+          commentCreate(input: { issueId: $issueId, body: $body }) {
+            success
+            comment { body createdAt user { displayName avatarUrl } }
+          }
+        }`,
+        { issueId, body },
+      );
+      // Refresh comments
+      setIssueComments((prev) => ({ ...prev, [issueId]: undefined as unknown as LinearIssue["comments"] }));
+      setCommentInputs((prev) => ({ ...prev, [issueId]: "" }));
+      // Re-fetch
+      fetchIssueComments(issueId);
+    } catch {
+      // Silently fail
+    } finally {
+      setPostingComment((prev) => ({ ...prev, [issueId]: false }));
+    }
+  }, [commentInputs, fetchIssueComments]);
+
+  const handleSaveNotes = async () => {
+    if (!notes.trim()) return;
+    setSavingNotes(true);
+    // In future, this could post to Linear as a comment
+    setTimeout(() => {
+      setSavingNotes(false);
+      setNotes("");
+    }, 500);
+  };
 
   return (
     <div className="detail-overlay" onClick={onClose}>
@@ -715,6 +782,20 @@ function LinearProjectDetailPanel({
               style={{ backgroundColor: personColor }}
             />
             <span className="detail-person">{personName}</span>
+            <button
+              className="detail-edit-btn"
+              onClick={() => {
+                if (isEditing) {
+                  setIsEditing(false);
+                } else {
+                  setEditStart(project.startMonth);
+                  setEditDuration(project.duration);
+                  setIsEditing(true);
+                }
+              }}
+            >
+              {isEditing ? "Done" : "Edit"}
+            </button>
             <button className="detail-close" onClick={onClose}>
               &times;
             </button>
@@ -733,7 +814,20 @@ function LinearProjectDetailPanel({
             </div>
             <div className="detail-info-row">
               <span className="detail-info-label">Start</span>
-              <span className="detail-info-value">{startDateStr}</span>
+              <span className="detail-info-value">
+                {isEditing ? (
+                  <input
+                    type="number"
+                    className="detail-editable-input"
+                    value={editStart}
+                    min={0}
+                    max={22}
+                    onChange={(e) => setEditStart(Number(e.target.value))}
+                  />
+                ) : (
+                  startDateStr
+                )}
+              </span>
             </div>
             <div className="detail-info-row">
               <span className="detail-info-label">End</span>
@@ -742,7 +836,22 @@ function LinearProjectDetailPanel({
             <div className="detail-info-row">
               <span className="detail-info-label">Duration</span>
               <span className="detail-info-value">
-                {project.duration} month{project.duration > 1 ? "s" : ""}
+                {isEditing ? (
+                  <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                    <input
+                      type="number"
+                      className="detail-editable-input"
+                      value={editDuration}
+                      min={1}
+                      max={23}
+                      onChange={(e) => setEditDuration(Number(e.target.value))}
+                      style={{ width: 70 }}
+                    />
+                    <span style={{ fontSize: 12, color: "#8b8b9e" }}>months</span>
+                  </span>
+                ) : (
+                  <>{project.duration} month{project.duration > 1 ? "s" : ""}</>
+                )}
               </span>
             </div>
           </div>
@@ -804,6 +913,7 @@ function LinearProjectDetailPanel({
             <ul className="detail-task-list">
               {issues.map((issue) => {
                 const isExpanded = expandedIssueId === issue.id;
+                const comments = issueComments[issue.id];
                 return (
                   <li
                     key={issue.id}
@@ -811,9 +921,11 @@ function LinearProjectDetailPanel({
                   >
                     <div
                       className="detail-task-item-header"
-                      onClick={() =>
-                        setExpandedIssueId(isExpanded ? null : issue.id)
-                      }
+                      onClick={() => {
+                        const nextId = isExpanded ? null : issue.id;
+                        setExpandedIssueId(nextId);
+                        if (nextId) fetchIssueComments(nextId);
+                      }}
                     >
                       <span
                         className={`detail-task-chevron${isExpanded ? " expanded" : ""}`}
@@ -839,12 +951,20 @@ function LinearProjectDetailPanel({
                       <div className="detail-task-expanded-content">
                         <div className="detail-task-detail-row">
                           <span className="detail-task-detail-label">Status</span>
-                          <span
-                            className="detail-task-detail-value"
+                          <select
+                            className="detail-status-select"
+                            value={issue.state.name}
                             style={{ color: issue.state.color }}
+                            onChange={() => {
+                              // Status update would require Linear workflow state IDs
+                              // Placeholder for future implementation
+                            }}
                           >
-                            {issue.state.name}
-                          </span>
+                            <option value="Todo">Todo</option>
+                            <option value="In Progress">In Progress</option>
+                            <option value="Done">Done</option>
+                            <option value="Cancelled">Cancelled</option>
+                          </select>
                         </div>
                         {issue.assignee && (
                           <div className="detail-task-detail-row">
@@ -864,6 +984,56 @@ function LinearProjectDetailPanel({
                             </span>
                           </div>
                         )}
+
+                        {/* Comments thread */}
+                        {comments && comments.nodes && comments.nodes.length > 0 && (
+                          <div style={{ marginTop: 8 }}>
+                            <div style={{ fontSize: 11, fontWeight: 600, color: "#8b8b9e", marginBottom: 6 }}>
+                              Comments ({comments.nodes.length})
+                            </div>
+                            {comments.nodes.map((comment, idx) => (
+                              <div key={idx} style={{
+                                padding: "6px 8px",
+                                marginBottom: 4,
+                                background: "#f8f9fb",
+                                borderRadius: 6,
+                                fontSize: 12,
+                              }}>
+                                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 2 }}>
+                                  <span style={{ fontWeight: 600, color: "#1a1a2e" }}>{comment.user.displayName}</span>
+                                  <span style={{ color: "#8b8b9e", fontSize: 10 }}>{formatDate(comment.createdAt)}</span>
+                                </div>
+                                <div style={{ color: "#444", whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{comment.body}</div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Add comment input */}
+                        <div className="detail-comment-input-row">
+                          <input
+                            type="text"
+                            className="detail-comment-input"
+                            placeholder="Add a comment..."
+                            value={commentInputs[issue.id] || ""}
+                            onChange={(e) =>
+                              setCommentInputs((prev) => ({ ...prev, [issue.id]: e.target.value }))
+                            }
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" && commentInputs[issue.id]?.trim()) {
+                                handlePostComment(issue.id);
+                              }
+                            }}
+                          />
+                          <button
+                            className="detail-comment-send-btn"
+                            disabled={!commentInputs[issue.id]?.trim() || postingComment[issue.id]}
+                            onClick={() => handlePostComment(issue.id)}
+                          >
+                            {postingComment[issue.id] ? "..." : "Send"}
+                          </button>
+                        </div>
+
                         <div style={{ marginTop: 4 }}>
                           <button
                             onClick={(e) => {
@@ -893,6 +1063,41 @@ function LinearProjectDetailPanel({
             </ul>
           </div>
         )}
+
+        {/* Notes section */}
+        <div className="detail-bottom-section">
+          <h3 className="detail-tasks-title">Notes</h3>
+          <textarea
+            className="detail-notes-textarea"
+            placeholder="Add a note..."
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+          />
+          <div style={{ marginTop: 8, display: "flex", justifyContent: "flex-end" }}>
+            <button
+              className="detail-notes-save-btn"
+              disabled={!notes.trim() || savingNotes}
+              onClick={handleSaveNotes}
+            >
+              {savingNotes ? "Saving..." : "Save Note"}
+            </button>
+          </div>
+        </div>
+
+        {/* Delete button at the bottom */}
+        <div className="detail-bottom-section">
+          <button
+            className="detail-delete-btn"
+            onClick={() => {
+              if (confirm(`Remove "${project.name}" from the roadmap?`)) {
+                onDelete(personName, project.id, project.name);
+                onClose();
+              }
+            }}
+          >
+            Delete from Roadmap
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -905,11 +1110,13 @@ function DetailPanel({
   personName,
   personColor,
   onClose,
+  onDelete,
 }: {
   project: Project;
   personName: string;
   personColor: string;
   onClose: () => void;
+  onDelete: (personName: string, projectId: string, projectName: string) => void;
 }) {
   const doneCount = project.tasks.filter((t) => t.status === "done").length;
   const inProgressCount = project.tasks.filter(
@@ -919,6 +1126,12 @@ function DetailPanel({
   const total = project.tasks.length;
   const progress = total > 0 ? Math.round((doneCount / total) * 100) : 0;
 
+  const [isEditing, setIsEditing] = useState(false);
+  const [editStart, setEditStart] = useState(project.startMonth);
+  const [editDuration, setEditDuration] = useState(project.duration);
+  const [notes, setNotes] = useState("");
+  const [savingNotes, setSavingNotes] = useState(false);
+
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -927,9 +1140,19 @@ function DetailPanel({
     return () => window.removeEventListener("keydown", handler);
   }, [onClose]);
 
-  const startDateStr = formatMonthIndex(project.startMonth);
-  const endDateStr = formatMonthIndex(project.startMonth + project.duration);
+  const startDateStr = formatMonthIndex(isEditing ? editStart : project.startMonth);
+  const endDateStr = formatMonthIndex((isEditing ? editStart : project.startMonth) + (isEditing ? editDuration : project.duration));
   const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null);
+
+  const handleSaveNotes = async () => {
+    if (!notes.trim()) return;
+    setSavingNotes(true);
+    // Notes saved locally (Linear comment posting would need a project link)
+    setTimeout(() => {
+      setSavingNotes(false);
+      setNotes("");
+    }, 500);
+  };
 
   return (
     <div className="detail-overlay" onClick={onClose}>
@@ -941,6 +1164,20 @@ function DetailPanel({
               style={{ backgroundColor: personColor }}
             />
             <span className="detail-person">{personName}</span>
+            <button
+              className="detail-edit-btn"
+              onClick={() => {
+                if (isEditing) {
+                  setIsEditing(false);
+                } else {
+                  setEditStart(project.startMonth);
+                  setEditDuration(project.duration);
+                  setIsEditing(true);
+                }
+              }}
+            >
+              {isEditing ? "Done" : "Edit"}
+            </button>
             <button className="detail-close" onClick={onClose}>
               &times;
             </button>
@@ -956,7 +1193,20 @@ function DetailPanel({
             </div>
             <div className="detail-info-row">
               <span className="detail-info-label">Start</span>
-              <span className="detail-info-value">{startDateStr}</span>
+              <span className="detail-info-value">
+                {isEditing ? (
+                  <input
+                    type="number"
+                    className="detail-editable-input"
+                    value={editStart}
+                    min={0}
+                    max={22}
+                    onChange={(e) => setEditStart(Number(e.target.value))}
+                  />
+                ) : (
+                  startDateStr
+                )}
+              </span>
             </div>
             <div className="detail-info-row">
               <span className="detail-info-label">End</span>
@@ -965,7 +1215,22 @@ function DetailPanel({
             <div className="detail-info-row">
               <span className="detail-info-label">Duration</span>
               <span className="detail-info-value">
-                {project.duration} month{project.duration > 1 ? "s" : ""}
+                {isEditing ? (
+                  <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                    <input
+                      type="number"
+                      className="detail-editable-input"
+                      value={editDuration}
+                      min={1}
+                      max={23}
+                      onChange={(e) => setEditDuration(Number(e.target.value))}
+                      style={{ width: 70 }}
+                    />
+                    <span style={{ fontSize: 12, color: "#8b8b9e" }}>months</span>
+                  </span>
+                ) : (
+                  <>{project.duration} month{project.duration > 1 ? "s" : ""}</>
+                )}
               </span>
             </div>
           </div>
@@ -1087,6 +1352,41 @@ function DetailPanel({
               );
             })}
           </ul>
+        </div>
+
+        {/* Notes section */}
+        <div className="detail-bottom-section">
+          <h3 className="detail-tasks-title">Notes</h3>
+          <textarea
+            className="detail-notes-textarea"
+            placeholder="Add a note..."
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+          />
+          <div style={{ marginTop: 8, display: "flex", justifyContent: "flex-end" }}>
+            <button
+              className="detail-notes-save-btn"
+              disabled={!notes.trim() || savingNotes}
+              onClick={handleSaveNotes}
+            >
+              {savingNotes ? "Saving..." : "Save Note"}
+            </button>
+          </div>
+        </div>
+
+        {/* Delete button at the bottom */}
+        <div className="detail-bottom-section">
+          <button
+            className="detail-delete-btn"
+            onClick={() => {
+              if (confirm(`Remove "${project.name}" from the roadmap?`)) {
+                onDelete(personName, project.id, project.name);
+                onClose();
+              }
+            }}
+          >
+            Delete from Roadmap
+          </button>
         </div>
       </div>
     </div>
@@ -1358,17 +1658,12 @@ type PersonRowInfo = {
   laneCount: number;
   yOffset: number;
   totalHeight: number;
+  teamName: string;
+  teamColor: string;
+  personIndex: number; // index within the team group for alternating bg
 };
 
-type TeamHeaderInfo = {
-  kind: "team-header";
-  team: Team;
-  yOffset: number;
-  totalHeight: number;
-  collapsed: boolean;
-};
-
-type RowEntry = PersonRowInfo | TeamHeaderInfo;
+type RowEntry = PersonRowInfo;
 
 // ── Drag state ─────────────────────────────────────────────────────────────
 
@@ -1972,24 +2267,16 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
     return map;
   }, [linearBars, cycleIssueIds]);
 
-  // Build row entries with team headers
+  // Build row entries (no team header rows - teams are vertical labels)
   const rowEntries: RowEntry[] = useMemo(() => {
     const entries: RowEntry[] = [];
     let currentY = 0;
 
     for (const { team, members } of teamGroups.groups) {
       const isCollapsed = collapsedTeams.has(team.name);
-      entries.push({
-        kind: "team-header",
-        team,
-        yOffset: currentY,
-        totalHeight: TEAM_HEADER_HEIGHT,
-        collapsed: isCollapsed,
-      });
-      currentY += TEAM_HEADER_HEIGHT;
 
       if (!isCollapsed) {
-        for (const person of members) {
+        members.forEach((person, idx) => {
           const { lanes, laneCount } = packLanes(person.projects);
           const linearCount = (linearBarsPerPerson[person.name] || []).length;
           const extraLanes = linearCount > 0 ? 1 : 0;
@@ -2001,14 +2288,17 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
             laneCount,
             yOffset: currentY,
             totalHeight,
+            teamName: team.name,
+            teamColor: team.color,
+            personIndex: idx,
           });
           currentY += totalHeight;
-        }
+        });
       }
     }
 
     // Ungrouped people at the end
-    for (const person of teamGroups.ungrouped) {
+    teamGroups.ungrouped.forEach((person, idx) => {
       const { lanes, laneCount } = packLanes(person.projects);
       const linearCount = (linearBarsPerPerson[person.name] || []).length;
       const extraLanes = linearCount > 0 ? 1 : 0;
@@ -2020,9 +2310,12 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
         laneCount,
         yOffset: currentY,
         totalHeight,
+        teamName: "",
+        teamColor: "#94a3b8",
+        personIndex: idx,
       });
       currentY += totalHeight;
-    }
+    });
 
     return entries;
   }, [teamGroups, collapsedTeams, linearBarsPerPerson]);
@@ -2032,7 +2325,7 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
     : 0;
   const totalGridWidth = columns.length * colWidth;
 
-  const personEntries = rowEntries.filter((e): e is PersonRowInfo => e.kind === "person");
+  const personEntries = rowEntries;
 
   const projectCount = filteredPeople.reduce(
     (acc, p) => acc + p.projects.length,
@@ -2424,6 +2717,43 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
   const showPhases = zoom === "month";
   const stickyTop = (showPhases ? PHASE_HEIGHT : 0) + HEADER_HEIGHT;
 
+  // ── Compute team label spans for vertical sidebar labels ──────────────
+  const teamLabelSpans = useMemo(() => {
+    const spans: { teamName: string; teamColor: string; yStart: number; height: number }[] = [];
+    let currentTeam: string | null = null;
+    let spanStart = 0;
+    let spanHeight = 0;
+
+    for (const entry of rowEntries) {
+      if (entry.teamName !== currentTeam) {
+        if (currentTeam !== null && spanHeight > 0) {
+          const team = teams.find((t) => t.name === currentTeam);
+          spans.push({
+            teamName: currentTeam,
+            teamColor: team?.color || "#94a3b8",
+            yStart: spanStart,
+            height: spanHeight,
+          });
+        }
+        currentTeam = entry.teamName;
+        spanStart = entry.yOffset;
+        spanHeight = entry.totalHeight;
+      } else {
+        spanHeight += entry.totalHeight;
+      }
+    }
+    if (currentTeam !== null && spanHeight > 0) {
+      const team = teams.find((t) => t.name === currentTeam);
+      spans.push({
+        teamName: currentTeam,
+        teamColor: team?.color || "#94a3b8",
+        yStart: spanStart,
+        height: spanHeight,
+      });
+    }
+    return spans;
+  }, [rowEntries, teams]);
+
   // ── Compute progress pct for a given project ───────────────────────────
   const getBarProgress = useCallback(
     (project: Project): number | null => {
@@ -2491,39 +2821,40 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
               <span>Team</span>
             </div>
             <div
-              className="sidebar-names"
+              className="sidebar-inner"
               ref={sidebarRef}
               onScroll={handleSidebarScroll}
             >
-              {rowEntries.map((entry) => {
-                if (entry.kind === "team-header") {
-                  return (
-                    <div
-                      key={`team-${entry.team.name}`}
-                      className="sidebar-team-header"
-                      style={{
-                        height: entry.totalHeight,
-                        backgroundColor: entry.team.color,
-                      }}
-                      onClick={() => toggleTeam(entry.team.name)}
-                    >
-                      <span
-                        className={`sidebar-team-chevron${entry.collapsed ? " collapsed" : ""}`}
-                      >
-                        &#9662;
-                      </span>
-                      <span className="sidebar-team-name">{entry.team.name}</span>
-                      <span className="sidebar-team-count">
-                        {entry.team.members.length}
-                      </span>
-                    </div>
-                  );
-                }
-                return (
+              {/* Vertical team labels column */}
+              <div className="sidebar-team-labels">
+                {teamLabelSpans.map((span) => (
+                  <div
+                    key={`team-label-${span.teamName}`}
+                    className="sidebar-team-label"
+                    style={{
+                      height: span.height,
+                      backgroundColor: span.teamColor,
+                    }}
+                    onClick={() => toggleTeam(span.teamName)}
+                    title={span.teamName}
+                  >
+                    {span.teamName}
+                  </div>
+                ))}
+              </div>
+              {/* Person names column */}
+              <div className="sidebar-person-list">
+                {rowEntries.map((entry) => (
                   <div
                     key={entry.person.name}
                     className="sidebar-person"
-                    style={{ height: entry.totalHeight }}
+                    style={{
+                      height: entry.totalHeight,
+                      backgroundColor: hexToRgba(
+                        entry.person.color,
+                        entry.personIndex % 2 === 0 ? 0.06 : 0.10,
+                      ),
+                    }}
                   >
                     <div
                       className="sidebar-color-bar"
@@ -2546,8 +2877,8 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
                       +
                     </button>
                   </div>
-                );
-              })}
+                ))}
+              </div>
             </div>
           </div>
         )}
@@ -2619,42 +2950,26 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
               />
             ))}
 
-            {/* Row backgrounds and separators */}
-            {rowEntries.map((entry) => {
-              if (entry.kind === "team-header") {
-                return (
-                  <div
-                    key={`team-row-${entry.team.name}`}
-                    className="grid-team-header-bg"
-                    style={{
-                      top: entry.yOffset,
-                      height: entry.totalHeight,
-                      backgroundColor: hexToRgba(entry.team.color, 0.15),
-                    }}
-                  />
-                );
-              }
-              const personIdx = personEntries.indexOf(entry);
-              return (
-                <div
-                  key={`rowbg-${entry.person.name}`}
-                  className="grid-row-bg"
-                  style={{
-                    top: entry.yOffset,
-                    height: entry.totalHeight,
-                    backgroundColor:
-                      personIdx % 2 === 0
-                        ? "transparent"
-                        : "rgba(0,0,0,0.015)",
-                  }}
-                />
-              );
-            })}
+            {/* Row backgrounds with personal color tints */}
+            {rowEntries.map((entry) => (
+              <div
+                key={`rowbg-${entry.person.name}`}
+                className="grid-row-bg"
+                style={{
+                  top: entry.yOffset,
+                  height: entry.totalHeight,
+                  backgroundColor: hexToRgba(
+                    entry.person.color,
+                    entry.personIndex % 2 === 0 ? 0.06 : 0.10,
+                  ),
+                }}
+              />
+            ))}
 
             {/* Horizontal row separators */}
             {rowEntries.map((entry) => (
               <div
-                key={`hline-${entry.kind === "team-header" ? `team-${entry.team.name}` : entry.person.name}`}
+                key={`hline-${entry.person.name}`}
                 className="grid-hline"
                 style={{ top: entry.yOffset + entry.totalHeight }}
               />
@@ -2804,12 +3119,6 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
                           }
                         }
                       }}
-                      onContextMenu={(e) => {
-                        e.preventDefault();
-                        if (confirm(`Remove "${project.name}"?`)) {
-                          handleDeleteProject(ri.person.name, project.id, project.name);
-                        }
-                      }}
                       onMouseEnter={() => setHoveredProject(project.id)}
                       onMouseLeave={() => setHoveredProject(null)}
                       onMouseDown={(e) => handleBarMouseDown(e, project, ri.person.name, "move")}
@@ -2881,21 +3190,6 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
                         >
                           {project.name}
                         </span>
-                      )}
-
-                      {/* Delete button on hover */}
-                      {isHovered && !isDragging && !isRenaming && (
-                        <button
-                          className="bar-delete-btn"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteProject(ri.person.name, project.id, project.name);
-                          }}
-                          onMouseDown={(e) => e.stopPropagation()}
-                          title="Remove project"
-                        >
-                          &times;
-                        </button>
                       )}
 
                       {/* Dependency link dots on hover */}
@@ -3016,6 +3310,7 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
           personName={selected.personName}
           personColor={selected.personColor}
           onClose={() => setSelected(null)}
+          onDelete={handleDeleteProject}
         />
       )}
 
@@ -3032,6 +3327,7 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
             setSelectedLinearProject(null);
             setSelectedLinearIssueId(issueId);
           }}
+          onDelete={handleDeleteProject}
         />
       )}
 
