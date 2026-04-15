@@ -1,29 +1,25 @@
 import type { Metadata } from "next";
-import { Lexend } from "next/font/google";
 import "./globals.css";
 
-const lexend = Lexend({
-  subsets: ["latin"],
-  variable: "--font-lexend",
-});
-
 export const metadata: Metadata = {
-  title: "Marker Method",
-  description: "Math assessment administration platform",
+  title: "Marker Learning Roadmap",
+  description: "Interactive product roadmap powered by Linear",
 };
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
     <html lang="en">
-      <body
-        className={`${lexend.variable} font-lexend antialiased`}
-      >
-        {children}
-      </body>
+      <head>
+        <link
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+          rel="stylesheet"
+        />
+      </head>
+      <body>{children}</body>
     </html>
   );
 }
