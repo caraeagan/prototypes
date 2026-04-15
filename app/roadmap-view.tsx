@@ -3206,26 +3206,6 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
                       )}
 
                       {/* Dependency link dots on hover */}
-                      {(isHovered || linkingState) && !isDragging && !isRenaming && (
-                        <>
-                          <div
-                            className={`link-dot link-dot-left${linkingState ? " link-dot-active" : ""}`}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleLinkDotClick(project.id, "left");
-                            }}
-                            onMouseDown={(e) => e.stopPropagation()}
-                          />
-                          <div
-                            className={`link-dot link-dot-right${linkingState ? " link-dot-active" : ""}`}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleLinkDotClick(project.id, "right");
-                            }}
-                            onMouseDown={(e) => e.stopPropagation()}
-                          />
-                        </>
-                      )}
 
                       {/* Resize handle */}
                       <div
