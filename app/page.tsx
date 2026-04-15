@@ -1,6 +1,6 @@
 import { RoadmapView } from "./roadmap-view";
-import { PEOPLE, MONTHS, PHASES } from "./roadmap-data";
+import { PEOPLE, MONTHS, PHASES, TEAMS } from "./roadmap-data";
 
 export default function Page() {
-  return <RoadmapView people={PEOPLE} months={MONTHS} phases={PHASES} />;
+  return <RoadmapView people={PEOPLE} months={MONTHS} phases={PHASES} teams={TEAMS} />;
 }

@@ -19,6 +19,7 @@ export type Project = {
 export type Person = {
   name: string;
   color: string;
+  team: string;
   projects: Project[];
 };
 
@@ -27,6 +28,12 @@ export type Phase = {
   startMonth: number;
   duration: number;
   color: string;
+};
+
+export type Team = {
+  name: string;
+  color: string;
+  members: string[];
 };
 
 // ── Timeline constants ─────────────────────────────────────────────────────
@@ -66,6 +73,16 @@ export const PHASES: Phase[] = [
   { name: "GA", startMonth: 19, duration: 4, color: "#E8FEFE" },
 ];
 
+// ── Teams ──────────────────────────────────────────────────────────────────
+
+export const TEAMS: Team[] = [
+  { name: "Engineering", color: "#4A90D9", members: ["Oleksii", "Flo", "Maciej", "John", "Luida", "AK"] },
+  { name: "Design", color: "#E91E63", members: ["Maria", "Carlos"] },
+  { name: "Psychometrics", color: "#FF9800", members: ["Erica", "David"] },
+  { name: "Operations & GTM", color: "#4CAF50", members: ["Eleanor", "Erin", "Stef / Sam", "Molly"] },
+  { name: "Product", color: "#9C27B0", members: ["Cara"] },
+];
+
 // ── Helper to generate task IDs ────────────────────────────────────────────
 
 let _taskCounter = 0;
@@ -89,429 +106,14 @@ function makeTasks(names: string[], statuses: TaskStatus[]): Task[] {
 }
 
 // ── People & project data ──────────────────────────────────────────────────
+// Ordered by team: Engineering, Design, Psychometrics, Operations & GTM, Product
 
 export const PEOPLE: Person[] = [
-  {
-    name: "Eleanor",
-    color: "#4285F4",
-    projects: [
-      {
-        id: pid(),
-        name: "Examiner revamp",
-        startMonth: 0,
-        duration: 2,
-        tasks: makeTasks(
-          [
-            "Audit existing examiner workflows",
-            "Design new examiner dashboard",
-            "Implement revised scheduling flow",
-            "QA & user testing",
-          ],
-          ["done", "done", "in-progress", "todo"],
-        ),
-      },
-      {
-        id: pid(),
-        name: "Async training website",
-        startMonth: 0,
-        duration: 4,
-        tasks: makeTasks(
-          [
-            "Define training module structure",
-            "Build video hosting integration",
-            "Create progress tracking system",
-            "Launch beta to examiners",
-          ],
-          ["done", "in-progress", "in-progress", "todo"],
-        ),
-      },
-      {
-        id: pid(),
-        name: "Hiring examiners",
-        startMonth: 0,
-        duration: 4,
-        tasks: makeTasks(
-          [
-            "Post job listings",
-            "Screen applicants",
-            "Conduct interviews",
-            "Onboard new hires",
-          ],
-          ["done", "done", "in-progress", "todo"],
-        ),
-      },
-      {
-        id: pid(),
-        name: "Reporting",
-        startMonth: 2,
-        duration: 4,
-        tasks: makeTasks(
-          [
-            "Define report templates",
-            "Build data aggregation pipeline",
-            "Create export functionality",
-            "Stakeholder review",
-          ],
-          ["done", "in-progress", "todo", "todo"],
-        ),
-      },
-      {
-        id: pid(),
-        name: "Financial model",
-        startMonth: 3,
-        duration: 3,
-        tasks: makeTasks(
-          [
-            "Gather cost data",
-            "Build revenue projections",
-            "Create scenario analysis",
-          ],
-          ["in-progress", "todo", "todo"],
-        ),
-      },
-      {
-        id: pid(),
-        name: "Examiner booklets",
-        startMonth: 4,
-        duration: 4,
-        tasks: makeTasks(
-          [
-            "Content outline",
-            "Design layout",
-            "Print production coordination",
-            "Distribution plan",
-          ],
-          ["in-progress", "todo", "todo", "todo"],
-        ),
-      },
-    ],
-  },
-  {
-    name: "Erin",
-    color: "#EA4335",
-    projects: [
-      {
-        id: pid(),
-        name: "Recruitment & Hard to reach dem challenge",
-        startMonth: 0,
-        duration: 5,
-        tasks: makeTasks(
-          [
-            "Identify underrepresented demographics",
-            "Develop targeted outreach strategy",
-            "Partner with community organizations",
-            "Track recruitment metrics",
-          ],
-          ["done", "done", "in-progress", "in-progress"],
-        ),
-      },
-      {
-        id: pid(),
-        name: "Human Rater",
-        startMonth: 2,
-        duration: 4,
-        tasks: makeTasks(
-          [
-            "Define rater rubric",
-            "Build rater interface",
-            "Train initial raters",
-            "Establish inter-rater reliability",
-          ],
-          ["done", "in-progress", "todo", "todo"],
-        ),
-      },
-      {
-        id: pid(),
-        name: "In person sessions",
-        startMonth: 0,
-        duration: 4,
-        tasks: makeTasks(
-          [
-            "Schedule session locations",
-            "Prepare materials kits",
-            "Conduct sessions",
-            "Collect feedback",
-          ],
-          ["done", "done", "in-progress", "todo"],
-        ),
-      },
-      {
-        id: pid(),
-        name: "Examiner training program",
-        startMonth: 1,
-        duration: 4,
-        tasks: makeTasks(
-          [
-            "Design training curriculum",
-            "Record training videos",
-            "Create assessment quizzes",
-            "Pilot with first cohort",
-          ],
-          ["done", "in-progress", "in-progress", "todo"],
-        ),
-      },
-      {
-        id: pid(),
-        name: "Hiring examiners",
-        startMonth: 0,
-        duration: 3,
-        tasks: makeTasks(
-          [
-            "Coordinate with Eleanor on hiring",
-            "Review applicant qualifications",
-            "Conduct technical assessments",
-          ],
-          ["done", "done", "in-progress"],
-        ),
-      },
-      {
-        id: pid(),
-        name: "Participant & examiner support",
-        startMonth: 2,
-        duration: 4,
-        tasks: makeTasks(
-          [
-            "Set up support ticketing system",
-            "Create FAQ documentation",
-            "Staff support rotation",
-            "Monitor satisfaction scores",
-          ],
-          ["done", "in-progress", "todo", "todo"],
-        ),
-      },
-    ],
-  },
-  {
-    name: "Molly",
-    color: "#FBBC04",
-    projects: [
-      {
-        id: pid(),
-        name: "Content updates & Data analysis with Erica",
-        startMonth: 0,
-        duration: 4,
-        tasks: makeTasks(
-          [
-            "Review item performance data",
-            "Update underperforming items",
-            "Collaborate with Erica on analysis",
-            "Document content changes",
-          ],
-          ["done", "in-progress", "in-progress", "todo"],
-        ),
-      },
-      {
-        id: pid(),
-        name: "Examiner training",
-        startMonth: 1,
-        duration: 3,
-        tasks: makeTasks(
-          [
-            "Develop training materials",
-            "Run practice sessions",
-            "Evaluate examiner readiness",
-          ],
-          ["done", "in-progress", "todo"],
-        ),
-      },
-      {
-        id: pid(),
-        name: "Participant & examiner support",
-        startMonth: 3,
-        duration: 4,
-        tasks: makeTasks(
-          [
-            "Handle escalated support cases",
-            "Create troubleshooting guides",
-            "Weekly support retrospectives",
-          ],
-          ["in-progress", "todo", "todo"],
-        ),
-      },
-    ],
-  },
-  {
-    name: "Stef / Sam",
-    color: "#34A853",
-    projects: [
-      {
-        id: pid(),
-        name: "User research",
-        startMonth: 0,
-        duration: 4,
-        tasks: makeTasks(
-          [
-            "Plan research sprints",
-            "Recruit participants",
-            "Conduct usability studies",
-            "Synthesize findings",
-            "Present to stakeholders",
-          ],
-          ["done", "done", "in-progress", "todo", "todo"],
-        ),
-      },
-      {
-        id: pid(),
-        name: "Hiring examiners",
-        startMonth: 1,
-        duration: 3,
-        tasks: makeTasks(
-          [
-            "Define examiner personas",
-            "Develop screening criteria",
-            "Assist with interviews",
-          ],
-          ["done", "in-progress", "todo"],
-        ),
-      },
-    ],
-  },
-  {
-    name: "Erica",
-    color: "#FF6D01",
-    projects: [
-      {
-        id: pid(),
-        name: "Norm Plan",
-        startMonth: 0,
-        duration: 4,
-        tasks: makeTasks(
-          [
-            "Define norming population targets",
-            "Create sampling methodology",
-            "Draft statistical analysis plan",
-            "Peer review plan",
-          ],
-          ["done", "done", "in-progress", "todo"],
-        ),
-      },
-      {
-        id: pid(),
-        name: "PP3 data analysis",
-        startMonth: 0,
-        duration: 4,
-        tasks: makeTasks(
-          [
-            "Clean PP3 dataset",
-            "Run item-level statistics",
-            "Generate reliability metrics",
-            "Write analysis report",
-          ],
-          ["done", "done", "in-progress", "todo"],
-        ),
-      },
-    ],
-  },
-  {
-    name: "Lucie",
-    color: "#46BDC6",
-    projects: [
-      {
-        id: pid(),
-        name: "Subtest Adaptive Algorithm",
-        startMonth: 2,
-        duration: 3,
-        tasks: makeTasks(
-          [
-            "Research adaptive testing methods",
-            "Implement item selection algorithm",
-            "Calibrate difficulty parameters",
-            "Validate against static tests",
-          ],
-          ["done", "in-progress", "todo", "todo"],
-        ),
-      },
-      {
-        id: pid(),
-        name: "Internal tool",
-        startMonth: 0,
-        duration: 4,
-        tasks: makeTasks(
-          [
-            "Gather requirements from team",
-            "Build admin dashboard",
-            "Add data export features",
-            "Deploy and document",
-          ],
-          ["done", "done", "in-progress", "todo"],
-        ),
-      },
-      {
-        id: pid(),
-        name: "Data analysis",
-        startMonth: 0,
-        duration: 1,
-        tasks: makeTasks(
-          [
-            "Run descriptive statistics",
-            "Generate visualizations",
-            "Share preliminary findings",
-          ],
-          ["done", "done", "done"],
-        ),
-      },
-      {
-        id: pid(),
-        name: "Norming Stats",
-        startMonth: 4,
-        duration: 2,
-        tasks: makeTasks(
-          [
-            "Compute norm tables",
-            "Validate score distributions",
-            "Peer review statistics",
-          ],
-          ["todo", "todo", "todo"],
-        ),
-      },
-      {
-        id: pid(),
-        name: "Human Rater",
-        startMonth: 2,
-        duration: 4,
-        tasks: makeTasks(
-          [
-            "Build rater calibration tool",
-            "Implement scoring consensus logic",
-            "Track rater agreement metrics",
-          ],
-          ["in-progress", "todo", "todo"],
-        ),
-      },
-      {
-        id: pid(),
-        name: "AI scoring",
-        startMonth: 2,
-        duration: 4,
-        tasks: makeTasks(
-          [
-            "Prepare training dataset",
-            "Fine-tune scoring model",
-            "Evaluate model accuracy",
-            "A/B test against human raters",
-          ],
-          ["done", "in-progress", "todo", "todo"],
-        ),
-      },
-      {
-        id: pid(),
-        name: "Data Storage & Pipelines",
-        startMonth: 0,
-        duration: 2,
-        tasks: makeTasks(
-          [
-            "Design data warehouse schema",
-            "Build ETL pipelines",
-            "Set up monitoring and alerts",
-          ],
-          ["done", "done", "in-progress"],
-        ),
-      },
-    ],
-  },
+  // ── Engineering ──────────────────────────────────────────────────────────
   {
     name: "Oleksii",
     color: "#7B61FF",
+    team: "Engineering",
     projects: [
       {
         id: pid(),
@@ -621,6 +223,7 @@ export const PEOPLE: Person[] = [
   {
     name: "Flo",
     color: "#FF4081",
+    team: "Engineering",
     projects: [
       {
         id: pid(),
@@ -716,6 +319,7 @@ export const PEOPLE: Person[] = [
   {
     name: "Maciej",
     color: "#00BCD4",
+    team: "Engineering",
     projects: [
       {
         id: pid(),
@@ -738,6 +342,7 @@ export const PEOPLE: Person[] = [
   {
     name: "John",
     color: "#8BC34A",
+    team: "Engineering",
     projects: [
       {
         id: pid(),
@@ -774,6 +379,7 @@ export const PEOPLE: Person[] = [
   {
     name: "Luida",
     color: "#FF9800",
+    team: "Engineering",
     projects: [
       {
         id: pid(),
@@ -838,6 +444,7 @@ export const PEOPLE: Person[] = [
   {
     name: "AK",
     color: "#9C27B0",
+    team: "Engineering",
     projects: [
       {
         id: pid(),
@@ -871,9 +478,440 @@ export const PEOPLE: Person[] = [
       },
     ],
   },
+
+  // ── Design ───────────────────────────────────────────────────────────────
+  {
+    name: "Maria",
+    color: "#26A69A",
+    team: "Design",
+    projects: [
+      {
+        id: pid(),
+        name: "PP1 Instructions",
+        startMonth: 0,
+        duration: 3,
+        tasks: makeTasks(
+          [
+            "Draft PP1 instruction content",
+            "Review with psychometricians",
+            "Finalize and format",
+          ],
+          ["done", "done", "in-progress"],
+        ),
+      },
+      {
+        id: pid(),
+        name: "PP2 Instructions",
+        startMonth: 2,
+        duration: 3,
+        tasks: makeTasks(
+          [
+            "Draft PP2 instruction content",
+            "Review with psychometricians",
+            "Finalize and format",
+          ],
+          ["in-progress", "todo", "todo"],
+        ),
+      },
+    ],
+  },
+  {
+    name: "Carlos",
+    color: "#5C6BC0",
+    team: "Design",
+    projects: [
+      {
+        id: pid(),
+        name: "PP3 Bilingual Instructions",
+        startMonth: 0,
+        duration: 3,
+        tasks: makeTasks(
+          [
+            "Translate PP3 instructions to Spanish",
+            "Cultural adaptation review",
+            "QA bilingual rendering",
+          ],
+          ["done", "in-progress", "todo"],
+        ),
+      },
+      {
+        id: pid(),
+        name: "PP1 Bilingual Instructions",
+        startMonth: 2,
+        duration: 3,
+        tasks: makeTasks(
+          [
+            "Translate PP1 instructions",
+            "Cultural adaptation review",
+            "QA bilingual rendering",
+          ],
+          ["in-progress", "todo", "todo"],
+        ),
+      },
+      {
+        id: pid(),
+        name: "PP2 Bilingual Instructions",
+        startMonth: 3,
+        duration: 3,
+        tasks: makeTasks(
+          [
+            "Translate PP2 instructions",
+            "Cultural adaptation review",
+            "QA bilingual rendering",
+          ],
+          ["todo", "todo", "todo"],
+        ),
+      },
+    ],
+  },
+
+  // ── Psychometrics ────────────────────────────────────────────────────────
+  {
+    name: "Erica",
+    color: "#FF6D01",
+    team: "Psychometrics",
+    projects: [
+      {
+        id: pid(),
+        name: "Norm Plan",
+        startMonth: 0,
+        duration: 4,
+        tasks: makeTasks(
+          [
+            "Define norming population targets",
+            "Create sampling methodology",
+            "Draft statistical analysis plan",
+            "Peer review plan",
+          ],
+          ["done", "done", "in-progress", "todo"],
+        ),
+      },
+      {
+        id: pid(),
+        name: "PP3 data analysis",
+        startMonth: 0,
+        duration: 4,
+        tasks: makeTasks(
+          [
+            "Clean PP3 dataset",
+            "Run item-level statistics",
+            "Generate reliability metrics",
+            "Write analysis report",
+          ],
+          ["done", "done", "in-progress", "todo"],
+        ),
+      },
+    ],
+  },
+  {
+    name: "David",
+    color: "#78909C",
+    team: "Psychometrics",
+    projects: [
+      {
+        id: pid(),
+        name: "CAP (Referral Packet Analysis)",
+        startMonth: 3,
+        duration: 4,
+        tasks: makeTasks(
+          [
+            "Define packet structure requirements",
+            "Build document parsing pipeline",
+            "Implement analysis dashboard",
+            "Integrate with referral workflow",
+          ],
+          ["in-progress", "todo", "todo", "todo"],
+        ),
+      },
+    ],
+  },
+
+  // ── Operations & GTM ─────────────────────────────────────────────────────
+  {
+    name: "Eleanor",
+    color: "#4285F4",
+    team: "Operations & GTM",
+    projects: [
+      {
+        id: pid(),
+        name: "Examiner revamp",
+        startMonth: 0,
+        duration: 2,
+        tasks: makeTasks(
+          [
+            "Audit existing examiner workflows",
+            "Design new examiner dashboard",
+            "Implement revised scheduling flow",
+            "QA & user testing",
+          ],
+          ["done", "done", "in-progress", "todo"],
+        ),
+      },
+      {
+        id: pid(),
+        name: "Async training website",
+        startMonth: 0,
+        duration: 4,
+        tasks: makeTasks(
+          [
+            "Define training module structure",
+            "Build video hosting integration",
+            "Create progress tracking system",
+            "Launch beta to examiners",
+          ],
+          ["done", "in-progress", "in-progress", "todo"],
+        ),
+      },
+      {
+        id: pid(),
+        name: "Hiring examiners",
+        startMonth: 0,
+        duration: 4,
+        tasks: makeTasks(
+          [
+            "Post job listings",
+            "Screen applicants",
+            "Conduct interviews",
+            "Onboard new hires",
+          ],
+          ["done", "done", "in-progress", "todo"],
+        ),
+      },
+      {
+        id: pid(),
+        name: "Reporting",
+        startMonth: 2,
+        duration: 4,
+        tasks: makeTasks(
+          [
+            "Define report templates",
+            "Build data aggregation pipeline",
+            "Create export functionality",
+            "Stakeholder review",
+          ],
+          ["done", "in-progress", "todo", "todo"],
+        ),
+      },
+      {
+        id: pid(),
+        name: "Financial model",
+        startMonth: 3,
+        duration: 3,
+        tasks: makeTasks(
+          [
+            "Gather cost data",
+            "Build revenue projections",
+            "Create scenario analysis",
+          ],
+          ["in-progress", "todo", "todo"],
+        ),
+      },
+      {
+        id: pid(),
+        name: "Examiner booklets",
+        startMonth: 4,
+        duration: 4,
+        tasks: makeTasks(
+          [
+            "Content outline",
+            "Design layout",
+            "Print production coordination",
+            "Distribution plan",
+          ],
+          ["in-progress", "todo", "todo", "todo"],
+        ),
+      },
+    ],
+  },
+  {
+    name: "Erin",
+    color: "#EA4335",
+    team: "Operations & GTM",
+    projects: [
+      {
+        id: pid(),
+        name: "Recruitment & Hard to reach dem challenge",
+        startMonth: 0,
+        duration: 5,
+        tasks: makeTasks(
+          [
+            "Identify underrepresented demographics",
+            "Develop targeted outreach strategy",
+            "Partner with community organizations",
+            "Track recruitment metrics",
+          ],
+          ["done", "done", "in-progress", "in-progress"],
+        ),
+      },
+      {
+        id: pid(),
+        name: "Human Rater",
+        startMonth: 2,
+        duration: 4,
+        tasks: makeTasks(
+          [
+            "Define rater rubric",
+            "Build rater interface",
+            "Train initial raters",
+            "Establish inter-rater reliability",
+          ],
+          ["done", "in-progress", "todo", "todo"],
+        ),
+      },
+      {
+        id: pid(),
+        name: "In person sessions",
+        startMonth: 0,
+        duration: 4,
+        tasks: makeTasks(
+          [
+            "Schedule session locations",
+            "Prepare materials kits",
+            "Conduct sessions",
+            "Collect feedback",
+          ],
+          ["done", "done", "in-progress", "todo"],
+        ),
+      },
+      {
+        id: pid(),
+        name: "Examiner training program",
+        startMonth: 1,
+        duration: 4,
+        tasks: makeTasks(
+          [
+            "Design training curriculum",
+            "Record training videos",
+            "Create assessment quizzes",
+            "Pilot with first cohort",
+          ],
+          ["done", "in-progress", "in-progress", "todo"],
+        ),
+      },
+      {
+        id: pid(),
+        name: "Hiring examiners",
+        startMonth: 0,
+        duration: 3,
+        tasks: makeTasks(
+          [
+            "Coordinate with Eleanor on hiring",
+            "Review applicant qualifications",
+            "Conduct technical assessments",
+          ],
+          ["done", "done", "in-progress"],
+        ),
+      },
+      {
+        id: pid(),
+        name: "Participant & examiner support",
+        startMonth: 2,
+        duration: 4,
+        tasks: makeTasks(
+          [
+            "Set up support ticketing system",
+            "Create FAQ documentation",
+            "Staff support rotation",
+            "Monitor satisfaction scores",
+          ],
+          ["done", "in-progress", "todo", "todo"],
+        ),
+      },
+    ],
+  },
+  {
+    name: "Stef / Sam",
+    color: "#34A853",
+    team: "Operations & GTM",
+    projects: [
+      {
+        id: pid(),
+        name: "User research",
+        startMonth: 0,
+        duration: 4,
+        tasks: makeTasks(
+          [
+            "Plan research sprints",
+            "Recruit participants",
+            "Conduct usability studies",
+            "Synthesize findings",
+            "Present to stakeholders",
+          ],
+          ["done", "done", "in-progress", "todo", "todo"],
+        ),
+      },
+      {
+        id: pid(),
+        name: "Hiring examiners",
+        startMonth: 1,
+        duration: 3,
+        tasks: makeTasks(
+          [
+            "Define examiner personas",
+            "Develop screening criteria",
+            "Assist with interviews",
+          ],
+          ["done", "in-progress", "todo"],
+        ),
+      },
+    ],
+  },
+  {
+    name: "Molly",
+    color: "#FBBC04",
+    team: "Operations & GTM",
+    projects: [
+      {
+        id: pid(),
+        name: "Content updates & Data analysis with Erica",
+        startMonth: 0,
+        duration: 4,
+        tasks: makeTasks(
+          [
+            "Review item performance data",
+            "Update underperforming items",
+            "Collaborate with Erica on analysis",
+            "Document content changes",
+          ],
+          ["done", "in-progress", "in-progress", "todo"],
+        ),
+      },
+      {
+        id: pid(),
+        name: "Examiner training",
+        startMonth: 1,
+        duration: 3,
+        tasks: makeTasks(
+          [
+            "Develop training materials",
+            "Run practice sessions",
+            "Evaluate examiner readiness",
+          ],
+          ["done", "in-progress", "todo"],
+        ),
+      },
+      {
+        id: pid(),
+        name: "Participant & examiner support",
+        startMonth: 3,
+        duration: 4,
+        tasks: makeTasks(
+          [
+            "Handle escalated support cases",
+            "Create troubleshooting guides",
+            "Weekly support retrospectives",
+          ],
+          ["in-progress", "todo", "todo"],
+        ),
+      },
+    ],
+  },
+
+  // ── Product ──────────────────────────────────────────────────────────────
   {
     name: "Cara",
     color: "#F06292",
+    team: "Product",
     projects: [
       {
         id: pid(),
@@ -991,105 +1029,112 @@ export const PEOPLE: Person[] = [
       },
     ],
   },
+
+  // ── Unassigned ───────────────────────────────────────────────────────────
   {
-    name: "Maria",
-    color: "#26A69A",
+    name: "Lucie",
+    color: "#46BDC6",
+    team: "",
     projects: [
       {
         id: pid(),
-        name: "PP1 Instructions",
-        startMonth: 0,
-        duration: 3,
-        tasks: makeTasks(
-          [
-            "Draft PP1 instruction content",
-            "Review with psychometricians",
-            "Finalize and format",
-          ],
-          ["done", "done", "in-progress"],
-        ),
-      },
-      {
-        id: pid(),
-        name: "PP2 Instructions",
+        name: "Subtest Adaptive Algorithm",
         startMonth: 2,
         duration: 3,
         tasks: makeTasks(
           [
-            "Draft PP2 instruction content",
-            "Review with psychometricians",
-            "Finalize and format",
+            "Research adaptive testing methods",
+            "Implement item selection algorithm",
+            "Calibrate difficulty parameters",
+            "Validate against static tests",
           ],
-          ["in-progress", "todo", "todo"],
+          ["done", "in-progress", "todo", "todo"],
         ),
       },
-    ],
-  },
-  {
-    name: "Carlos",
-    color: "#5C6BC0",
-    projects: [
       {
         id: pid(),
-        name: "PP3 Bilingual Instructions",
+        name: "Internal tool",
         startMonth: 0,
-        duration: 3,
+        duration: 4,
         tasks: makeTasks(
           [
-            "Translate PP3 instructions to Spanish",
-            "Cultural adaptation review",
-            "QA bilingual rendering",
+            "Gather requirements from team",
+            "Build admin dashboard",
+            "Add data export features",
+            "Deploy and document",
           ],
-          ["done", "in-progress", "todo"],
+          ["done", "done", "in-progress", "todo"],
         ),
       },
       {
         id: pid(),
-        name: "PP1 Bilingual Instructions",
-        startMonth: 2,
-        duration: 3,
+        name: "Data analysis",
+        startMonth: 0,
+        duration: 1,
         tasks: makeTasks(
           [
-            "Translate PP1 instructions",
-            "Cultural adaptation review",
-            "QA bilingual rendering",
+            "Run descriptive statistics",
+            "Generate visualizations",
+            "Share preliminary findings",
           ],
-          ["in-progress", "todo", "todo"],
+          ["done", "done", "done"],
         ),
       },
       {
         id: pid(),
-        name: "PP2 Bilingual Instructions",
-        startMonth: 3,
-        duration: 3,
+        name: "Norming Stats",
+        startMonth: 4,
+        duration: 2,
         tasks: makeTasks(
           [
-            "Translate PP2 instructions",
-            "Cultural adaptation review",
-            "QA bilingual rendering",
+            "Compute norm tables",
+            "Validate score distributions",
+            "Peer review statistics",
           ],
           ["todo", "todo", "todo"],
         ),
       },
-    ],
-  },
-  {
-    name: "David",
-    color: "#78909C",
-    projects: [
       {
         id: pid(),
-        name: "CAP (Referral Packet Analysis)",
-        startMonth: 3,
+        name: "Human Rater",
+        startMonth: 2,
         duration: 4,
         tasks: makeTasks(
           [
-            "Define packet structure requirements",
-            "Build document parsing pipeline",
-            "Implement analysis dashboard",
-            "Integrate with referral workflow",
+            "Build rater calibration tool",
+            "Implement scoring consensus logic",
+            "Track rater agreement metrics",
           ],
-          ["in-progress", "todo", "todo", "todo"],
+          ["in-progress", "todo", "todo"],
+        ),
+      },
+      {
+        id: pid(),
+        name: "AI scoring",
+        startMonth: 2,
+        duration: 4,
+        tasks: makeTasks(
+          [
+            "Prepare training dataset",
+            "Fine-tune scoring model",
+            "Evaluate model accuracy",
+            "A/B test against human raters",
+          ],
+          ["done", "in-progress", "todo", "todo"],
+        ),
+      },
+      {
+        id: pid(),
+        name: "Data Storage & Pipelines",
+        startMonth: 0,
+        duration: 2,
+        tasks: makeTasks(
+          [
+            "Design data warehouse schema",
+            "Build ETL pipelines",
+            "Set up monitoring and alerts",
+          ],
+          ["done", "done", "in-progress"],
         ),
       },
     ],
