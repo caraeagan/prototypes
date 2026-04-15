@@ -903,7 +903,7 @@ export const PEOPLE: Person[] = [
   },
   {
     name: "Molly",
-    color: "#FBBC04",
+    color: "#F06292",
     team: "Operations & GTM",
     projects: [
       {
@@ -958,7 +958,7 @@ export const PEOPLE: Person[] = [
   // ── Product ──────────────────────────────────────────────────────────────
   {
     name: "Cara",
-    color: "#F06292",
+    color: "#FBBC04",
     team: "Product",
     projects: [
       {
