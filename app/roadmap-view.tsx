@@ -24,7 +24,7 @@ const SIDEBAR_WIDTH = 180;
 const ROW_HEIGHT = 40;
 const HEADER_HEIGHT = 80;
 const PHASE_HEIGHT = 36;
-const TEAM_HEADER_HEIGHT = 36;
+const TEAM_HEADER_HEIGHT = 42;
 const BAR_V_PAD = 5;
 const BAR_HEIGHT = ROW_HEIGHT - BAR_V_PAD * 2;
 
@@ -298,6 +298,17 @@ function cleanTitle(title: string): string {
 
 function formatDate(dateStr: string): string {
   const d = new Date(dateStr);
+  return d.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+/** Convert a month index (0 = Mar 2026) to a formatted date like "Apr 14, 2026" */
+function formatMonthIndex(monthIndex: number): string {
+  // Month index 0 = Mar 2026 (month 2 in JS Date)
+  const d = new Date(2026, 2 + monthIndex, 1);
   return d.toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
@@ -690,6 +701,10 @@ function LinearProjectDetailPanel({
       ? Math.round((doneIssues.length / issues.length) * 100)
       : 0;
 
+  const startDateStr = formatMonthIndex(project.startMonth);
+  const endDateStr = formatMonthIndex(project.startMonth + project.duration);
+  const [expandedIssueId, setExpandedIssueId] = useState<string | null>(null);
+
   return (
     <div className="detail-overlay" onClick={onClose}>
       <div className="detail-panel" onClick={(e) => e.stopPropagation()}>
@@ -708,10 +723,30 @@ function LinearProjectDetailPanel({
           <div style={{ fontSize: 12, color: "#8b8b9e", marginBottom: 8 }}>
             Linear: {linearProjectName}
           </div>
+          <div className="detail-info-rows">
+            <div className="detail-info-row">
+              <span className="detail-info-label">Owner</span>
+              <span className="detail-info-value">
+                <span className="detail-owner-dot" style={{ backgroundColor: personColor }} />
+                {personName}
+              </span>
+            </div>
+            <div className="detail-info-row">
+              <span className="detail-info-label">Start</span>
+              <span className="detail-info-value">{startDateStr}</span>
+            </div>
+            <div className="detail-info-row">
+              <span className="detail-info-label">End</span>
+              <span className="detail-info-value">{endDateStr}</span>
+            </div>
+            <div className="detail-info-row">
+              <span className="detail-info-label">Duration</span>
+              <span className="detail-info-value">
+                {project.duration} month{project.duration > 1 ? "s" : ""}
+              </span>
+            </div>
+          </div>
           <div className="detail-meta">
-            <span className="detail-duration">
-              {project.duration} month{project.duration > 1 ? "s" : ""}
-            </span>
             <span className="detail-progress-text">
               {progress
                 ? `${progress.done}/${progress.total} done`
@@ -767,29 +802,94 @@ function LinearProjectDetailPanel({
               Issues ({issues.length})
             </h3>
             <ul className="detail-task-list">
-              {issues.map((issue) => (
-                <li
-                  key={issue.id}
-                  className="detail-task-item"
-                  style={{ cursor: "pointer" }}
-                  onClick={() => onIssueClick(issue.id)}
-                >
-                  <span
-                    className="detail-task-dot"
-                    style={{ backgroundColor: issue.state.color }}
-                  />
-                  <span className="detail-task-name">{issue.title}</span>
-                  <span
-                    className="detail-task-badge"
-                    style={{
-                      backgroundColor: hexToRgba(issue.state.color, 0.12),
-                      color: issue.state.color,
-                    }}
+              {issues.map((issue) => {
+                const isExpanded = expandedIssueId === issue.id;
+                return (
+                  <li
+                    key={issue.id}
+                    className={`detail-task-item-expandable${isExpanded ? " expanded" : ""}`}
                   >
-                    {issue.state.name}
-                  </span>
-                </li>
-              ))}
+                    <div
+                      className="detail-task-item-header"
+                      onClick={() =>
+                        setExpandedIssueId(isExpanded ? null : issue.id)
+                      }
+                    >
+                      <span
+                        className={`detail-task-chevron${isExpanded ? " expanded" : ""}`}
+                      >
+                        &#9654;
+                      </span>
+                      <span
+                        className="detail-task-dot"
+                        style={{ backgroundColor: issue.state.color }}
+                      />
+                      <span className="detail-task-name">{issue.title}</span>
+                      <span
+                        className="detail-task-badge"
+                        style={{
+                          backgroundColor: hexToRgba(issue.state.color, 0.12),
+                          color: issue.state.color,
+                        }}
+                      >
+                        {issue.state.name}
+                      </span>
+                    </div>
+                    {isExpanded && (
+                      <div className="detail-task-expanded-content">
+                        <div className="detail-task-detail-row">
+                          <span className="detail-task-detail-label">Status</span>
+                          <span
+                            className="detail-task-detail-value"
+                            style={{ color: issue.state.color }}
+                          >
+                            {issue.state.name}
+                          </span>
+                        </div>
+                        {issue.assignee && (
+                          <div className="detail-task-detail-row">
+                            <span className="detail-task-detail-label">Assignee</span>
+                            <span className="detail-task-detail-value">
+                              {issue.assignee.displayName}
+                            </span>
+                          </div>
+                        )}
+                        {(issue.startedAt || issue.dueDate) && (
+                          <div className="detail-task-detail-row">
+                            <span className="detail-task-detail-label">Dates</span>
+                            <span className="detail-task-detail-value">
+                              {issue.startedAt ? formatDate(issue.startedAt) : "No start"}{" "}
+                              &rarr;{" "}
+                              {issue.dueDate ? formatDate(issue.dueDate) : "No due date"}
+                            </span>
+                          </div>
+                        )}
+                        <div style={{ marginTop: 4 }}>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onIssueClick(issue.id);
+                            }}
+                            style={{
+                              background: "none",
+                              border: "1px solid #e0e0ea",
+                              borderRadius: 6,
+                              padding: "4px 10px",
+                              fontSize: 11,
+                              fontWeight: 600,
+                              fontFamily: "var(--font-sans)",
+                              color: "#6366f1",
+                              cursor: "pointer",
+                            }}
+                          >
+                            View full details in Linear
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           </div>
         )}
@@ -827,6 +927,10 @@ function DetailPanel({
     return () => window.removeEventListener("keydown", handler);
   }, [onClose]);
 
+  const startDateStr = formatMonthIndex(project.startMonth);
+  const endDateStr = formatMonthIndex(project.startMonth + project.duration);
+  const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null);
+
   return (
     <div className="detail-overlay" onClick={onClose}>
       <div className="detail-panel" onClick={(e) => e.stopPropagation()}>
@@ -842,10 +946,30 @@ function DetailPanel({
             </button>
           </div>
           <h2 className="detail-title">{project.name}</h2>
+          <div className="detail-info-rows">
+            <div className="detail-info-row">
+              <span className="detail-info-label">Owner</span>
+              <span className="detail-info-value">
+                <span className="detail-owner-dot" style={{ backgroundColor: personColor }} />
+                {personName}
+              </span>
+            </div>
+            <div className="detail-info-row">
+              <span className="detail-info-label">Start</span>
+              <span className="detail-info-value">{startDateStr}</span>
+            </div>
+            <div className="detail-info-row">
+              <span className="detail-info-label">End</span>
+              <span className="detail-info-value">{endDateStr}</span>
+            </div>
+            <div className="detail-info-row">
+              <span className="detail-info-label">Duration</span>
+              <span className="detail-info-value">
+                {project.duration} month{project.duration > 1 ? "s" : ""}
+              </span>
+            </div>
+          </div>
           <div className="detail-meta">
-            <span className="detail-duration">
-              {project.duration} month{project.duration > 1 ? "s" : ""}
-            </span>
             <span className="detail-progress-text">{progress}% complete</span>
           </div>
           <div className="detail-progress-bar-bg">
@@ -889,27 +1013,79 @@ function DetailPanel({
         <div className="detail-tasks">
           <h3 className="detail-tasks-title">Tasks</h3>
           <ul className="detail-task-list">
-            {project.tasks.map((task) => (
-              <li key={task.id} className="detail-task-item">
-                <span
-                  className="detail-task-dot"
-                  style={{ backgroundColor: statusColor(task.status) }}
-                />
-                <span className="detail-task-name">{task.title}</span>
-                <span
-                  className="detail-task-badge"
-                  style={{
-                    backgroundColor: hexToRgba(
-                      statusColor(task.status),
-                      0.12,
-                    ),
-                    color: statusColor(task.status),
-                  }}
+            {project.tasks.map((task) => {
+              const isExpanded = expandedTaskId === task.id;
+              return (
+                <li
+                  key={task.id}
+                  className={`detail-task-item-expandable${isExpanded ? " expanded" : ""}`}
                 >
-                  {statusLabel(task.status)}
-                </span>
-              </li>
-            ))}
+                  <div
+                    className="detail-task-item-header"
+                    onClick={() =>
+                      setExpandedTaskId(isExpanded ? null : task.id)
+                    }
+                  >
+                    <span
+                      className={`detail-task-chevron${isExpanded ? " expanded" : ""}`}
+                    >
+                      &#9654;
+                    </span>
+                    <span
+                      className="detail-task-dot"
+                      style={{ backgroundColor: statusColor(task.status) }}
+                    />
+                    <span className="detail-task-name">{task.title}</span>
+                    <span
+                      className="detail-task-badge"
+                      style={{
+                        backgroundColor: hexToRgba(
+                          statusColor(task.status),
+                          0.12,
+                        ),
+                        color: statusColor(task.status),
+                      }}
+                    >
+                      {statusLabel(task.status)}
+                    </span>
+                  </div>
+                  {isExpanded && (
+                    <div className="detail-task-expanded-content">
+                      <div className="detail-task-detail-row">
+                        <span className="detail-task-detail-label">Status</span>
+                        <span
+                          className="detail-task-detail-value"
+                          style={{ color: statusColor(task.status) }}
+                        >
+                          {statusLabel(task.status)}
+                        </span>
+                      </div>
+                      <div className="detail-task-detail-row">
+                        <span className="detail-task-detail-label">Assignee</span>
+                        <span className="detail-task-detail-value">
+                          <span
+                            className="detail-owner-dot"
+                            style={{
+                              backgroundColor: personColor,
+                              display: "inline-block",
+                              marginRight: 4,
+                              verticalAlign: "middle",
+                            }}
+                          />
+                          {personName}
+                        </span>
+                      </div>
+                      <div className="detail-task-detail-row">
+                        <span className="detail-task-detail-label">Dates</span>
+                        <span className="detail-task-detail-value">
+                          {startDateStr} &rarr; {endDateStr}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         </div>
       </div>
@@ -1338,13 +1514,27 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
   const sidebarRef = useRef<HTMLDivElement>(null);
   const syncingRef = useRef(false);
   const dragRef = useRef<DragState | null>(null);
+  const [containerWidth, setContainerWidth] = useState(0);
 
-  const colWidth = ZOOM_COL_WIDTH[zoom];
   const columns = useMemo(() => generateColumns(zoom), [zoom]);
+
+  // Dynamically compute column width: for week/biweekly, expand to fill available width
+  const colWidth = useMemo(() => {
+    if (zoom === "week" || zoom === "biweekly") {
+      if (containerWidth > 0 && columns.length > 0) {
+        const availableWidth = containerWidth - (isMobile ? 0 : SIDEBAR_WIDTH);
+        return Math.max(ZOOM_COL_WIDTH[zoom], Math.floor(availableWidth / columns.length));
+      }
+    }
+    return ZOOM_COL_WIDTH[zoom];
+  }, [zoom, containerWidth, columns.length, isMobile]);
 
   // ── Check for mobile ───────────────────────────────────────────────────
   useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth < 768);
+    const check = () => {
+      setIsMobile(window.innerWidth < 768);
+      setContainerWidth(window.innerWidth);
+    };
     check();
     window.addEventListener("resize", check);
     return () => window.removeEventListener("resize", check);
@@ -2231,7 +2421,8 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
     window.print();
   }, []);
 
-  const stickyTop = PHASE_HEIGHT + HEADER_HEIGHT;
+  const showPhases = zoom === "month";
+  const stickyTop = (showPhases ? PHASE_HEIGHT : 0) + HEADER_HEIGHT;
 
   // ── Compute progress pct for a given project ───────────────────────────
   const getBarProgress = useCallback(
@@ -2312,8 +2503,7 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
                       className="sidebar-team-header"
                       style={{
                         height: entry.totalHeight,
-                        borderLeftColor: entry.team.color,
-                        backgroundColor: hexToRgba(entry.team.color, 0.06),
+                        backgroundColor: entry.team.color,
                       }}
                       onClick={() => toggleTeam(entry.team.name)}
                     >
@@ -2368,30 +2558,32 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
           ref={scrollRef}
           onScroll={handleGridScroll}
         >
-          {/* Phase row */}
-          <div
-            className="phase-row"
-            style={{ height: PHASE_HEIGHT, width: totalGridWidth }}
-          >
-            {phasePositions.map(({ phase, x, w }) => (
-              <div
-                key={phase.name}
-                className="phase-cell"
-                style={{
-                  left: x,
-                  width: w,
-                  backgroundColor: phase.color,
-                }}
-              >
-                {phase.name}
-              </div>
-            ))}
-          </div>
+          {/* Phase row (hidden for week/biweekly zoom) */}
+          {showPhases && (
+            <div
+              className="phase-row"
+              style={{ height: PHASE_HEIGHT, width: totalGridWidth }}
+            >
+              {phasePositions.map(({ phase, x, w }) => (
+                <div
+                  key={phase.name}
+                  className="phase-cell"
+                  style={{
+                    left: x,
+                    width: w,
+                    backgroundColor: phase.color,
+                  }}
+                >
+                  {phase.name}
+                </div>
+              ))}
+            </div>
+          )}
 
           {/* Column headers */}
           <div
             className="month-header-row"
-            style={{ height: HEADER_HEIGHT, width: totalGridWidth }}
+            style={{ height: HEADER_HEIGHT, width: totalGridWidth, top: showPhases ? PHASE_HEIGHT : 0 }}
           >
             {columns.map((col, i) => {
               const parts = col.label.split(" ");
@@ -2437,8 +2629,7 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
                     style={{
                       top: entry.yOffset,
                       height: entry.totalHeight,
-                      borderLeftColor: entry.team.color,
-                      backgroundColor: hexToRgba(entry.team.color, 0.04),
+                      backgroundColor: hexToRgba(entry.team.color, 0.15),
                     }}
                   />
                 );

@@ -198,20 +198,19 @@ body {
   align-items: center;
   gap: 8px;
   padding: 0 12px;
-  border-bottom: 1px solid #e8e8ef;
-  border-left: 3px solid;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.2);
   cursor: pointer;
   user-select: none;
-  transition: background-color 0.15s;
+  transition: filter 0.15s;
 }
 
 .sidebar-team-header:hover {
-  filter: brightness(0.97);
+  filter: brightness(1.1);
 }
 
 .sidebar-team-chevron {
   font-size: 10px;
-  color: #8b8b9e;
+  color: rgba(255, 255, 255, 0.8);
   transition: transform 0.2s ease;
   display: inline-block;
   line-height: 1;
@@ -224,7 +223,7 @@ body {
 .sidebar-team-name {
   font-size: 12px;
   font-weight: 700;
-  color: #1a1a2e;
+  color: #fff;
   letter-spacing: 0.01em;
   flex: 1;
   white-space: nowrap;
@@ -234,9 +233,9 @@ body {
 
 .sidebar-team-count {
   font-size: 11px;
-  font-weight: 500;
-  color: #8b8b9e;
-  background: rgba(0, 0, 0, 0.04);
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.2);
   padding: 1px 6px;
   border-radius: 4px;
 }
@@ -352,7 +351,6 @@ body {
   left: 0;
   right: 0;
   width: 100%;
-  border-left: 3px solid;
   pointer-events: none;
 }
 
@@ -718,6 +716,136 @@ body.dragging * {
   padding: 2px 8px;
   border-radius: 4px;
   white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ── Expandable task item ──────────────────────────────────────────────── */
+
+.detail-task-item-expandable {
+  display: flex;
+  flex-direction: column;
+  background: #fafbfd;
+  border-radius: 8px;
+  border: 1px solid #f0f0f5;
+  overflow: hidden;
+  transition: border-color 0.15s;
+}
+
+.detail-task-item-expandable.expanded {
+  border-color: #e0e0ea;
+}
+
+.detail-task-item-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: background-color 0.1s;
+}
+
+.detail-task-item-header:hover {
+  background-color: #f0f2f7;
+}
+
+.detail-task-chevron {
+  font-size: 10px;
+  color: #8b8b9e;
+  transition: transform 0.2s ease;
+  display: inline-block;
+  line-height: 1;
+  flex-shrink: 0;
+  width: 12px;
+  text-align: center;
+}
+
+.detail-task-chevron.expanded {
+  transform: rotate(90deg);
+}
+
+.detail-task-expanded-content {
+  padding: 0 12px 12px 42px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-top: 1px solid #f0f0f5;
+  animation: expandIn 0.15s ease-out;
+}
+
+@keyframes expandIn {
+  from {
+    opacity: 0;
+    max-height: 0;
+  }
+  to {
+    opacity: 1;
+    max-height: 300px;
+  }
+}
+
+.detail-task-detail-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-top: 8px;
+}
+
+.detail-task-detail-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: #8b8b9e;
+  min-width: 60px;
+  flex-shrink: 0;
+}
+
+.detail-task-detail-value {
+  font-size: 12px;
+  color: #1a1a2e;
+}
+
+.detail-task-description {
+  font-size: 12px;
+  color: #555;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* ── Project info rows (owner, dates) ──────────────────────────────────── */
+
+.detail-info-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.detail-info-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.detail-info-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #8b8b9e;
+  min-width: 70px;
+  flex-shrink: 0;
+}
+
+.detail-info-value {
+  font-size: 13px;
+  color: #1a1a2e;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.detail-owner-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
   flex-shrink: 0;
 }
 
