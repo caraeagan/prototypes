@@ -2876,12 +2876,16 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
               onScroll={handleSidebarScroll}
             >
               {/* Vertical team labels column */}
-              <div className="sidebar-team-labels">
+              <div className="sidebar-team-labels" style={{ position: "relative", height: totalGridHeight }}>
                 {teamLabelSpans.map((span) => (
                   <div
                     key={`team-label-${span.teamName}`}
                     className="sidebar-team-label"
                     style={{
+                      position: "absolute",
+                      top: span.yStart,
+                      left: 0,
+                      right: 0,
                       height: span.height,
                       backgroundColor: span.teamColor,
                     }}
@@ -2893,14 +2897,17 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
                 ))}
               </div>
               {/* Person names column */}
-              <div className="sidebar-person-list">
+              <div className="sidebar-person-list" style={{ position: "relative", height: totalGridHeight }}>
                 {rowEntries.map((entry) => (
                   <div
                     key={entry.person.name}
                     className="sidebar-person"
                     style={{
+                      position: "absolute",
+                      top: entry.yOffset,
+                      left: 0,
+                      right: 0,
                       height: entry.totalHeight,
-                      marginBottom: PERSON_GAP,
                       backgroundColor: hexToRgba(
                         entry.person.color,
                         entry.personIndex % 2 === 0 ? 0.10 : 0.16,
