@@ -1853,6 +1853,16 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
     return null;
   }, [columns, colWidth]);
 
+  // Auto-scroll to center on today when zoom changes
+  useEffect(() => {
+    if (todayX === null) return;
+    const grid = scrollRef.current;
+    if (!grid) return;
+    // Scroll so today is roughly 1/4 from the left edge
+    const targetScroll = Math.max(0, todayX - grid.clientWidth * 0.25);
+    grid.scrollTo({ left: targetScroll, behavior: "smooth" });
+  }, [zoom, todayX]);
+
   // Phase positions scaled to current zoom
   const phasePositions = useMemo(() => {
     return phases.map((phase) => {
