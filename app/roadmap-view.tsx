@@ -2313,8 +2313,9 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
       if (!isCollapsed) {
         members.forEach((person, idx) => {
           const { lanes, laneCount } = packLanes(person.projects);
-          const linearCount = (linearBarsPerPerson[person.name] || []).length;
-          const totalHeight = (laneCount + linearCount) * ROW_HEIGHT;
+          const linearCount = viewMode === "subtestEdits" ? (linearBarsPerPerson[person.name] || []).length : 0;
+          const effectiveLaneCount = viewMode === "projects" ? laneCount : 0;
+          const totalHeight = Math.max(1, effectiveLaneCount + linearCount) * ROW_HEIGHT;
           entries.push({
             kind: "person",
             person,
@@ -2334,8 +2335,9 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
     // Ungrouped people at the end
     teamGroups.ungrouped.forEach((person, idx) => {
       const { lanes, laneCount } = packLanes(person.projects);
-      const linearCount = (linearBarsPerPerson[person.name] || []).length;
-      const totalHeight = (laneCount + linearCount) * ROW_HEIGHT;
+      const linearCount = viewMode === "subtestEdits" ? (linearBarsPerPerson[person.name] || []).length : 0;
+      const effectiveLaneCount = viewMode === "projects" ? laneCount : 0;
+      const totalHeight = Math.max(1, effectiveLaneCount + linearCount) * ROW_HEIGHT;
       entries.push({
         kind: "person",
         person,
@@ -2351,7 +2353,7 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
     });
 
     return entries;
-  }, [teamGroups, collapsedTeams, linearBarsPerPerson]);
+  }, [teamGroups, collapsedTeams, linearBarsPerPerson, viewMode]);
 
   const totalGridHeight = rowEntries.length > 0
     ? rowEntries[rowEntries.length - 1].yOffset + rowEntries[rowEntries.length - 1].totalHeight
@@ -2749,8 +2751,8 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
     window.print();
   }, []);
 
-  const showPhases = zoom === "month";
-  const stickyTop = (showPhases ? PHASE_HEIGHT : 0) + HEADER_HEIGHT;
+  const showPhases = true;
+  const stickyTop = PHASE_HEIGHT + HEADER_HEIGHT;
 
   // ── Compute team label spans for vertical sidebar labels ──────────────
   const teamLabelSpans = useMemo(() => {
