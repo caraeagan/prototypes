@@ -210,7 +210,7 @@ function hexToRgba(hex: string, alpha: number): string {
   return `rgba(${r},${g},${b},${alpha})`;
 }
 
-function darkenHex(hex: string, factor = 0.4): string {
+function darkenHex(hex: string, factor = 0.15): string {
   const r = Math.round(parseInt(hex.slice(1, 3), 16) * factor);
   const g = Math.round(parseInt(hex.slice(3, 5), 16) * factor);
   const b = Math.round(parseInt(hex.slice(5, 7), 16) * factor);
@@ -3185,7 +3185,7 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
                       ) : (
                         <span
                           className="project-bar-label"
-                          style={{ color: dimmed ? hexToRgba(ri.person.color, 0.4) : darkenHex(ri.person.color, 0.35) }}
+                          style={{ color: dimmed ? hexToRgba(ri.person.color, 0.4) : darkenHex(ri.person.color) }}
                         >
                           {project.name}
                         </span>
