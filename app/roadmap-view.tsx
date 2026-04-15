@@ -14,8 +14,8 @@ type ZoomLevel = "month" | "biweekly" | "week";
 
 const ZOOM_COL_WIDTH: Record<ZoomLevel, number> = {
   month: 120,
-  biweekly: 80,
-  week: 60,
+  biweekly: 120,
+  week: 200,
 };
 
 // ── Constants ──────────────────────────────────────────────────────────────
@@ -40,6 +40,7 @@ function generateColumns(zoom: ZoomLevel): { label: string; date: Date }[] {
   const shortMonths = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
   if (zoom === "month") {
+    // Full timeline
     const d = new Date(TIMELINE_START);
     while (d < TIMELINE_END) {
       cols.push({
@@ -49,8 +50,13 @@ function generateColumns(zoom: ZoomLevel): { label: string; date: Date }[] {
       d.setMonth(d.getMonth() + 1);
     }
   } else if (zoom === "biweekly") {
-    const d = new Date(TIMELINE_START);
-    while (d < TIMELINE_END) {
+    // Current quarter (~3 months centered on today)
+    const now = new Date();
+    const rangeStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const rangeEnd = new Date(now.getFullYear(), now.getMonth() + 2, 1);
+    const d = new Date(Math.max(rangeStart.getTime(), TIMELINE_START.getTime()));
+    const end = new Date(Math.min(rangeEnd.getTime(), TIMELINE_END.getTime()));
+    while (d < end) {
       const month = shortMonths[d.getMonth()];
       const day = d.getDate();
       cols.push({
@@ -60,22 +66,29 @@ function generateColumns(zoom: ZoomLevel): { label: string; date: Date }[] {
       d.setDate(d.getDate() + 14);
     }
   } else {
-    // week
-    const start = new Date(TIMELINE_START);
-    const startDow = start.getDay();
-    const mondayOffset = startDow === 0 ? -6 : 1 - startDow;
-    start.setDate(start.getDate() + mondayOffset);
+    // Week view: current month only, broken out by week
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
-    const cursor = new Date(start);
-    while (cursor < TIMELINE_END) {
-      if (cursor >= new Date(TIMELINE_START.getFullYear(), TIMELINE_START.getMonth(), TIMELINE_START.getDate() - 7)) {
-        const month = shortMonths[cursor.getMonth()];
-        const day = cursor.getDate();
-        cols.push({
-          label: `${month} ${day}`,
-          date: new Date(cursor),
-        });
-      }
+    // Find the Monday on or before the 1st of the month
+    const startDow = monthStart.getDay();
+    const mondayOffset = startDow === 0 ? -6 : 1 - startDow;
+    const cursor = new Date(monthStart);
+    cursor.setDate(cursor.getDate() + mondayOffset);
+
+    // Generate weeks that overlap with the current month
+    while (cursor <= monthEnd) {
+      const month = shortMonths[cursor.getMonth()];
+      const day = cursor.getDate();
+      const endOfWeek = new Date(cursor);
+      endOfWeek.setDate(endOfWeek.getDate() + 6);
+      const endMonth = shortMonths[endOfWeek.getMonth()];
+      const endDay = endOfWeek.getDate();
+      cols.push({
+        label: `${month} ${day} – ${endMonth} ${endDay}`,
+        date: new Date(cursor),
+      });
       cursor.setDate(cursor.getDate() + 7);
     }
   }
