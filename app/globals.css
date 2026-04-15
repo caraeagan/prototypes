@@ -165,7 +165,7 @@ body {
   align-items: center;
   gap: 10px;
   padding: 0 16px;
-  border-bottom: 10px solid white;
+  border-bottom: none;
   position: relative;
 }
 

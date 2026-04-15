@@ -23,6 +23,7 @@ const ZOOM_COL_WIDTH: Record<ZoomLevel, number> = {
 const SIDEBAR_WIDTH = 210;
 const TEAM_LABEL_WIDTH = 30;
 const ROW_HEIGHT = 48;
+const PERSON_GAP = 10;
 const HEADER_HEIGHT = 80;
 const PHASE_HEIGHT = 36;
 const BAR_V_PAD = 5;
@@ -2327,7 +2328,7 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
             teamColor: team.color,
             personIndex: idx,
           });
-          currentY += totalHeight;
+          currentY += totalHeight + PERSON_GAP;
         });
       }
     }
@@ -2349,7 +2350,7 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
         teamColor: "#94a3b8",
         personIndex: idx,
       });
-      currentY += totalHeight;
+      currentY += totalHeight + PERSON_GAP;
     });
 
     return entries;
@@ -2892,9 +2893,10 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
                     className="sidebar-person"
                     style={{
                       height: entry.totalHeight,
+                      marginBottom: PERSON_GAP,
                       backgroundColor: hexToRgba(
                         entry.person.color,
-                        entry.personIndex % 2 === 0 ? 0.06 : 0.10,
+                        entry.personIndex % 2 === 0 ? 0.10 : 0.16,
                       ),
                     }}
                   >
