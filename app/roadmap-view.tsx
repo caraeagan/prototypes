@@ -22,7 +22,7 @@ const ZOOM_COL_WIDTH: Record<ZoomLevel, number> = {
 
 const SIDEBAR_WIDTH = 210;
 const TEAM_LABEL_WIDTH = 30;
-const ROW_HEIGHT = 40;
+const ROW_HEIGHT = 48;
 const HEADER_HEIGHT = 80;
 const PHASE_HEIGHT = 36;
 const BAR_V_PAD = 5;
@@ -2284,8 +2284,7 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
         members.forEach((person, idx) => {
           const { lanes, laneCount } = packLanes(person.projects);
           const linearCount = (linearBarsPerPerson[person.name] || []).length;
-          const extraLanes = linearCount > 0 ? 1 : 0;
-          const totalHeight = (laneCount + extraLanes) * ROW_HEIGHT;
+          const totalHeight = (laneCount + linearCount) * ROW_HEIGHT;
           entries.push({
             kind: "person",
             person,
@@ -2306,8 +2305,7 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
     teamGroups.ungrouped.forEach((person, idx) => {
       const { lanes, laneCount } = packLanes(person.projects);
       const linearCount = (linearBarsPerPerson[person.name] || []).length;
-      const extraLanes = linearCount > 0 ? 1 : 0;
-      const totalHeight = (laneCount + extraLanes) * ROW_HEIGHT;
+      const totalHeight = (laneCount + linearCount) * ROW_HEIGHT;
       entries.push({
         kind: "person",
         person,
@@ -2967,7 +2965,7 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
                   height: entry.totalHeight,
                   backgroundColor: hexToRgba(
                     entry.person.color,
-                    entry.personIndex % 2 === 0 ? 0.06 : 0.10,
+                    entry.personIndex % 2 === 0 ? 0.10 : 0.16,
                   ),
                 }}
               />
@@ -3167,12 +3165,12 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
               if (!bars || bars.length === 0) return null;
               const linearLaneY = ri.yOffset + ri.laneCount * ROW_HEIGHT;
 
-              return bars.map((bar) => {
+              return bars.map((bar, barIdx) => {
                 const startCol = dateToColPos(bar.startDate, columns);
                 const endCol = dateToColPos(bar.endDate, columns);
                 const x = startCol * colWidth + 2;
                 const w = Math.max((endCol - startCol) * colWidth - 4, 30);
-                const y = linearLaneY + BAR_V_PAD;
+                const y = linearLaneY + barIdx * ROW_HEIGHT + BAR_V_PAD;
                 const isHovered = hoveredProject === `linear-${bar.issueId}`;
 
                 return (
@@ -3184,8 +3182,9 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
                       top: y,
                       width: w,
                       height: BAR_HEIGHT,
-                      backgroundColor: hexToRgba(bar.state.color, 0.1),
-                      borderLeft: `3px solid ${bar.state.color}`,
+                      backgroundColor: "rgba(251, 191, 36, 0.25)",
+                      border: "1.5px solid rgba(251, 191, 36, 0.6)",
+                      borderLeft: "3px solid #f59e0b",
                     }}
                     onClick={() => setSelectedLinearIssueId(bar.issueId)}
                     onMouseEnter={() => setHoveredProject(`linear-${bar.issueId}`)}
