@@ -56,17 +56,25 @@ function generateColumns(zoom: ZoomLevel): { label: string; date: Date }[] {
     const rangeEnd = new Date(now.getFullYear(), now.getMonth() + 2, 1);
     const d = new Date(Math.max(rangeStart.getTime(), TIMELINE_START.getTime()));
     const end = new Date(Math.min(rangeEnd.getTime(), TIMELINE_END.getTime()));
+    // Align to Monday
+    const dow = d.getDay();
+    const monAdj = dow === 0 ? -6 : 1 - dow;
+    d.setDate(d.getDate() + monAdj);
     while (d < end) {
-      const month = shortMonths[d.getMonth()];
-      const day = d.getDate();
+      const startMonth = shortMonths[d.getMonth()];
+      const startDay = d.getDate();
+      const endDate = new Date(d);
+      endDate.setDate(endDate.getDate() + 13);
+      const endMonth = shortMonths[endDate.getMonth()];
+      const endDay = endDate.getDate();
       cols.push({
-        label: `${month} ${day}`,
+        label: `${startMonth} ${startDay} – ${endMonth} ${endDay}`,
         date: new Date(d),
       });
       d.setDate(d.getDate() + 14);
     }
   } else {
-    // Week view: current month only, broken out by week
+    // Week view: current month broken into Mon-Fri work weeks
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
@@ -77,18 +85,22 @@ function generateColumns(zoom: ZoomLevel): { label: string; date: Date }[] {
     const cursor = new Date(monthStart);
     cursor.setDate(cursor.getDate() + mondayOffset);
 
-    // Generate weeks that overlap with the current month
+    // Generate Mon-Fri work weeks
     while (cursor <= monthEnd) {
-      const month = shortMonths[cursor.getMonth()];
-      const day = cursor.getDate();
-      const endOfWeek = new Date(cursor);
-      endOfWeek.setDate(endOfWeek.getDate() + 6);
-      const endMonth = shortMonths[endOfWeek.getMonth()];
-      const endDay = endOfWeek.getDate();
-      cols.push({
-        label: `${month} ${day} – ${endMonth} ${endDay}`,
-        date: new Date(cursor),
-      });
+      const mon = new Date(cursor);
+      const fri = new Date(cursor);
+      fri.setDate(fri.getDate() + 4); // Monday + 4 = Friday
+
+      const monMonth = shortMonths[mon.getMonth()];
+      const friMonth = shortMonths[fri.getMonth()];
+      const monDay = mon.getDate();
+      const friDay = fri.getDate();
+
+      const label = monMonth === friMonth
+        ? `${monMonth} ${monDay} – ${friDay}`
+        : `${monMonth} ${monDay} – ${friMonth} ${friDay}`;
+
+      cols.push({ label, date: new Date(cursor) });
       cursor.setDate(cursor.getDate() + 7);
     }
   }
@@ -3098,7 +3110,8 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
                         top: y,
                         width: w,
                         height: BAR_HEIGHT,
-                        backgroundColor: hexToRgba(ri.person.color, dimmed ? 0.08 : 0.18),
+                        backgroundColor: hexToRgba(ri.person.color, dimmed ? 0.12 : 0.35),
+                        border: `1.5px solid ${dimmed ? hexToRgba(ri.person.color, 0.3) : hexToRgba(ri.person.color, 0.7)}`,
                         borderLeft: `3px solid ${dimmed ? hexToRgba(ri.person.color, 0.3) : ri.person.color}`,
                       }}
                       onClick={() => {

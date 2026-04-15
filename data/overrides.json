@@ -7,9 +7,19 @@
     "Flo:proj-10": {
       "startMonth": 3,
       "duration": 3
+    },
+    "Flo:proj-11": {
+      "startMonth": 0,
+      "duration": 4
     }
   },
   "deletions": [
     "Oleksii:iPad Optimization for Examiners"
+  ],
+  "dependencies": [
+    {
+      "from": "proj-11",
+      "to": "proj-1"
+    }
   ]
 }
