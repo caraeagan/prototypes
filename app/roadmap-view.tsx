@@ -50,17 +50,13 @@ function generateColumns(zoom: ZoomLevel): { label: string; date: Date }[] {
       d.setMonth(d.getMonth() + 1);
     }
   } else if (zoom === "biweekly") {
-    // Current quarter (~3 months centered on today)
-    const now = new Date();
-    const rangeStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    const rangeEnd = new Date(now.getFullYear(), now.getMonth() + 2, 1);
-    const d = new Date(Math.max(rangeStart.getTime(), TIMELINE_START.getTime()));
-    const end = new Date(Math.min(rangeEnd.getTime(), TIMELINE_END.getTime()));
+    // Full timeline in 2-week intervals
+    const d = new Date(TIMELINE_START);
     // Align to Monday
     const dow = d.getDay();
     const monAdj = dow === 0 ? -6 : 1 - dow;
     d.setDate(d.getDate() + monAdj);
-    while (d < end) {
+    while (d < TIMELINE_END) {
       const startMonth = shortMonths[d.getMonth()];
       const startDay = d.getDate();
       const endDate = new Date(d);
@@ -74,22 +70,17 @@ function generateColumns(zoom: ZoomLevel): { label: string; date: Date }[] {
       d.setDate(d.getDate() + 14);
     }
   } else {
-    // Week view: current month broken into Mon-Fri work weeks
-    const now = new Date();
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    // Week view: full timeline in weekly intervals (scrollable, auto-centers on today)
+    const d = new Date(TIMELINE_START);
+    // Align to Monday
+    const dow = d.getDay();
+    const monAdj = dow === 0 ? -6 : 1 - dow;
+    d.setDate(d.getDate() + monAdj);
 
-    // Find the Monday on or before the 1st of the month
-    const startDow = monthStart.getDay();
-    const mondayOffset = startDow === 0 ? -6 : 1 - startDow;
-    const cursor = new Date(monthStart);
-    cursor.setDate(cursor.getDate() + mondayOffset);
-
-    // Generate Mon-Fri work weeks
-    while (cursor <= monthEnd) {
-      const mon = new Date(cursor);
-      const fri = new Date(cursor);
-      fri.setDate(fri.getDate() + 4); // Monday + 4 = Friday
+    while (d < TIMELINE_END) {
+      const mon = new Date(d);
+      const fri = new Date(d);
+      fri.setDate(fri.getDate() + 4);
 
       const monMonth = shortMonths[mon.getMonth()];
       const friMonth = shortMonths[fri.getMonth()];
@@ -100,8 +91,8 @@ function generateColumns(zoom: ZoomLevel): { label: string; date: Date }[] {
         ? `${monMonth} ${monDay} – ${friDay}`
         : `${monMonth} ${monDay} – ${friMonth} ${friDay}`;
 
-      cols.push({ label, date: new Date(cursor) });
-      cursor.setDate(cursor.getDate() + 7);
+      cols.push({ label, date: new Date(d) });
+      d.setDate(d.getDate() + 7);
     }
   }
   return cols;
@@ -1682,9 +1673,11 @@ type RowEntry = PersonRowInfo;
 type DragState = {
   projectId: string;
   personName: string;
+  originalPersonName: string;
   linearIssueId?: string; // set when dragging a Linear-sourced bar
   mode: "move" | "resize";
   startMouseX: number;
+  startMouseY: number;
   originalStartMonth: number;
   originalDuration: number;
   currentStartMonth: number;
@@ -2408,9 +2401,11 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
       const state: DragState = {
         projectId: project.id,
         personName,
+        originalPersonName: personName,
         linearIssueId,
         mode,
         startMouseX: e.clientX,
+        startMouseY: e.clientY,
         originalStartMonth: project.startMonth,
         originalDuration: project.duration,
         currentStartMonth: project.startMonth,
@@ -2996,61 +2991,6 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
                 <div className="today-label">Today</div>
               </div>
             )}
-
-            {/* Dependency arrows (SVG overlay) */}
-            <svg
-              style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                width: totalGridWidth,
-                height: totalGridHeight,
-                pointerEvents: "none",
-                zIndex: 2,
-              }}
-            >
-              <defs>
-                <marker
-                  id="dep-arrow"
-                  viewBox="0 0 10 10"
-                  refX="10"
-                  refY="5"
-                  markerWidth="6"
-                  markerHeight="6"
-                  orient="auto-start-reverse"
-                >
-                  <path d="M 0 0 L 10 5 L 0 10 z" fill="#94a3b8" />
-                </marker>
-              </defs>
-              {dependencies.map((dep) => {
-                const fromPos = projectPositionMap[dep.from];
-                const toPos = projectPositionMap[dep.to];
-                if (!fromPos || !toPos) return null;
-
-                const x1 = fromPos.x + fromPos.w;
-                const y1 = fromPos.y + fromPos.h / 2;
-                const x2 = toPos.x;
-                const y2 = toPos.y + toPos.h / 2;
-
-                // Curved path
-                const midX = (x1 + x2) / 2;
-                const d = `M ${x1} ${y1} C ${midX} ${y1}, ${midX} ${y2}, ${x2} ${y2}`;
-
-                return (
-                  <g key={`dep-${dep.from}-${dep.to}`}>
-                    <path
-                      d={d}
-                      fill="none"
-                      stroke="#94a3b8"
-                      strokeWidth={1.5}
-                      markerEnd="url(#dep-arrow)"
-                      style={{ pointerEvents: "stroke", cursor: "pointer" }}
-                      onClick={() => handleRemoveDependency(dep.from, dep.to)}
-                    />
-                  </g>
-                );
-              })}
-            </svg>
 
             {/* Project bars */}
             {personEntries.map((ri) =>
