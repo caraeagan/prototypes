@@ -1,1 +1,11 @@
-{}
+{
+  "positions": {
+    "Oleksii:proj-3": {
+      "startMonth": 7,
+      "duration": 3
+    }
+  },
+  "deletions": [
+    "Oleksii:iPad Optimization for Examiners"
+  ]
+}

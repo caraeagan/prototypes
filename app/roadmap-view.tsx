@@ -1098,6 +1098,8 @@ function FilterBar({
   onCycleSelect,
   cyclesLoading,
   onPrint,
+  onUndo,
+  canUndo,
 }: {
   search: string;
   onSearch: (v: string) => void;
@@ -1110,6 +1112,8 @@ function FilterBar({
   onCycleSelect: (id: string | null) => void;
   cyclesLoading: boolean;
   onPrint: () => void;
+  onUndo: () => void;
+  canUndo: boolean;
 }) {
   return (
     <div className="filter-bar">
@@ -1134,6 +1138,15 @@ function FilterBar({
           onChange={(e) => onSearch(e.target.value)}
         />
         <ZoomControls zoom={zoom} onZoom={onZoom} />
+        <button
+          className="zoom-btn"
+          onClick={onUndo}
+          disabled={!canUndo}
+          title="Undo (Cmd+Z)"
+          style={{ padding: "6px 12px", fontSize: 14, opacity: canUndo ? 1 : 0.3 }}
+        >
+          Undo
+        </button>
         <button
           className="zoom-btn"
           onClick={onPrint}
@@ -1267,6 +1280,17 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
   const [localPeople, setLocalPeople] = useState<Person[]>(people);
   const [dragState, setDragState] = useState<DragState | null>(null);
 
+  // Undo stack
+  type UndoAction = { type: "move"; projectId: string; personName: string; prevStart: number; prevDuration: number; newStart: number; newDuration: number }
+    | { type: "delete"; personName: string; project: Project }
+    | { type: "rename"; personName: string; projectId: string; prevName: string; newName: string }
+    | { type: "add"; personName: string; projectId: string };
+  const [undoStack, setUndoStack] = useState<UndoAction[]>([]);
+
+  const pushUndo = useCallback((action: UndoAction) => {
+    setUndoStack((prev) => [...prev.slice(-50), action]);
+  }, []);
+
   // Linear state
   const [cycles, setCycles] = useState<LinearCycle[]>([]);
   const [cyclesLoading, setCyclesLoading] = useState(true);
@@ -1325,6 +1349,67 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
   const dismissToast = useCallback((id: number) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
+
+  // ── Undo handler ────────────────────────────────────────────────────
+  const handleUndo = useCallback(() => {
+    setUndoStack((prev) => {
+      if (prev.length === 0) return prev;
+      const action = prev[prev.length - 1];
+      const rest = prev.slice(0, -1);
+
+      switch (action.type) {
+        case "move":
+          setLocalPeople((p) => p.map((person) => ({
+            ...person,
+            projects: person.projects.map((proj) =>
+              proj.id === action.projectId ? { ...proj, startMonth: action.prevStart, duration: action.prevDuration } : proj
+            ),
+          })));
+          saveOverride("updatePosition", {
+            key: `${action.personName}:${action.projectId}`,
+            startMonth: action.prevStart,
+            duration: action.prevDuration,
+          });
+          break;
+        case "delete":
+          setLocalPeople((p) => p.map((person) =>
+            person.name === action.personName ? { ...person, projects: [...person.projects, action.project] } : person
+          ));
+          saveOverride("undoDelete", { key: `${action.personName}:${action.project.name}` });
+          break;
+        case "rename":
+          setLocalPeople((p) => p.map((person) => ({
+            ...person,
+            projects: person.projects.map((proj) =>
+              proj.id === action.projectId ? { ...proj, name: action.prevName } : proj
+            ),
+          })));
+          saveOverride("rename", { key: `${action.personName}:${action.prevName}`, newName: action.prevName });
+          break;
+        case "add":
+          setLocalPeople((p) => p.map((person) => ({
+            ...person,
+            projects: person.projects.filter((proj) => proj.id !== action.projectId),
+          })));
+          saveOverride("delete", { key: `${action.personName}:${action.projectId}` });
+          break;
+      }
+
+      addToast("success", "Undone");
+      return rest;
+    });
+  }, [addToast]);
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "z" && !e.shiftKey) {
+        e.preventDefault();
+        handleUndo();
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [handleUndo]);
 
   // ── Load overrides on mount ───────────────────────────────────────────
   useEffect(() => {
@@ -1798,8 +1883,10 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
 
   const handleBarMouseDown = useCallback(
     (e: React.MouseEvent, project: Project, personName: string, mode: "move" | "resize", linearIssueId?: string) => {
+      if (e.button !== 0) return; // only left click
       e.preventDefault();
       e.stopPropagation();
+      console.log("[DRAG] mousedown on", project.name, mode);
       const state: DragState = {
         projectId: project.id,
         personName,
@@ -1823,6 +1910,7 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
       if (!ds) return;
 
       const dx = e.clientX - ds.startMouseX;
+      if (Math.abs(dx) > 5) console.log("[DRAG] moving", dx);
       const approxMonthWidth = (() => {
         if (zoom === "month") return colWidth;
         if (zoom === "biweekly") return colWidth * (30.44 / 14);
@@ -1871,8 +1959,17 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
       })),
     );
 
-    // If changed, persist to overrides
+    // If changed, persist to overrides and push undo
     if (changed) {
+      pushUndo({
+        type: "move",
+        projectId: ds.projectId,
+        personName: ds.personName,
+        prevStart: ds.originalStartMonth,
+        prevDuration: ds.originalDuration,
+        newStart: ds.currentStartMonth,
+        newDuration: ds.currentDuration,
+      });
       const key = `${ds.personName}:${ds.projectId}`;
       saveOverride("updatePosition", {
         key,
@@ -1994,6 +2091,13 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
   // ── Delete project handler ─────────────────────────────────────────────
   const handleDeleteProject = useCallback(
     (personName: string, projectId: string, projectName: string) => {
+      // Find the project before deleting for undo
+      const person = localPeople.find((p) => p.name === personName);
+      const deletedProject = person?.projects.find((p) => p.id === projectId);
+      if (deletedProject) {
+        pushUndo({ type: "delete", personName, project: deletedProject });
+      }
+
       setLocalPeople((prev) =>
         prev.map((person) => {
           if (person.name !== personName) return person;
@@ -2161,6 +2265,8 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
         onCycleSelect={setSelectedCycleId}
         cyclesLoading={cyclesLoading}
         onPrint={handlePrint}
+        onUndo={handleUndo}
+        canUndo={undoStack.length > 0}
       />
 
       <div className="roadmap-container">
@@ -2508,21 +2614,6 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
                         }}
                       />
 
-                      {/* Linear progress bar (thin green bar at bottom) */}
-                      {linearProgress !== null && (
-                        <div
-                          style={{
-                            position: "absolute",
-                            bottom: 0,
-                            left: 0,
-                            height: 3,
-                            width: `${linearProgress}%`,
-                            backgroundColor: "#22c55e",
-                            borderRadius: "0 0 0 4px",
-                            zIndex: 1,
-                          }}
-                        />
-                      )}
 
                       {/* Label or inline rename input */}
                       {isRenaming ? (
