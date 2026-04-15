@@ -14,6 +14,7 @@ export type Project = {
   startMonth: number; // 0-based index into MONTHS array
   duration: number; // number of months
   tasks: Task[];
+  linearProjectName?: string | null; // Linear project name for API integration
 };
 
 export type Person = {
@@ -118,6 +119,7 @@ export const PEOPLE: Person[] = [
       {
         id: pid(),
         name: "Post Subtest Score Page",
+        linearProjectName: "Subtest Feedback & Assessment Player Edits",
         startMonth: 2,
         duration: 2,
         tasks: makeTasks(
@@ -133,6 +135,7 @@ export const PEOPLE: Person[] = [
       {
         id: pid(),
         name: "Psych Training",
+        linearProjectName: "Examiner Training",
         startMonth: 4,
         duration: 3,
         tasks: makeTasks(
@@ -147,6 +150,7 @@ export const PEOPLE: Person[] = [
       {
         id: pid(),
         name: "iPad Optimization for Examiners",
+        linearProjectName: "iPad Polish",
         startMonth: 7,
         duration: 3,
         tasks: makeTasks(
@@ -162,6 +166,7 @@ export const PEOPLE: Person[] = [
       {
         id: pid(),
         name: "Norming Forms",
+        linearProjectName: "Form Updates",
         startMonth: 2,
         duration: 4,
         tasks: makeTasks(
@@ -177,6 +182,7 @@ export const PEOPLE: Person[] = [
       {
         id: pid(),
         name: "File Loading",
+        linearProjectName: null,
         startMonth: 0,
         duration: 4,
         tasks: makeTasks(
@@ -192,6 +198,7 @@ export const PEOPLE: Person[] = [
       {
         id: pid(),
         name: "CAP",
+        linearProjectName: null,
         startMonth: 4,
         duration: 3,
         tasks: makeTasks(
@@ -206,6 +213,7 @@ export const PEOPLE: Person[] = [
       {
         id: pid(),
         name: "Examiner Onboarding",
+        linearProjectName: "Examiner Instructions & Onboarding",
         startMonth: 0,
         duration: 2,
         tasks: makeTasks(
@@ -228,6 +236,7 @@ export const PEOPLE: Person[] = [
       {
         id: pid(),
         name: "New Subtests",
+        linearProjectName: "PP3 Development",
         startMonth: 1,
         duration: 4,
         tasks: makeTasks(
@@ -244,6 +253,7 @@ export const PEOPLE: Person[] = [
       {
         id: pid(),
         name: "In between subtest student experience",
+        linearProjectName: "Subtest Feedback & Assessment Player Edits",
         startMonth: 2,
         duration: 4,
         tasks: makeTasks(
@@ -259,6 +269,7 @@ export const PEOPLE: Person[] = [
       {
         id: pid(),
         name: "shadCN Migration",
+        linearProjectName: "Migration",
         startMonth: 2,
         duration: 3,
         tasks: makeTasks(
@@ -274,6 +285,7 @@ export const PEOPLE: Person[] = [
       {
         id: pid(),
         name: "Instructions as they come in",
+        linearProjectName: "PP3 Animated Instructions",
         startMonth: 0,
         duration: 4,
         tasks: makeTasks(
@@ -288,6 +300,7 @@ export const PEOPLE: Person[] = [
       {
         id: pid(),
         name: "Sizing",
+        linearProjectName: null,
         startMonth: 0,
         duration: 3,
         tasks: makeTasks(
@@ -302,6 +315,7 @@ export const PEOPLE: Person[] = [
       {
         id: pid(),
         name: "Student Offboarding",
+        linearProjectName: null,
         startMonth: 4,
         duration: 4,
         tasks: makeTasks(
@@ -324,6 +338,7 @@ export const PEOPLE: Person[] = [
       {
         id: pid(),
         name: "Internal App Bugs & Improvements",
+        linearProjectName: "Internal App",
         startMonth: 0,
         duration: 4,
         tasks: makeTasks(
@@ -347,6 +362,7 @@ export const PEOPLE: Person[] = [
       {
         id: pid(),
         name: "Migration and Foundations",
+        linearProjectName: "Migration",
         startMonth: 0,
         duration: 4,
         tasks: makeTasks(
@@ -362,6 +378,7 @@ export const PEOPLE: Person[] = [
       {
         id: pid(),
         name: "Score Review",
+        linearProjectName: "Score Review",
         startMonth: 0,
         duration: 4,
         tasks: makeTasks(
@@ -384,6 +401,7 @@ export const PEOPLE: Person[] = [
       {
         id: pid(),
         name: "Examiner Instructions 2.0",
+        linearProjectName: "Examiner Instructions & Onboarding",
         startMonth: 0,
         duration: 4,
         tasks: makeTasks(
@@ -399,6 +417,7 @@ export const PEOPLE: Person[] = [
       {
         id: pid(),
         name: "Corrective Feedback",
+        linearProjectName: "Subtest Feedback & Assessment Player Edits",
         startMonth: 0,
         duration: 3,
         tasks: makeTasks(
@@ -413,6 +432,7 @@ export const PEOPLE: Person[] = [
       {
         id: pid(),
         name: "Internal App - In Person",
+        linearProjectName: "Internal App",
         startMonth: 0,
         duration: 4,
         tasks: makeTasks(
@@ -427,6 +447,7 @@ export const PEOPLE: Person[] = [
       {
         id: pid(),
         name: "Examiner Redesign - Middle Bar and Side Bar",
+        linearProjectName: "Examiner Revamp",
         startMonth: 2,
         duration: 4,
         tasks: makeTasks(
@@ -449,6 +470,7 @@ export const PEOPLE: Person[] = [
       {
         id: pid(),
         name: "Migration and Foundations",
+        linearProjectName: "Migration",
         startMonth: 0,
         duration: 4,
         tasks: makeTasks(
@@ -464,6 +486,7 @@ export const PEOPLE: Person[] = [
       {
         id: pid(),
         name: "Internal App Improvements",
+        linearProjectName: "Internal App",
         startMonth: 1,
         duration: 4,
         tasks: makeTasks(
@@ -488,6 +511,7 @@ export const PEOPLE: Person[] = [
       {
         id: pid(),
         name: "PP1 Instructions",
+        linearProjectName: "PP3 Animated Instructions",
         startMonth: 0,
         duration: 3,
         tasks: makeTasks(
@@ -502,6 +526,7 @@ export const PEOPLE: Person[] = [
       {
         id: pid(),
         name: "PP2 Instructions",
+        linearProjectName: "PP3 Animated Instructions",
         startMonth: 2,
         duration: 3,
         tasks: makeTasks(
@@ -523,6 +548,7 @@ export const PEOPLE: Person[] = [
       {
         id: pid(),
         name: "PP3 Bilingual Instructions",
+        linearProjectName: "PP3 Animated Instructions",
         startMonth: 0,
         duration: 3,
         tasks: makeTasks(
@@ -537,6 +563,7 @@ export const PEOPLE: Person[] = [
       {
         id: pid(),
         name: "PP1 Bilingual Instructions",
+        linearProjectName: "PP3 Animated Instructions",
         startMonth: 2,
         duration: 3,
         tasks: makeTasks(
@@ -551,6 +578,7 @@ export const PEOPLE: Person[] = [
       {
         id: pid(),
         name: "PP2 Bilingual Instructions",
+        linearProjectName: "PP3 Animated Instructions",
         startMonth: 3,
         duration: 3,
         tasks: makeTasks(
@@ -574,6 +602,7 @@ export const PEOPLE: Person[] = [
       {
         id: pid(),
         name: "Norm Plan",
+        linearProjectName: null,
         startMonth: 0,
         duration: 4,
         tasks: makeTasks(
@@ -589,6 +618,7 @@ export const PEOPLE: Person[] = [
       {
         id: pid(),
         name: "PP3 data analysis",
+        linearProjectName: "Data",
         startMonth: 0,
         duration: 4,
         tasks: makeTasks(
@@ -611,6 +641,7 @@ export const PEOPLE: Person[] = [
       {
         id: pid(),
         name: "CAP (Referral Packet Analysis)",
+        linearProjectName: null,
         startMonth: 3,
         duration: 4,
         tasks: makeTasks(
@@ -635,6 +666,7 @@ export const PEOPLE: Person[] = [
       {
         id: pid(),
         name: "Examiner revamp",
+        linearProjectName: "Examiner Revamp",
         startMonth: 0,
         duration: 2,
         tasks: makeTasks(
@@ -650,6 +682,7 @@ export const PEOPLE: Person[] = [
       {
         id: pid(),
         name: "Async training website",
+        linearProjectName: "Examiner Training",
         startMonth: 0,
         duration: 4,
         tasks: makeTasks(
@@ -665,6 +698,7 @@ export const PEOPLE: Person[] = [
       {
         id: pid(),
         name: "Hiring examiners",
+        linearProjectName: null,
         startMonth: 0,
         duration: 4,
         tasks: makeTasks(
@@ -680,6 +714,7 @@ export const PEOPLE: Person[] = [
       {
         id: pid(),
         name: "Reporting",
+        linearProjectName: "Report generation",
         startMonth: 2,
         duration: 4,
         tasks: makeTasks(
@@ -695,6 +730,7 @@ export const PEOPLE: Person[] = [
       {
         id: pid(),
         name: "Financial model",
+        linearProjectName: null,
         startMonth: 3,
         duration: 3,
         tasks: makeTasks(
@@ -709,6 +745,7 @@ export const PEOPLE: Person[] = [
       {
         id: pid(),
         name: "Examiner booklets",
+        linearProjectName: null,
         startMonth: 4,
         duration: 4,
         tasks: makeTasks(
@@ -731,6 +768,7 @@ export const PEOPLE: Person[] = [
       {
         id: pid(),
         name: "Recruitment & Hard to reach dem challenge",
+        linearProjectName: null,
         startMonth: 0,
         duration: 5,
         tasks: makeTasks(
@@ -746,6 +784,7 @@ export const PEOPLE: Person[] = [
       {
         id: pid(),
         name: "Human Rater",
+        linearProjectName: null,
         startMonth: 2,
         duration: 4,
         tasks: makeTasks(
@@ -761,6 +800,7 @@ export const PEOPLE: Person[] = [
       {
         id: pid(),
         name: "In person sessions",
+        linearProjectName: null,
         startMonth: 0,
         duration: 4,
         tasks: makeTasks(
@@ -776,6 +816,7 @@ export const PEOPLE: Person[] = [
       {
         id: pid(),
         name: "Examiner training program",
+        linearProjectName: "Examiner Training",
         startMonth: 1,
         duration: 4,
         tasks: makeTasks(
@@ -791,6 +832,7 @@ export const PEOPLE: Person[] = [
       {
         id: pid(),
         name: "Hiring examiners",
+        linearProjectName: null,
         startMonth: 0,
         duration: 3,
         tasks: makeTasks(
@@ -805,6 +847,7 @@ export const PEOPLE: Person[] = [
       {
         id: pid(),
         name: "Participant & examiner support",
+        linearProjectName: null,
         startMonth: 2,
         duration: 4,
         tasks: makeTasks(
@@ -827,6 +870,7 @@ export const PEOPLE: Person[] = [
       {
         id: pid(),
         name: "User research",
+        linearProjectName: null,
         startMonth: 0,
         duration: 4,
         tasks: makeTasks(
@@ -843,6 +887,7 @@ export const PEOPLE: Person[] = [
       {
         id: pid(),
         name: "Hiring examiners",
+        linearProjectName: null,
         startMonth: 1,
         duration: 3,
         tasks: makeTasks(
@@ -864,6 +909,7 @@ export const PEOPLE: Person[] = [
       {
         id: pid(),
         name: "Content updates & Data analysis with Erica",
+        linearProjectName: "Content Edits",
         startMonth: 0,
         duration: 4,
         tasks: makeTasks(
@@ -879,6 +925,7 @@ export const PEOPLE: Person[] = [
       {
         id: pid(),
         name: "Examiner training",
+        linearProjectName: "Examiner Training",
         startMonth: 1,
         duration: 3,
         tasks: makeTasks(
@@ -893,6 +940,7 @@ export const PEOPLE: Person[] = [
       {
         id: pid(),
         name: "Participant & examiner support",
+        linearProjectName: null,
         startMonth: 3,
         duration: 4,
         tasks: makeTasks(
@@ -916,6 +964,7 @@ export const PEOPLE: Person[] = [
       {
         id: pid(),
         name: "Corrective Sample Questions",
+        linearProjectName: "Subtest Feedback & Assessment Player Edits",
         startMonth: 0,
         duration: 3,
         tasks: makeTasks(
@@ -931,6 +980,7 @@ export const PEOPLE: Person[] = [
       {
         id: pid(),
         name: "Fake Student - Psych Training",
+        linearProjectName: "Examiner Training",
         startMonth: 4,
         duration: 4,
         tasks: makeTasks(
@@ -945,6 +995,7 @@ export const PEOPLE: Person[] = [
       {
         id: pid(),
         name: "End to End Experience",
+        linearProjectName: null,
         startMonth: 0,
         duration: 4,
         tasks: makeTasks(
@@ -960,6 +1011,7 @@ export const PEOPLE: Person[] = [
       {
         id: pid(),
         name: "Score report",
+        linearProjectName: "Report generation",
         startMonth: 4,
         duration: 4,
         tasks: makeTasks(
@@ -974,6 +1026,7 @@ export const PEOPLE: Person[] = [
       {
         id: pid(),
         name: "Math content rendered in LaTeX",
+        linearProjectName: "Content Edits",
         startMonth: 2,
         duration: 3,
         tasks: makeTasks(
@@ -988,6 +1041,7 @@ export const PEOPLE: Person[] = [
       {
         id: pid(),
         name: "Score Review",
+        linearProjectName: "Score Review",
         startMonth: 0,
         duration: 3,
         tasks: makeTasks(
@@ -1002,6 +1056,7 @@ export const PEOPLE: Person[] = [
       {
         id: pid(),
         name: "Roadmap",
+        linearProjectName: null,
         startMonth: 0,
         duration: 3,
         tasks: makeTasks(
@@ -1016,6 +1071,7 @@ export const PEOPLE: Person[] = [
       {
         id: pid(),
         name: "Tech Specifications",
+        linearProjectName: null,
         startMonth: 2,
         duration: 3,
         tasks: makeTasks(
@@ -1039,6 +1095,7 @@ export const PEOPLE: Person[] = [
       {
         id: pid(),
         name: "Subtest Adaptive Algorithm",
+        linearProjectName: "Subtest Feedback & Assessment Player Edits",
         startMonth: 2,
         duration: 3,
         tasks: makeTasks(
@@ -1054,6 +1111,7 @@ export const PEOPLE: Person[] = [
       {
         id: pid(),
         name: "Internal tool",
+        linearProjectName: "Internal App",
         startMonth: 0,
         duration: 4,
         tasks: makeTasks(
@@ -1069,6 +1127,7 @@ export const PEOPLE: Person[] = [
       {
         id: pid(),
         name: "Data analysis",
+        linearProjectName: "Data",
         startMonth: 0,
         duration: 1,
         tasks: makeTasks(
@@ -1083,6 +1142,7 @@ export const PEOPLE: Person[] = [
       {
         id: pid(),
         name: "Norming Stats",
+        linearProjectName: null,
         startMonth: 4,
         duration: 2,
         tasks: makeTasks(
@@ -1097,6 +1157,7 @@ export const PEOPLE: Person[] = [
       {
         id: pid(),
         name: "Human Rater",
+        linearProjectName: null,
         startMonth: 2,
         duration: 4,
         tasks: makeTasks(
@@ -1111,6 +1172,7 @@ export const PEOPLE: Person[] = [
       {
         id: pid(),
         name: "AI scoring",
+        linearProjectName: "AI Scoring",
         startMonth: 2,
         duration: 4,
         tasks: makeTasks(
@@ -1126,6 +1188,7 @@ export const PEOPLE: Person[] = [
       {
         id: pid(),
         name: "Data Storage & Pipelines",
+        linearProjectName: "Data",
         startMonth: 0,
         duration: 2,
         tasks: makeTasks(

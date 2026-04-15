@@ -143,6 +143,46 @@ export const UPDATE_ISSUE_DATES = `
   }
 `;
 
+export const FETCH_PROJECT_ISSUES_BY_NAME = `
+  query ProjectIssuesByName($projectName: String!) {
+    projects(filter: { name: { eq: $projectName } }) {
+      nodes {
+        id
+        name
+        issues(first: 100) {
+          nodes {
+            id
+            title
+            priority
+            priorityLabel
+            state { name color }
+            assignee { displayName avatarUrl }
+            startedAt
+            dueDate
+          }
+        }
+      }
+    }
+  }
+`;
+
+export const FETCH_ALL_PROJECTS_PROGRESS = `
+  query AllProjectsProgress {
+    projects(first: 50) {
+      nodes {
+        id
+        name
+        issues {
+          nodes {
+            id
+            state { name type }
+          }
+        }
+      }
+    }
+  }
+`;
+
 // ── Known project IDs ─────────────────────────────────────────────────────
 
 export const SUBTEST_FEEDBACK_PROJECT_ID =
@@ -245,5 +285,41 @@ export type IssueUpdateResponse = {
       startedAt: string | null;
       dueDate: string | null;
     };
+  };
+};
+
+export type ProjectIssuesByNameResponse = {
+  projects: {
+    nodes: {
+      id: string;
+      name: string;
+      issues: {
+        nodes: {
+          id: string;
+          title: string;
+          priority: number;
+          priorityLabel: string;
+          state: { name: string; color: string };
+          assignee: { displayName: string; avatarUrl: string | null } | null;
+          startedAt: string | null;
+          dueDate: string | null;
+        }[];
+      };
+    }[];
+  };
+};
+
+export type AllProjectsProgressResponse = {
+  projects: {
+    nodes: {
+      id: string;
+      name: string;
+      issues: {
+        nodes: {
+          id: string;
+          state: { name: string; type: string };
+        }[];
+      };
+    }[];
   };
 };

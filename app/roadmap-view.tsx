@@ -6,6 +6,7 @@ import type {
   LinearIssue,
   LinearCycle,
 } from "~/lib/linear";
+import type { RoadmapOverrides } from "./api/roadmap/route";
 
 // ── Zoom types ────────────────────────────────────────────────────────────
 
@@ -230,6 +231,25 @@ async function linearUpdateDates(
   return json;
 }
 
+// ── Roadmap overrides API ────────────────────────────────────────────────
+
+async function fetchOverrides(): Promise<RoadmapOverrides> {
+  const res = await fetch("/api/roadmap");
+  if (!res.ok) return {};
+  return res.json();
+}
+
+async function saveOverride(
+  action: string,
+  payload: Record<string, unknown>,
+): Promise<void> {
+  await fetch("/api/roadmap", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action, ...payload }),
+  });
+}
+
 // ── Priority helpers ──────────────────────────────────────────────────────
 
 function priorityIcon(priority: number): string {
@@ -257,7 +277,7 @@ function priorityColor(priority: number): string {
 
 function cleanTitle(title: string): string {
   // Take first meaningful part before common delimiters
-  const cleaned = title.split(/[-–—:|]/)[0].trim();
+  const cleaned = title.split(/[-\u2013\u2014:|]/)[0].trim();
   return cleaned.length > 40 ? cleaned.substring(0, 37) + "..." : cleaned;
 }
 
@@ -302,6 +322,16 @@ function Toast({ messages, onDismiss }: { messages: ToastMessage[]; onDismiss: (
     </div>
   );
 }
+
+// ── Progress data types ──────────────────────────────────────────────────
+
+type ProjectProgress = {
+  total: number;
+  done: number;
+  inProgress: number;
+  todo: number;
+  cancelled: number;
+};
 
 // ── Linear Issue Detail Panel ─────────────────────────────────────────────
 
@@ -537,6 +567,224 @@ function LinearDetailPanel({
   );
 }
 
+// ── Linear Project Detail Panel ──────────────────────────────────────────
+// Shown when clicking a project bar that has a linearProjectName
+
+type LinearProjectIssue = {
+  id: string;
+  title: string;
+  priority: number;
+  priorityLabel: string;
+  state: { name: string; color: string };
+  assignee: { displayName: string; avatarUrl: string | null } | null;
+  startedAt: string | null;
+  dueDate: string | null;
+};
+
+function LinearProjectDetailPanel({
+  project,
+  personName,
+  personColor,
+  linearProjectName,
+  progress,
+  onClose,
+  onIssueClick,
+}: {
+  project: Project;
+  personName: string;
+  personColor: string;
+  linearProjectName: string;
+  progress: ProjectProgress | null;
+  onClose: () => void;
+  onIssueClick: (issueId: string) => void;
+}) {
+  const [issues, setIssues] = useState<LinearProjectIssue[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [onClose]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+
+    linearQuery<{
+      projects: {
+        nodes: {
+          issues: {
+            nodes: LinearProjectIssue[];
+          };
+        }[];
+      };
+    }>(
+      `query ProjectIssuesByName($projectName: String!) {
+        projects(filter: { name: { eq: $projectName } }) {
+          nodes {
+            issues(first: 100) {
+              nodes {
+                id title priority priorityLabel
+                state { name color }
+                assignee { displayName avatarUrl }
+                startedAt dueDate
+              }
+            }
+          }
+        }
+      }`,
+      { projectName: linearProjectName },
+    )
+      .then((data) => {
+        if (cancelled) return;
+        const allIssues = data.projects.nodes.flatMap((p) => p.issues.nodes);
+        setIssues(allIssues);
+      })
+      .catch((err) => {
+        if (!cancelled) setError(err.message);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [linearProjectName]);
+
+  const doneIssues = issues.filter((i) => {
+    const s = i.state.name.toLowerCase();
+    return s === "done" || s === "closed" || s === "completed" || s === "cancelled" || s === "canceled";
+  });
+  const inProgressIssues = issues.filter((i) => {
+    const s = i.state.name.toLowerCase();
+    return s === "in progress" || s === "in review" || s === "started";
+  });
+  const todoIssues = issues.filter(
+    (i) => !doneIssues.includes(i) && !inProgressIssues.includes(i),
+  );
+
+  const progressPct = progress
+    ? progress.total > 0
+      ? Math.round((progress.done / progress.total) * 100)
+      : 0
+    : issues.length > 0
+      ? Math.round((doneIssues.length / issues.length) * 100)
+      : 0;
+
+  return (
+    <div className="detail-overlay" onClick={onClose}>
+      <div className="detail-panel" onClick={(e) => e.stopPropagation()}>
+        <div className="detail-header" style={{ borderColor: personColor }}>
+          <div className="detail-header-top">
+            <div
+              className="detail-color-dot"
+              style={{ backgroundColor: personColor }}
+            />
+            <span className="detail-person">{personName}</span>
+            <button className="detail-close" onClick={onClose}>
+              &times;
+            </button>
+          </div>
+          <h2 className="detail-title">{project.name}</h2>
+          <div style={{ fontSize: 12, color: "#8b8b9e", marginBottom: 8 }}>
+            Linear: {linearProjectName}
+          </div>
+          <div className="detail-meta">
+            <span className="detail-duration">
+              {project.duration} month{project.duration > 1 ? "s" : ""}
+            </span>
+            <span className="detail-progress-text">
+              {progress
+                ? `${progress.done}/${progress.total} done`
+                : `${doneIssues.length}/${issues.length} done`}{" "}
+              ({progressPct}%)
+            </span>
+          </div>
+          <div className="detail-progress-bar-bg">
+            <div
+              className="detail-progress-bar-fill"
+              style={{
+                width: `${progressPct}%`,
+                backgroundColor: "#22c55e",
+              }}
+            />
+          </div>
+        </div>
+
+        <div className="detail-stats">
+          <div className="detail-stat">
+            <span className="detail-stat-dot" style={{ backgroundColor: "#22c55e" }} />
+            <span className="detail-stat-label">Done</span>
+            <span className="detail-stat-count">{progress?.done ?? doneIssues.length}</span>
+          </div>
+          <div className="detail-stat">
+            <span className="detail-stat-dot" style={{ backgroundColor: "#3b82f6" }} />
+            <span className="detail-stat-label">In Progress</span>
+            <span className="detail-stat-count">{progress?.inProgress ?? inProgressIssues.length}</span>
+          </div>
+          <div className="detail-stat">
+            <span className="detail-stat-dot" style={{ backgroundColor: "#94a3b8" }} />
+            <span className="detail-stat-label">To Do</span>
+            <span className="detail-stat-count">{progress?.todo ?? todoIssues.length}</span>
+          </div>
+        </div>
+
+        {loading && (
+          <div className="linear-detail-loading">
+            <div className="loading-spinner" />
+            <span>Loading issues from Linear...</span>
+          </div>
+        )}
+
+        {error && (
+          <div className="linear-detail-error">
+            <span>Failed to load: {error}</span>
+          </div>
+        )}
+
+        {!loading && !error && (
+          <div className="detail-tasks">
+            <h3 className="detail-tasks-title">
+              Issues ({issues.length})
+            </h3>
+            <ul className="detail-task-list">
+              {issues.map((issue) => (
+                <li
+                  key={issue.id}
+                  className="detail-task-item"
+                  style={{ cursor: "pointer" }}
+                  onClick={() => onIssueClick(issue.id)}
+                >
+                  <span
+                    className="detail-task-dot"
+                    style={{ backgroundColor: issue.state.color }}
+                  />
+                  <span className="detail-task-name">{issue.title}</span>
+                  <span
+                    className="detail-task-badge"
+                    style={{
+                      backgroundColor: hexToRgba(issue.state.color, 0.12),
+                      color: issue.state.color,
+                    }}
+                  >
+                    {issue.state.name}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── Detail panel (static roadmap projects) ────────────────────────────────
 
 function DetailPanel({
@@ -720,6 +968,122 @@ function CycleSelect({
   );
 }
 
+// ── Add project form ──────────────────────────────────────────────────────
+
+function AddProjectForm({
+  onAdd,
+  onCancel,
+}: {
+  onAdd: (name: string, startMonth: number, duration: number) => void;
+  onCancel: () => void;
+}) {
+  const [name, setName] = useState("");
+  const [startMonth, setStartMonth] = useState(0);
+  const [duration, setDuration] = useState(2);
+
+  return (
+    <div className="add-project-form" onClick={(e) => e.stopPropagation()}>
+      <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8 }}>Add Project</div>
+      <input
+        type="text"
+        placeholder="Project name"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        style={{
+          width: "100%",
+          padding: "6px 10px",
+          border: "1px solid #e0e0ea",
+          borderRadius: 6,
+          fontSize: 13,
+          fontFamily: "var(--font-sans)",
+          marginBottom: 8,
+        }}
+        autoFocus
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && name.trim()) {
+            onAdd(name.trim(), startMonth, duration);
+          }
+          if (e.key === "Escape") onCancel();
+        }}
+      />
+      <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+        <label style={{ fontSize: 12, flex: 1 }}>
+          Start month
+          <input
+            type="number"
+            min={0}
+            max={22}
+            value={startMonth}
+            onChange={(e) => setStartMonth(Number(e.target.value))}
+            style={{
+              width: "100%",
+              padding: "4px 8px",
+              border: "1px solid #e0e0ea",
+              borderRadius: 6,
+              fontSize: 13,
+              fontFamily: "var(--font-sans)",
+              marginTop: 2,
+            }}
+          />
+        </label>
+        <label style={{ fontSize: 12, flex: 1 }}>
+          Duration
+          <input
+            type="number"
+            min={1}
+            max={23}
+            value={duration}
+            onChange={(e) => setDuration(Number(e.target.value))}
+            style={{
+              width: "100%",
+              padding: "4px 8px",
+              border: "1px solid #e0e0ea",
+              borderRadius: 6,
+              fontSize: 13,
+              fontFamily: "var(--font-sans)",
+              marginTop: 2,
+            }}
+          />
+        </label>
+      </div>
+      <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
+        <button
+          onClick={onCancel}
+          style={{
+            padding: "4px 12px",
+            border: "1px solid #e0e0ea",
+            borderRadius: 6,
+            background: "#fff",
+            fontSize: 12,
+            cursor: "pointer",
+            fontFamily: "var(--font-sans)",
+          }}
+        >
+          Cancel
+        </button>
+        <button
+          onClick={() => {
+            if (name.trim()) onAdd(name.trim(), startMonth, duration);
+          }}
+          style={{
+            padding: "4px 12px",
+            border: "none",
+            borderRadius: 6,
+            background: "#6366f1",
+            color: "#fff",
+            fontSize: 12,
+            cursor: "pointer",
+            fontWeight: 600,
+            fontFamily: "var(--font-sans)",
+          }}
+        >
+          Add
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ── Filter bar ─────────────────────────────────────────────────────────────
 
 function FilterBar({
@@ -733,6 +1097,7 @@ function FilterBar({
   selectedCycleId,
   onCycleSelect,
   cyclesLoading,
+  onPrint,
 }: {
   search: string;
   onSearch: (v: string) => void;
@@ -744,6 +1109,7 @@ function FilterBar({
   selectedCycleId: string | null;
   onCycleSelect: (id: string | null) => void;
   cyclesLoading: boolean;
+  onPrint: () => void;
 }) {
   return (
     <div className="filter-bar">
@@ -768,6 +1134,14 @@ function FilterBar({
           onChange={(e) => onSearch(e.target.value)}
         />
         <ZoomControls zoom={zoom} onZoom={onZoom} />
+        <button
+          className="zoom-btn"
+          onClick={onPrint}
+          title="Print / Export"
+          style={{ padding: "6px 12px", fontSize: 14 }}
+        >
+          Print
+        </button>
       </div>
     </div>
   );
@@ -798,6 +1172,7 @@ type RowEntry = PersonRowInfo | TeamHeaderInfo;
 
 type DragState = {
   projectId: string;
+  personName: string;
   linearIssueId?: string; // set when dragging a Linear-sourced bar
   mode: "move" | "resize";
   startMouseX: number;
@@ -820,6 +1195,18 @@ type LinearBar = {
   priority: number;
   priorityLabel: string;
   labels: { name: string; color: string }[];
+};
+
+// ── Dependency state ─────────────────────────────────────────────────────
+
+type DependencyLink = {
+  from: string; // projectId
+  to: string; // projectId
+};
+
+type LinkingState = {
+  fromProjectId: string;
+  side: "left" | "right";
 };
 
 // ── Assignee name normalization ───────────────────────────────────────────
@@ -850,6 +1237,14 @@ function normalizeAssigneeName(displayName: string): string | null {
   return map[lower] ?? null;
 }
 
+// ── Unique project ID for new projects ─────────────────────────────────
+
+let _addedProjectCounter = 1000;
+function newProjId(): string {
+  _addedProjectCounter += 1;
+  return `proj-added-${_addedProjectCounter}`;
+}
+
 // ── Main component ─────────────────────────────────────────────────────────
 
 export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps) {
@@ -860,6 +1255,12 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
     personColor: string;
   } | null>(null);
   const [selectedLinearIssueId, setSelectedLinearIssueId] = useState<string | null>(null);
+  const [selectedLinearProject, setSelectedLinearProject] = useState<{
+    project: Project;
+    personName: string;
+    personColor: string;
+    linearProjectName: string;
+  } | null>(null);
   const [hoveredProject, setHoveredProject] = useState<string | null>(null);
   const [zoom, setZoom] = useState<ZoomLevel>("month");
   const [collapsedTeams, setCollapsedTeams] = useState<Set<string>>(new Set());
@@ -875,8 +1276,26 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
   const [linearBars, setLinearBars] = useState<LinearBar[]>([]);
   const [linearBarsLoading, setLinearBarsLoading] = useState(true);
 
+  // Progress tracking state
+  const [projectProgress, setProjectProgress] = useState<Record<string, ProjectProgress>>({});
+
   // Toast state
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
+
+  // Add project form state
+  const [addingForPerson, setAddingForPerson] = useState<string | null>(null);
+
+  // Inline rename state
+  const [renamingProjectId, setRenamingProjectId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState("");
+
+  // Dependencies
+  const [dependencies, setDependencies] = useState<DependencyLink[]>([]);
+  const [linkingState, setLinkingState] = useState<LinkingState | null>(null);
+
+  // Mobile state
+  const [mobilePersonFilter, setMobilePersonFilter] = useState<string | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const sidebarRef = useRef<HTMLDivElement>(null);
@@ -885,6 +1304,14 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
 
   const colWidth = ZOOM_COL_WIDTH[zoom];
   const columns = useMemo(() => generateColumns(zoom), [zoom]);
+
+  // ── Check for mobile ───────────────────────────────────────────────────
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
 
   // ── Toast helpers ─────────────────────────────────────────────────────
   const addToast = useCallback((type: ToastType, text: string) => {
@@ -897,6 +1324,62 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
 
   const dismissToast = useCallback((id: number) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
+  }, []);
+
+  // ── Load overrides on mount ───────────────────────────────────────────
+  useEffect(() => {
+    fetchOverrides().then((ov) => {
+      if (!ov) return;
+      setLocalPeople((prev) => {
+        let updated = prev.map((person) => ({
+          ...person,
+          projects: person.projects
+            .filter((proj) => {
+              const key = `${person.name}:${proj.name}`;
+              return !ov.deletions?.includes(key);
+            })
+            .map((proj) => {
+              const key = `${person.name}:${proj.name}`;
+              const posOv = ov.positions?.[key];
+              const renameOv = ov.renames?.[key];
+              return {
+                ...proj,
+                name: renameOv || proj.name,
+                startMonth: posOv?.startMonth ?? proj.startMonth,
+                duration: posOv?.duration ?? proj.duration,
+              };
+            }),
+        }));
+
+        // Add custom projects
+        if (ov.additions) {
+          for (const [personName, additions] of Object.entries(ov.additions)) {
+            updated = updated.map((person) => {
+              if (person.name !== personName) return person;
+              const newProjects = additions.map((a) => ({
+                id: newProjId(),
+                name: a.name,
+                startMonth: a.startMonth,
+                duration: a.duration,
+                tasks: [],
+                linearProjectName: null,
+              }));
+              return {
+                ...person,
+                projects: [...person.projects, ...newProjects],
+              };
+            });
+          }
+        }
+
+        return updated;
+      });
+
+      // Load dependencies
+      if (ov.dependencies) {
+        setDependencies(ov.dependencies);
+      }
+    });
   }, []);
 
   // ── Fetch cycles on mount ──────────────────────────────────────────────
@@ -978,6 +1461,64 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
         console.error("Failed to fetch subtest project issues:", err);
       })
       .finally(() => setLinearBarsLoading(false));
+  }, []);
+
+  // ── Fetch all projects progress on mount ──────────────────────────────
+  useEffect(() => {
+    linearQuery<{
+      projects: {
+        nodes: {
+          id: string;
+          name: string;
+          issues: {
+            nodes: {
+              id: string;
+              state: { name: string; type: string };
+            }[];
+          };
+        }[];
+      };
+    }>(
+      `query AllProjectsProgress {
+        projects(first: 50) {
+          nodes {
+            id name
+            issues {
+              nodes {
+                id
+                state { name type }
+              }
+            }
+          }
+        }
+      }`,
+    )
+      .then((data) => {
+        const progressMap: Record<string, ProjectProgress> = {};
+        for (const project of data.projects.nodes) {
+          const total = project.issues.nodes.length;
+          let done = 0;
+          let inProgress = 0;
+          let cancelled = 0;
+          for (const issue of project.issues.nodes) {
+            const stateType = issue.state.type?.toLowerCase?.() || "";
+            const stateName = issue.state.name.toLowerCase();
+            if (stateType === "completed" || stateName === "done" || stateName === "closed" || stateName === "completed") {
+              done++;
+            } else if (stateType === "cancelled" || stateName === "cancelled" || stateName === "canceled") {
+              cancelled++;
+            } else if (stateType === "started" || stateName === "in progress" || stateName === "in review" || stateName === "started") {
+              inProgress++;
+            }
+          }
+          const todo = total - done - inProgress - cancelled;
+          progressMap[project.name] = { total, done, inProgress, todo, cancelled };
+        }
+        setProjectProgress(progressMap);
+      })
+      .catch((err) => {
+        console.error("Failed to fetch project progress:", err);
+      });
   }, []);
 
   // ── Fetch cycle issues when cycle is selected ──────────────────────────
@@ -1081,11 +1622,18 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
     });
   }, []);
 
-  // Filter people by search
+  // Filter people by search (and mobile filter)
   const filteredPeople = useMemo(() => {
-    if (!search.trim()) return localPeople;
+    let result = localPeople;
+
+    // Mobile person filter
+    if (isMobile && mobilePersonFilter) {
+      result = result.filter((p) => p.name === mobilePersonFilter);
+    }
+
+    if (!search.trim()) return result;
     const lowerSearch = search.toLowerCase();
-    return localPeople
+    return result
       .map((p) => {
         const nameMatch = p.name.toLowerCase().includes(lowerSearch);
         const matchingProjects = p.projects.filter((proj) =>
@@ -1097,7 +1645,7 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
         return null;
       })
       .filter(Boolean) as Person[];
-  }, [localPeople, search]);
+  }, [localPeople, search, isMobile, mobilePersonFilter]);
 
   // Group people by team
   const teamGroups = useMemo(() => {
@@ -1229,14 +1777,32 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
     });
   }, [phases, zoom, columns, colWidth]);
 
+  // ── Build a map of project id to position for dependency arrows ────────
+  const projectPositionMap = useMemo(() => {
+    const map: Record<string, { x: number; y: number; w: number; h: number }> = {};
+    for (const ri of personEntries) {
+      for (const { project, lane } of ri.lanes) {
+        const pos = { startMonth: project.startMonth, duration: project.duration };
+        const colPos = monthIndexToColPos(pos.startMonth, zoom, columns);
+        const colSpan = monthDurationToCols(pos.startMonth, pos.duration, zoom, columns);
+        const x = colPos * colWidth + 2;
+        const y = ri.yOffset + lane * ROW_HEIGHT + BAR_V_PAD;
+        const w = Math.max(colSpan * colWidth - 4, 20);
+        map[project.id] = { x, y, w, h: BAR_HEIGHT };
+      }
+    }
+    return map;
+  }, [personEntries, zoom, columns, colWidth]);
+
   // ── Drag handlers ──────────────────────────────────────────────────────
 
   const handleBarMouseDown = useCallback(
-    (e: React.MouseEvent, project: Project, mode: "move" | "resize", linearIssueId?: string) => {
+    (e: React.MouseEvent, project: Project, personName: string, mode: "move" | "resize", linearIssueId?: string) => {
       e.preventDefault();
       e.stopPropagation();
       const state: DragState = {
         projectId: project.id,
+        personName,
         linearIssueId,
         mode,
         startMouseX: e.clientX,
@@ -1304,6 +1870,16 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
         }),
       })),
     );
+
+    // If changed, persist to overrides
+    if (changed) {
+      const key = `${ds.personName}:${ds.projectId}`;
+      saveOverride("updatePosition", {
+        key,
+        startMonth: ds.currentStartMonth,
+        duration: ds.currentDuration,
+      }).catch((err) => console.error("Failed to save position override:", err));
+    }
 
     // If this was a Linear-linked bar and dates changed, update in Linear
     if (ds.linearIssueId && changed) {
@@ -1382,10 +1958,197 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
     [cycleProjectNames, cycleIssueIds, linearBars],
   );
 
+  // ── Add project handler ────────────────────────────────────────────────
+  const handleAddProject = useCallback(
+    (personName: string, name: string, startMonth: number, duration: number) => {
+      const newProject: Project = {
+        id: newProjId(),
+        name,
+        startMonth,
+        duration,
+        tasks: [],
+        linearProjectName: null,
+      };
+
+      setLocalPeople((prev) =>
+        prev.map((person) => {
+          if (person.name !== personName) return person;
+          return {
+            ...person,
+            projects: [...person.projects, newProject],
+          };
+        }),
+      );
+
+      saveOverride("addProject", {
+        personName,
+        project: { name, startMonth, duration },
+      }).catch((err) => console.error("Failed to save addition:", err));
+
+      setAddingForPerson(null);
+      addToast("success", `Added "${name}"`);
+    },
+    [addToast],
+  );
+
+  // ── Delete project handler ─────────────────────────────────────────────
+  const handleDeleteProject = useCallback(
+    (personName: string, projectId: string, projectName: string) => {
+      setLocalPeople((prev) =>
+        prev.map((person) => {
+          if (person.name !== personName) return person;
+          return {
+            ...person,
+            projects: person.projects.filter((p) => p.id !== projectId),
+          };
+        }),
+      );
+
+      const key = `${personName}:${projectName}`;
+      saveOverride("deleteProject", { key }).catch((err) =>
+        console.error("Failed to save deletion:", err),
+      );
+
+      addToast("success", `Removed "${projectName}"`);
+    },
+    [addToast],
+  );
+
+  // ── Rename project handler ────────────────────────────────────────────
+  const handleRenameProject = useCallback(
+    (personName: string, projectId: string, oldName: string, newName: string) => {
+      if (!newName.trim() || newName === oldName) {
+        setRenamingProjectId(null);
+        return;
+      }
+
+      setLocalPeople((prev) =>
+        prev.map((person) => {
+          if (person.name !== personName) return person;
+          return {
+            ...person,
+            projects: person.projects.map((p) => {
+              if (p.id !== projectId) return p;
+              return { ...p, name: newName };
+            }),
+          };
+        }),
+      );
+
+      const key = `${personName}:${oldName}`;
+      saveOverride("renameProject", { key, newName }).catch((err) =>
+        console.error("Failed to save rename:", err),
+      );
+
+      setRenamingProjectId(null);
+      addToast("success", `Renamed to "${newName}"`);
+    },
+    [addToast],
+  );
+
+  // ── Dependency handlers ───────────────────────────────────────────────
+  const handleLinkDotClick = useCallback(
+    (projectId: string, side: "left" | "right") => {
+      if (linkingState) {
+        // Complete the link
+        if (linkingState.fromProjectId !== projectId) {
+          const newDep: DependencyLink = {
+            from: linkingState.fromProjectId,
+            to: projectId,
+          };
+          setDependencies((prev) => {
+            const exists = prev.some(
+              (d) => d.from === newDep.from && d.to === newDep.to,
+            );
+            if (exists) return prev;
+            return [...prev, newDep];
+          });
+          saveOverride("addDependency", newDep).catch((err) =>
+            console.error("Failed to save dependency:", err),
+          );
+          addToast("success", "Dependency created");
+        }
+        setLinkingState(null);
+      } else {
+        // Start linking
+        setLinkingState({ fromProjectId: projectId, side });
+      }
+    },
+    [linkingState, addToast],
+  );
+
+  const handleRemoveDependency = useCallback(
+    (from: string, to: string) => {
+      setDependencies((prev) =>
+        prev.filter((d) => !(d.from === from && d.to === to)),
+      );
+      saveOverride("removeDependency", { from, to }).catch((err) =>
+        console.error("Failed to remove dependency:", err),
+      );
+    },
+    [],
+  );
+
+  // Cancel linking on Escape
+  useEffect(() => {
+    if (!linkingState) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setLinkingState(null);
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [linkingState]);
+
+  // ── Print handler ────────────────────────────────────────────────────
+  const handlePrint = useCallback(() => {
+    window.print();
+  }, []);
+
   const stickyTop = PHASE_HEIGHT + HEADER_HEIGHT;
+
+  // ── Compute progress pct for a given project ───────────────────────────
+  const getBarProgress = useCallback(
+    (project: Project): number | null => {
+      if (project.linearProjectName && projectProgress[project.linearProjectName]) {
+        const p = projectProgress[project.linearProjectName];
+        return p.total > 0 ? (p.done / p.total) * 100 : 0;
+      }
+      return null;
+    },
+    [projectProgress],
+  );
 
   return (
     <div className="roadmap-root">
+      {/* Mobile person filter */}
+      {isMobile && (
+        <div style={{
+          padding: "8px 16px",
+          background: "#fff",
+          borderBottom: "1px solid #e8e8ef",
+        }}>
+          <select
+            value={mobilePersonFilter ?? "all"}
+            onChange={(e) =>
+              setMobilePersonFilter(e.target.value === "all" ? null : e.target.value)
+            }
+            style={{
+              width: "100%",
+              padding: "8px 12px",
+              border: "1px solid #e0e0ea",
+              borderRadius: 8,
+              fontSize: 13,
+              fontFamily: "var(--font-sans)",
+            }}
+          >
+            <option value="all">All People</option>
+            {localPeople.map((p) => (
+              <option key={p.name} value={p.name}>{p.name}</option>
+            ))}
+          </select>
+        </div>
+      )}
+
       <FilterBar
         search={search}
         onSearch={setSearch}
@@ -1397,60 +2160,78 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
         selectedCycleId={selectedCycleId}
         onCycleSelect={setSelectedCycleId}
         cyclesLoading={cyclesLoading}
+        onPrint={handlePrint}
       />
 
       <div className="roadmap-container">
-        {/* Sticky sidebar */}
-        <div className="roadmap-sidebar" style={{ width: SIDEBAR_WIDTH }}>
-          <div className="sidebar-corner" style={{ height: stickyTop }}>
-            <span>Team</span>
-          </div>
-          <div
-            className="sidebar-names"
-            ref={sidebarRef}
-            onScroll={handleSidebarScroll}
-          >
-            {rowEntries.map((entry) => {
-              if (entry.kind === "team-header") {
+        {/* Sticky sidebar (hidden on mobile) */}
+        {!isMobile && (
+          <div className="roadmap-sidebar" style={{ width: SIDEBAR_WIDTH }}>
+            <div className="sidebar-corner" style={{ height: stickyTop }}>
+              <span>Team</span>
+            </div>
+            <div
+              className="sidebar-names"
+              ref={sidebarRef}
+              onScroll={handleSidebarScroll}
+            >
+              {rowEntries.map((entry) => {
+                if (entry.kind === "team-header") {
+                  return (
+                    <div
+                      key={`team-${entry.team.name}`}
+                      className="sidebar-team-header"
+                      style={{
+                        height: entry.totalHeight,
+                        borderLeftColor: entry.team.color,
+                        backgroundColor: hexToRgba(entry.team.color, 0.06),
+                      }}
+                      onClick={() => toggleTeam(entry.team.name)}
+                    >
+                      <span
+                        className={`sidebar-team-chevron${entry.collapsed ? " collapsed" : ""}`}
+                      >
+                        &#9662;
+                      </span>
+                      <span className="sidebar-team-name">{entry.team.name}</span>
+                      <span className="sidebar-team-count">
+                        {entry.team.members.length}
+                      </span>
+                    </div>
+                  );
+                }
                 return (
                   <div
-                    key={`team-${entry.team.name}`}
-                    className="sidebar-team-header"
-                    style={{
-                      height: entry.totalHeight,
-                      borderLeftColor: entry.team.color,
-                      backgroundColor: hexToRgba(entry.team.color, 0.06),
-                    }}
-                    onClick={() => toggleTeam(entry.team.name)}
+                    key={entry.person.name}
+                    className="sidebar-person"
+                    style={{ height: entry.totalHeight }}
                   >
-                    <span
-                      className={`sidebar-team-chevron${entry.collapsed ? " collapsed" : ""}`}
+                    <div
+                      className="sidebar-color-bar"
+                      style={{ backgroundColor: entry.person.color }}
+                    />
+                    <span className="sidebar-name">{entry.person.name}</span>
+                    {/* Add project button */}
+                    <button
+                      className="sidebar-add-btn"
+                      title="Add project"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setAddingForPerson(
+                          addingForPerson === entry.person.name
+                            ? null
+                            : entry.person.name,
+                        );
+                      }}
                     >
-                      &#9662;
-                    </span>
-                    <span className="sidebar-team-name">{entry.team.name}</span>
-                    <span className="sidebar-team-count">
-                      {entry.team.members.length}
-                    </span>
+                      +
+                    </button>
                   </div>
                 );
-              }
-              return (
-                <div
-                  key={entry.person.name}
-                  className="sidebar-person"
-                  style={{ height: entry.totalHeight }}
-                >
-                  <div
-                    className="sidebar-color-bar"
-                    style={{ backgroundColor: entry.person.color }}
-                  />
-                  <span className="sidebar-name">{entry.person.name}</span>
-                </div>
-              );
-            })}
+              })}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Scrollable grid */}
         <div
@@ -1569,6 +2350,61 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
               </div>
             )}
 
+            {/* Dependency arrows (SVG overlay) */}
+            <svg
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: totalGridWidth,
+                height: totalGridHeight,
+                pointerEvents: "none",
+                zIndex: 2,
+              }}
+            >
+              <defs>
+                <marker
+                  id="dep-arrow"
+                  viewBox="0 0 10 10"
+                  refX="10"
+                  refY="5"
+                  markerWidth="6"
+                  markerHeight="6"
+                  orient="auto-start-reverse"
+                >
+                  <path d="M 0 0 L 10 5 L 0 10 z" fill="#94a3b8" />
+                </marker>
+              </defs>
+              {dependencies.map((dep) => {
+                const fromPos = projectPositionMap[dep.from];
+                const toPos = projectPositionMap[dep.to];
+                if (!fromPos || !toPos) return null;
+
+                const x1 = fromPos.x + fromPos.w;
+                const y1 = fromPos.y + fromPos.h / 2;
+                const x2 = toPos.x;
+                const y2 = toPos.y + toPos.h / 2;
+
+                // Curved path
+                const midX = (x1 + x2) / 2;
+                const d = `M ${x1} ${y1} C ${midX} ${y1}, ${midX} ${y2}, ${x2} ${y2}`;
+
+                return (
+                  <g key={`dep-${dep.from}-${dep.to}`}>
+                    <path
+                      d={d}
+                      fill="none"
+                      stroke="#94a3b8"
+                      strokeWidth={1.5}
+                      markerEnd="url(#dep-arrow)"
+                      style={{ pointerEvents: "stroke", cursor: "pointer" }}
+                      onClick={() => handleRemoveDependency(dep.from, dep.to)}
+                    />
+                  </g>
+                );
+              })}
+            </svg>
+
             {/* Project bars */}
             {personEntries.map((ri) =>
               ri.lanes.map(({ project, lane }) => {
@@ -1581,13 +2417,20 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
                 const isHovered = hoveredProject === project.id;
                 const isDragging = dragState?.projectId === project.id;
                 const dimmed = selectedCycleId !== null && !isProjectInCycle(project, ri.person.name);
+                const isRenaming = renamingProjectId === project.id;
 
                 const doneCount = project.tasks.filter(
                   (t) => t.status === "done",
                 ).length;
                 const total = project.tasks.length;
-                const progressPct =
+                let progressPct =
                   total > 0 ? (doneCount / total) * 100 : 0;
+
+                // Use Linear progress if available
+                const linearProgress = getBarProgress(project);
+                if (linearProgress !== null) {
+                  progressPct = linearProgress;
+                }
 
                 // Ghost bar (original position) when dragging
                 let ghostBar = null;
@@ -1625,17 +2468,38 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
                       }}
                       onClick={() => {
                         if (!isDragging) {
-                          setSelected({
-                            project,
-                            personName: ri.person.name,
-                            personColor: ri.person.color,
-                          });
+                          if (project.linearProjectName) {
+                            setSelectedLinearProject({
+                              project,
+                              personName: ri.person.name,
+                              personColor: ri.person.color,
+                              linearProjectName: project.linearProjectName,
+                            });
+                          } else {
+                            setSelected({
+                              project,
+                              personName: ri.person.name,
+                              personColor: ri.person.color,
+                            });
+                          }
+                        }
+                      }}
+                      onContextMenu={(e) => {
+                        e.preventDefault();
+                        if (confirm(`Remove "${project.name}"?`)) {
+                          handleDeleteProject(ri.person.name, project.id, project.name);
                         }
                       }}
                       onMouseEnter={() => setHoveredProject(project.id)}
                       onMouseLeave={() => setHoveredProject(null)}
-                      onMouseDown={(e) => handleBarMouseDown(e, project, "move")}
+                      onMouseDown={(e) => handleBarMouseDown(e, project, ri.person.name, "move")}
+                      onDoubleClick={(e) => {
+                        e.stopPropagation();
+                        setRenamingProjectId(project.id);
+                        setRenameValue(project.name);
+                      }}
                     >
+                      {/* Progress background fill */}
                       <div
                         className="project-bar-progress"
                         style={{
@@ -1643,18 +2507,120 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
                           backgroundColor: hexToRgba(ri.person.color, 0.12),
                         }}
                       />
-                      <span
-                        className="project-bar-label"
-                        style={{ color: dimmed ? hexToRgba(ri.person.color, 0.4) : ri.person.color }}
-                      >
-                        {project.name}
-                      </span>
+
+                      {/* Linear progress bar (thin green bar at bottom) */}
+                      {linearProgress !== null && (
+                        <div
+                          style={{
+                            position: "absolute",
+                            bottom: 0,
+                            left: 0,
+                            height: 3,
+                            width: `${linearProgress}%`,
+                            backgroundColor: "#22c55e",
+                            borderRadius: "0 0 0 4px",
+                            zIndex: 1,
+                          }}
+                        />
+                      )}
+
+                      {/* Label or inline rename input */}
+                      {isRenaming ? (
+                        <input
+                          type="text"
+                          value={renameValue}
+                          onChange={(e) => setRenameValue(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              handleRenameProject(
+                                ri.person.name,
+                                project.id,
+                                project.name,
+                                renameValue,
+                              );
+                            }
+                            if (e.key === "Escape") {
+                              setRenamingProjectId(null);
+                            }
+                          }}
+                          onBlur={() => {
+                            handleRenameProject(
+                              ri.person.name,
+                              project.id,
+                              project.name,
+                              renameValue,
+                            );
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                          onMouseDown={(e) => e.stopPropagation()}
+                          autoFocus
+                          style={{
+                            position: "relative",
+                            zIndex: 1,
+                            background: "rgba(255,255,255,0.9)",
+                            border: "1px solid #6366f1",
+                            borderRadius: 3,
+                            padding: "0 4px",
+                            fontSize: 11,
+                            fontWeight: 600,
+                            fontFamily: "var(--font-sans)",
+                            width: "90%",
+                            maxWidth: "calc(100% - 16px)",
+                            outline: "none",
+                          }}
+                        />
+                      ) : (
+                        <span
+                          className="project-bar-label"
+                          style={{ color: dimmed ? hexToRgba(ri.person.color, 0.4) : ri.person.color }}
+                        >
+                          {project.name}
+                        </span>
+                      )}
+
+                      {/* Delete button on hover */}
+                      {isHovered && !isDragging && !isRenaming && (
+                        <button
+                          className="bar-delete-btn"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteProject(ri.person.name, project.id, project.name);
+                          }}
+                          onMouseDown={(e) => e.stopPropagation()}
+                          title="Remove project"
+                        >
+                          &times;
+                        </button>
+                      )}
+
+                      {/* Dependency link dots on hover */}
+                      {(isHovered || linkingState) && !isDragging && !isRenaming && (
+                        <>
+                          <div
+                            className={`link-dot link-dot-left${linkingState ? " link-dot-active" : ""}`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleLinkDotClick(project.id, "left");
+                            }}
+                            onMouseDown={(e) => e.stopPropagation()}
+                          />
+                          <div
+                            className={`link-dot link-dot-right${linkingState ? " link-dot-active" : ""}`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleLinkDotClick(project.id, "right");
+                            }}
+                            onMouseDown={(e) => e.stopPropagation()}
+                          />
+                        </>
+                      )}
+
                       {/* Resize handle */}
                       <div
                         className="resize-handle"
                         onMouseDown={(e) => {
                           e.stopPropagation();
-                          handleBarMouseDown(e, project, "resize");
+                          handleBarMouseDown(e, project, ri.person.name, "resize");
                         }}
                       />
                     </div>
@@ -1669,7 +2635,7 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
               if (!bars || bars.length === 0) return null;
               const linearLaneY = ri.yOffset + ri.laneCount * ROW_HEIGHT;
 
-              return bars.map((bar, idx) => {
+              return bars.map((bar) => {
                 const startCol = dateToColPos(bar.startDate, columns);
                 const endCol = dateToColPos(bar.endDate, columns);
                 const x = startCol * colWidth + 2;
@@ -1707,13 +2673,60 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
         </div>
       </div>
 
-      {/* Detail panel - static project */}
+      {/* Add project form popup */}
+      {addingForPerson && (
+        <div
+          style={{
+            position: "fixed",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            zIndex: 150,
+          }}
+        >
+          <AddProjectForm
+            onAdd={(name, startMonth, duration) =>
+              handleAddProject(addingForPerson, name, startMonth, duration)
+            }
+            onCancel={() => setAddingForPerson(null)}
+          />
+        </div>
+      )}
+      {addingForPerson && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.2)",
+            zIndex: 140,
+          }}
+          onClick={() => setAddingForPerson(null)}
+        />
+      )}
+
+      {/* Detail panel - static project (no Linear connection) */}
       {selected && (
         <DetailPanel
           project={selected.project}
           personName={selected.personName}
           personColor={selected.personColor}
           onClose={() => setSelected(null)}
+        />
+      )}
+
+      {/* Detail panel - Linear project issues */}
+      {selectedLinearProject && (
+        <LinearProjectDetailPanel
+          project={selectedLinearProject.project}
+          personName={selectedLinearProject.personName}
+          personColor={selectedLinearProject.personColor}
+          linearProjectName={selectedLinearProject.linearProjectName}
+          progress={projectProgress[selectedLinearProject.linearProjectName] || null}
+          onClose={() => setSelectedLinearProject(null)}
+          onIssueClick={(issueId) => {
+            setSelectedLinearProject(null);
+            setSelectedLinearIssueId(issueId);
+          }}
         />
       )}
 
