@@ -2777,14 +2777,14 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
             teamName: currentTeam,
             teamColor: team?.color || "#94a3b8",
             yStart: spanStart,
-            height: spanHeight,
+            height: spanHeight - PERSON_GAP, // don't include trailing gap
           });
         }
         currentTeam = entry.teamName;
         spanStart = entry.yOffset;
-        spanHeight = entry.totalHeight;
+        spanHeight = entry.totalHeight + PERSON_GAP;
       } else {
-        spanHeight += entry.totalHeight;
+        spanHeight += entry.totalHeight + PERSON_GAP;
       }
     }
     if (currentTeam !== null && spanHeight > 0) {
@@ -2793,7 +2793,7 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
         teamName: currentTeam,
         teamColor: team?.color || "#94a3b8",
         yStart: spanStart,
-        height: spanHeight,
+        height: spanHeight - PERSON_GAP,
       });
     }
     return spans;
