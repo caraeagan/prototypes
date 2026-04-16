@@ -78,12 +78,12 @@ export const PHASES: Phase[] = [
 // ── Teams ──────────────────────────────────────────────────────────────────
 
 export const TEAMS: Team[] = [
-  { name: "Engineering", color: "#2D5F3E", members: ["Oleksii", "Flo", "Maciej", "John", "Luida", "AK"] },
-  { name: "Data Science", color: "#4A8B8B", members: ["Lucie"] },
-  { name: "Design", color: "#C4956A", members: ["Maria", "Carlos"] },
-  { name: "Psychometrics", color: "#B8860B", members: ["Erica", "David"] },
-  { name: "Operations & GTM", color: "#3E6B89", members: ["Eleanor", "Erin", "Stef / Sam", "Molly"] },
-  { name: "Product", color: "#D4A843", members: ["Cara"] },
+  { name: "Engineering", color: "#2563EB", members: ["Oleksii", "Flo", "Maciej", "John", "Luida", "AK"] },
+  { name: "Data Science", color: "#0E7490", members: ["Lucie"] },
+  { name: "Design", color: "#7C3AED", members: ["Maria", "Carlos"] },
+  { name: "Psychometrics", color: "#D97706", members: ["Erica", "David"] },
+  { name: "Operations & GTM", color: "#1D4ED8", members: ["Eleanor", "Erin", "Stef / Sam", "Molly"] },
+  { name: "Product", color: "#EAB308", members: ["Cara"] },
 ];
 
 // ── Helper to generate task IDs ────────────────────────────────────────────
@@ -115,7 +115,7 @@ export const PEOPLE: Person[] = [
   // ── Engineering ──────────────────────────────────────────────────────────
   {
     name: "Oleksii",
-    color: "#2D5F3E",
+    color: "#2563EB",
     team: "Engineering",
     projects: [
       {
@@ -232,7 +232,7 @@ export const PEOPLE: Person[] = [
   },
   {
     name: "Flo",
-    color: "#5B8C5A",
+    color: "#16A34A",
     team: "Engineering",
     projects: [
       {
@@ -334,7 +334,7 @@ export const PEOPLE: Person[] = [
   },
   {
     name: "Maciej",
-    color: "#3B7A9E",
+    color: "#0891B2",
     team: "Engineering",
     projects: [
       {
@@ -358,7 +358,7 @@ export const PEOPLE: Person[] = [
   },
   {
     name: "John",
-    color: "#4A7C59",
+    color: "#65A30D",
     team: "Engineering",
     projects: [
       {
@@ -397,7 +397,7 @@ export const PEOPLE: Person[] = [
   },
   {
     name: "Luida",
-    color: "#8B6914",
+    color: "#CA8A04",
     team: "Engineering",
     projects: [
       {
@@ -466,7 +466,7 @@ export const PEOPLE: Person[] = [
   },
   {
     name: "AK",
-    color: "#2E6B62",
+    color: "#0D9488",
     team: "Engineering",
     projects: [
       {
@@ -507,7 +507,7 @@ export const PEOPLE: Person[] = [
   // ── Design ───────────────────────────────────────────────────────────────
   {
     name: "Maria",
-    color: "#C4956A",
+    color: "#7C3AED",
     team: "Design",
     projects: [
       {
@@ -544,7 +544,7 @@ export const PEOPLE: Person[] = [
   },
   {
     name: "Carlos",
-    color: "#7A9B76",
+    color: "#4F46E5",
     team: "Design",
     projects: [
       {
@@ -598,7 +598,7 @@ export const PEOPLE: Person[] = [
   // ── Psychometrics ────────────────────────────────────────────────────────
   {
     name: "Erica",
-    color: "#B8860B",
+    color: "#D97706",
     team: "Psychometrics",
     projects: [
       {
@@ -637,7 +637,7 @@ export const PEOPLE: Person[] = [
   },
   {
     name: "David",
-    color: "#6B8E7B",
+    color: "#059669",
     team: "Psychometrics",
     projects: [
       {
@@ -662,7 +662,7 @@ export const PEOPLE: Person[] = [
   // ── Operations & GTM ─────────────────────────────────────────────────────
   {
     name: "Eleanor",
-    color: "#3E6B89",
+    color: "#1D4ED8",
     team: "Operations & GTM",
     projects: [
       {
@@ -764,7 +764,7 @@ export const PEOPLE: Person[] = [
   },
   {
     name: "Erin",
-    color: "#8B7355",
+    color: "#92400E",
     team: "Operations & GTM",
     projects: [
       {
@@ -866,7 +866,7 @@ export const PEOPLE: Person[] = [
   },
   {
     name: "Stef / Sam",
-    color: "#34A853",
+    color: "#6D28D9",
     team: "Operations & GTM",
     projects: [
       {
@@ -905,7 +905,7 @@ export const PEOPLE: Person[] = [
   },
   {
     name: "Molly",
-    color: "#C87F6B",
+    color: "#B45309",
     team: "Operations & GTM",
     projects: [
       {
@@ -960,7 +960,7 @@ export const PEOPLE: Person[] = [
   // ── Product ──────────────────────────────────────────────────────────────
   {
     name: "Cara",
-    color: "#D4A843",
+    color: "#EAB308",
     team: "Product",
     projects: [
       {
@@ -1091,7 +1091,7 @@ export const PEOPLE: Person[] = [
   // ── Unassigned ───────────────────────────────────────────────────────────
   {
     name: "Lucie",
-    color: "#4A8B8B",
+    color: "#0E7490",
     team: "Data Science",
     projects: [
       {
