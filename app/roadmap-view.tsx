@@ -2519,7 +2519,11 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
   );
 
   // Today marker
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   const todayX = useMemo(() => {
+    if (!mounted) return null; // avoid hydration mismatch
     const now = new Date();
     if (now < TIMELINE_START || now >= TIMELINE_END) return null;
     for (let i = 0; i < columns.length; i++) {
@@ -2533,7 +2537,7 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
       }
     }
     return null;
-  }, [columns, colWidth]);
+  }, [columns, colWidth, mounted]);
 
   // Auto-scroll to center on today when zoom changes
   useEffect(() => {
@@ -2787,21 +2791,23 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
       ds.currentStartMonth !== ds.originalStartMonth ||
       ds.currentDuration !== ds.originalDuration;
 
-    // Apply changes to local state — preserve lane by keeping order
-    setLocalPeople((prev) =>
-      prev.map((person) => ({
-        ...person,
-        projects: person.projects.map((proj) => {
-          if (proj.id !== ds.projectId) return proj;
-          return {
-            ...proj,
-            startMonth: ds.currentStartMonth,
-            duration: ds.currentDuration,
-            order: proj.order ?? ds.originalLane, // preserve lane position
-          };
-        }),
-      })),
-    );
+    // Apply changes to local state only if something changed
+    if (changed) {
+      setLocalPeople((prev) =>
+        prev.map((person) => ({
+          ...person,
+          projects: person.projects.map((proj) => {
+            if (proj.id !== ds.projectId) return proj;
+            return {
+              ...proj,
+              startMonth: ds.currentStartMonth,
+              duration: ds.currentDuration,
+              order: proj.order ?? ds.originalLane,
+            };
+          }),
+        })),
+      );
+    }
 
     // If changed, persist to overrides and push undo
     if (changed) {
