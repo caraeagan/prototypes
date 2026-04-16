@@ -1,17 +1,32 @@
 {
   "positions": {
+    "Lucie:proj-57": {
+      "startMonth": 4,
+      "duration": 4,
+      "order": 4
+    },
+    "Lucie:proj-58": {
+      "startMonth": 0,
+      "duration": 1,
+      "order": 3
+    },
     "Lucie:proj-60": {
       "startMonth": 2,
       "duration": 4,
-      "order": 3
+      "order": 1
     },
-    "Lucie:proj-62": {
+    "Lucie:proj-19": {
       "startMonth": 0,
-      "duration": 2,
-      "order": 3
+      "duration": 4,
+      "order": 2
     },
-    "Lucie:proj-24": {
-      "startMonth": 2,
+    "Stef / Sam:proj-43": {
+      "startMonth": 0,
+      "duration": 4,
+      "order": 1
+    },
+    "Stef / Sam:proj-44": {
+      "startMonth": 1,
       "duration": 3,
       "order": 0
     }
