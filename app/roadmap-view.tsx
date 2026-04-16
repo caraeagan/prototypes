@@ -2313,7 +2313,7 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
     }
 
     return { groups, ungrouped };
-  }, [filteredPeople, teams]);
+  }, [teamAndPersonFiltered, teams]);
 
   // Count linear bars per person for lane packing
   const linearBarsPerPerson = useMemo(() => {
