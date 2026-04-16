@@ -2737,8 +2737,12 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
 
           // Build new order: assign order values based on current lane positions,
           // then swap the dragged project's order with the target lane's project
+          // Also apply date changes to the dragged project
           const newProjects = person.projects.map((p) => {
             const laneEntry = lanes.find((l) => l.project.id === p.id);
+            if (p.id === ds.projectId) {
+              return { ...p, order: laneEntry?.lane ?? 0, startMonth: ds.currentStartMonth, duration: ds.currentDuration };
+            }
             return { ...p, order: laneEntry?.lane ?? 0 };
           });
 
