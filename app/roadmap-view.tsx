@@ -638,8 +638,8 @@ type LinearProjectIssue = {
   title: string;
   priority: number;
   priorityLabel: string;
-  state: { name: string; color: string };
-  assignee: { displayName: string; avatarUrl: string | null } | null;
+  state: { name: string; color: string; type?: string };
+  assignee: { id?: string; displayName: string; avatarUrl: string | null } | null;
   startedAt: string | null;
   dueDate: string | null;
 };
@@ -676,11 +676,12 @@ function LinearProjectDetailPanel({
   const [editStartDate, setEditStartDate] = useState(monthIndexToDate(project.startMonth));
   const [editEndDate, setEditEndDate] = useState(monthIndexToDate(project.startMonth + project.duration));
   const [editOwner, setEditOwner] = useState(personName);
-  const [notes, setNotes] = useState("");
-  const [savingNotes, setSavingNotes] = useState(false);
-  const [issueComments, setIssueComments] = useState<Record<string, LinearIssue["comments"]>>({});
-  const [commentInputs, setCommentInputs] = useState<Record<string, string>>({});
-  const [postingComment, setPostingComment] = useState<Record<string, boolean>>({});
+
+  // Inline issue editing state
+  const [panelWfStates, setPanelWfStates] = useState<WorkflowState[]>([]);
+  const [panelMembers, setPanelMembers] = useState<TeamMember[]>([]);
+  const [panelEditField, setPanelEditField] = useState<{ issueId: string; field: "owner" | "status" | "dueDate"; x: number; y: number } | null>(null);
+  const [panelSaving, setPanelSaving] = useState<string | null>(null);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -695,35 +696,32 @@ function LinearProjectDetailPanel({
     setLoading(true);
     setError(null);
 
-    linearQuery<{
-      projects: {
-        nodes: {
-          issues: {
-            nodes: LinearProjectIssue[];
-          };
-        }[];
-      };
-    }>(
-      `query ProjectIssuesByName($projectName: String!) {
-        projects(filter: { name: { eq: $projectName } }) {
-          nodes {
-            issues(first: 100) {
-              nodes {
-                id title priority priorityLabel
-                state { name color }
-                assignee { displayName avatarUrl }
-                startedAt dueDate
-              }
-            }
-          }
-        }
-      }`,
-      { projectName: linearProjectName },
+    // First find project ID, then fetch issues (avoids Linear complexity limits)
+    linearQuery<{ projects: { nodes: { id: string }[] } }>(
+      `query FindProject($name: String!) { projects(filter: { name: { eq: $name } }) { nodes { id } } }`,
+      { name: linearProjectName },
     )
       .then((data) => {
         if (cancelled) return;
-        const allIssues = data.projects.nodes.flatMap((p) => p.issues.nodes);
-        setIssues(allIssues);
+        const projectId = data.projects.nodes[0]?.id;
+        if (!projectId) { setIssues([]); return; }
+        return linearQuery<{ project: { issues: { nodes: LinearProjectIssue[] } } }>(
+          `query ProjectIssues($id: String!) {
+            project(id: $id) {
+              issues(first: 250) {
+                nodes {
+                  id title priority priorityLabel
+                  state { name color type }
+                  assignee { id displayName avatarUrl }
+                  startedAt dueDate
+                }
+              }
+            }
+          }`,
+          { id: projectId },
+        ).then((issueData) => {
+          if (!cancelled) setIssues(issueData.project.issues.nodes);
+        });
       })
       .catch((err) => {
         if (!cancelled) setError(err.message);
@@ -732,45 +730,60 @@ function LinearProjectDetailPanel({
         if (!cancelled) setLoading(false);
       });
 
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [linearProjectName]);
 
-  const doneIssues = issues.filter((i) => {
-    const s = i.state.name.toLowerCase();
-    return s === "done" || s === "closed" || s === "completed" || s === "cancelled" || s === "canceled";
-  });
-  const inProgressIssues = issues.filter((i) => {
-    const s = i.state.name.toLowerCase();
-    return s === "in progress" || s === "in review" || s === "started";
-  });
-  const todoIssues = issues.filter(
-    (i) => !doneIssues.includes(i) && !inProgressIssues.includes(i),
-  );
+  // Fetch workflow states + team members once
+  useEffect(() => {
+    linearQuery<{ teams: { nodes: { states: { nodes: WorkflowState[] }; members: { nodes: TeamMember[] } }[] } }>(
+      `query { teams(first: 10) { nodes { states { nodes { id name color position } } members(first: 50) { nodes { id displayName avatarUrl } } } } }`,
+    ).then((data) => {
+      const stateMap = new Map<string, WorkflowState>();
+      const memberMap = new Map<string, TeamMember>();
+      for (const team of data.teams.nodes) {
+        for (const s of team.states.nodes) { if (!stateMap.has(s.name)) stateMap.set(s.name, s); }
+        for (const m of team.members.nodes) memberMap.set(m.id, m);
+      }
+      setPanelWfStates([...stateMap.values()].sort((a, b) => a.position - b.position));
+      setPanelMembers([...memberMap.values()].sort((a, b) => a.displayName.localeCompare(b.displayName)));
+    }).catch(() => {});
+  }, []);
 
-  const progressPct = progress
-    ? progress.total > 0
-      ? Math.round((progress.done / progress.total) * 100)
-      : 0
-    : issues.length > 0
-      ? Math.round((doneIssues.length / issues.length) * 100)
-      : 0;
+  // Only open issues
+  const openIssues = issues.filter((i) => {
+    const t = i.state.type;
+    return t !== "completed" && t !== "canceled";
+  });
 
-  // Derived edit values
+  const totalCount = issues.length;
+  const doneCount = issues.filter((i) => i.state.type === "completed").length;
+  const progressPct = totalCount > 0 ? Math.round((doneCount / totalCount) * 100) : 0;
+
+  // Group open issues by priority
+  const byPriority: Record<number, LinearProjectIssue[]> = {};
+  for (const issue of openIssues) {
+    if (!byPriority[issue.priority]) byPriority[issue.priority] = [];
+    byPriority[issue.priority].push(issue);
+  }
+  // Sort each group by due date
+  for (const key in byPriority) {
+    byPriority[key].sort((a, b) => {
+      if (!a.dueDate && !b.dueDate) return 0;
+      if (!a.dueDate) return 1;
+      if (!b.dueDate) return -1;
+      return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+    });
+  }
+
   const editStartMonth = dateToMonthIndex(editStartDate);
   const editEndMonth = dateToMonthIndex(editEndDate);
   const editDuration = Math.max(1, editEndMonth - editStartMonth);
-
   const startDateStr = formatMonthIndex(project.startMonth);
   const endDateStr = formatMonthIndex(project.startMonth + project.duration);
-  const [expandedIssueId, setExpandedIssueId] = useState<string | null>(null);
 
   const handleSaveEdits = () => {
-    const newStart = editStartMonth;
-    const newDuration = editDuration;
-    if (newStart !== project.startMonth || newDuration !== project.duration) {
-      onUpdateDates(project.id, personName, newStart, newDuration);
+    if (editStartMonth !== project.startMonth || editDuration !== project.duration) {
+      onUpdateDates(project.id, personName, editStartMonth, editDuration);
     }
     if (editOwner !== personName) {
       onChangeOwner(project.id, personName, editOwner);
@@ -778,62 +791,31 @@ function LinearProjectDetailPanel({
     setIsEditing(false);
   };
 
-  // Fetch comments for an expanded issue
-  const fetchIssueComments = useCallback((issueId: string) => {
-    if (issueComments[issueId]) return;
-    linearQuery<{ issue: LinearIssue }>(
-      `query Issue($id: String!) {
-        issue(id: $id) {
-          id
-          comments { nodes { body createdAt user { displayName avatarUrl } } }
-        }
-      }`,
-      { id: issueId },
-    ).then((data) => {
-      setIssueComments((prev) => ({
-        ...prev,
-        [issueId]: data.issue.comments,
-      }));
-    }).catch(() => {
-      // Silently fail for comments
-    });
-  }, [issueComments]);
-
-  const handlePostComment = useCallback(async (issueId: string) => {
-    const body = commentInputs[issueId]?.trim();
-    if (!body) return;
-    setPostingComment((prev) => ({ ...prev, [issueId]: true }));
+  const updateIssueField = async (issueId: string, field: string, value: string) => {
+    setPanelSaving(issueId);
     try {
-      await linearQuery(
-        `mutation CreateComment($issueId: String!, $body: String!) {
-          commentCreate(input: { issueId: $issueId, body: $body }) {
-            success
-            comment { body createdAt user { displayName avatarUrl } }
-          }
-        }`,
-        { issueId, body },
-      );
-      // Refresh comments
-      setIssueComments((prev) => ({ ...prev, [issueId]: undefined as unknown as LinearIssue["comments"] }));
-      setCommentInputs((prev) => ({ ...prev, [issueId]: "" }));
-      // Re-fetch
-      fetchIssueComments(issueId);
-    } catch {
-      // Silently fail
-    } finally {
-      setPostingComment((prev) => ({ ...prev, [issueId]: false }));
-    }
-  }, [commentInputs, fetchIssueComments]);
-
-  const handleSaveNotes = async () => {
-    if (!notes.trim()) return;
-    setSavingNotes(true);
-    // In future, this could post to Linear as a comment
-    setTimeout(() => {
-      setSavingNotes(false);
-      setNotes("");
-    }, 500);
+      const res = await fetch("/api/linear/update", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ issueId, [field]: value }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        const u = json.issue;
+        setIssues((prev) => prev.map((issue) => {
+          if (issue.id !== issueId) return issue;
+          const updated = { ...issue };
+          if (u.state) updated.state = { name: u.state.name, color: u.state.color, type: u.state.type };
+          if (u.dueDate !== undefined) updated.dueDate = u.dueDate;
+          if (u.assignee !== undefined) updated.assignee = u.assignee;
+          return updated;
+        }));
+      }
+    } catch (err) { console.error("Update failed:", err); }
+    finally { setPanelSaving(null); setPanelEditField(null); }
   };
+
+  const fmtIssueDate = (d: string) => new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 
   return (
     <div className="detail-overlay" onClick={onClose}>
@@ -932,38 +914,11 @@ function LinearProjectDetailPanel({
           </div>
           <div className="detail-meta">
             <span className="detail-progress-text">
-              {progress
-                ? `${progress.done}/${progress.total} done`
-                : `${doneIssues.length}/${issues.length} done`}{" "}
-              ({progressPct}%)
+              {doneCount}/{totalCount} done ({progressPct}%)
             </span>
           </div>
           <div className="detail-progress-bar-bg">
-            <div
-              className="detail-progress-bar-fill"
-              style={{
-                width: `${progressPct}%`,
-                backgroundColor: "#22c55e",
-              }}
-            />
-          </div>
-        </div>
-
-        <div className="detail-stats">
-          <div className="detail-stat">
-            <span className="detail-stat-dot" style={{ backgroundColor: "#22c55e" }} />
-            <span className="detail-stat-label">Done</span>
-            <span className="detail-stat-count">{progress?.done ?? doneIssues.length}</span>
-          </div>
-          <div className="detail-stat">
-            <span className="detail-stat-dot" style={{ backgroundColor: "#3b82f6" }} />
-            <span className="detail-stat-label">In Progress</span>
-            <span className="detail-stat-count">{progress?.inProgress ?? inProgressIssues.length}</span>
-          </div>
-          <div className="detail-stat">
-            <span className="detail-stat-dot" style={{ backgroundColor: "#94a3b8" }} />
-            <span className="detail-stat-label">To Do</span>
-            <span className="detail-stat-count">{progress?.todo ?? todoIssues.length}</span>
+            <div className="detail-progress-bar-fill" style={{ width: `${progressPct}%`, backgroundColor: "#22c55e" }} />
           </div>
         </div>
 
@@ -981,183 +936,83 @@ function LinearProjectDetailPanel({
         )}
 
         {!loading && !error && (
-          <div className="detail-tasks">
-            <h3 className="detail-tasks-title">
-              Issues ({issues.length})
-            </h3>
-            <ul className="detail-task-list">
-              {issues.map((issue) => {
-                const isExpanded = expandedIssueId === issue.id;
-                const comments = issueComments[issue.id];
-                return (
-                  <li
-                    key={issue.id}
-                    className={`detail-task-item-expandable${isExpanded ? " expanded" : ""}`}
-                  >
-                    <div
-                      className="detail-task-item-header"
-                      onClick={() => {
-                        const nextId = isExpanded ? null : issue.id;
-                        setExpandedIssueId(nextId);
-                        if (nextId) fetchIssueComments(nextId);
-                      }}
-                    >
-                      <span
-                        className={`detail-task-chevron${isExpanded ? " expanded" : ""}`}
-                      >
-                        &#9654;
-                      </span>
-                      <span
-                        className="detail-task-dot"
-                        style={{ backgroundColor: issue.state.color }}
-                      />
-                      <span className="detail-task-name">{issue.title}</span>
-                      <span
-                        className="detail-task-badge"
-                        style={{
-                          backgroundColor: hexToRgba(issue.state.color, 0.12),
-                          color: issue.state.color,
-                        }}
-                      >
-                        {issue.state.name}
-                      </span>
-                    </div>
-                    {isExpanded && (
-                      <div className="detail-task-expanded-content">
-                        <div className="detail-task-detail-row">
-                          <span className="detail-task-detail-label">Status</span>
-                          <select
-                            className="detail-status-select"
-                            value={issue.state.name}
-                            style={{ color: issue.state.color }}
-                            onChange={() => {
-                              // Status update would require Linear workflow state IDs
-                              // Placeholder for future implementation
-                            }}
-                          >
-                            <option value="Todo">Todo</option>
-                            <option value="In Progress">In Progress</option>
-                            <option value="Done">Done</option>
-                            <option value="Cancelled">Cancelled</option>
-                          </select>
-                        </div>
-                        {issue.assignee && (
-                          <div className="detail-task-detail-row">
-                            <span className="detail-task-detail-label">Assignee</span>
-                            <span className="detail-task-detail-value">
-                              {issue.assignee.displayName}
-                            </span>
-                          </div>
-                        )}
-                        {(issue.startedAt || issue.dueDate) && (
-                          <div className="detail-task-detail-row">
-                            <span className="detail-task-detail-label">Dates</span>
-                            <span className="detail-task-detail-value">
-                              {issue.startedAt ? formatDate(issue.startedAt) : "No start"}{" "}
-                              &rarr;{" "}
-                              {issue.dueDate ? formatDate(issue.dueDate) : "No due date"}
-                            </span>
-                          </div>
-                        )}
+          <div style={{ padding: "12px 16px" }}>
+            <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 12 }}>
+              {openIssues.length} open task{openIssues.length !== 1 ? "s" : ""}
+            </div>
 
-                        {/* Comments thread */}
-                        {comments && comments.nodes && comments.nodes.length > 0 && (
-                          <div style={{ marginTop: 8 }}>
-                            <div style={{ fontSize: 11, fontWeight: 600, color: "#8b8b9e", marginBottom: 6 }}>
-                              Comments ({comments.nodes.length})
-                            </div>
-                            {comments.nodes.map((comment, idx) => (
-                              <div key={idx} style={{
-                                padding: "6px 8px",
-                                marginBottom: 4,
-                                background: "#f8f9fb",
-                                borderRadius: 6,
-                                fontSize: 12,
-                              }}>
-                                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 2 }}>
-                                  <span style={{ fontWeight: 600, color: "#1a1a2e" }}>{comment.user.displayName}</span>
-                                  <span style={{ color: "#8b8b9e", fontSize: 10 }}>{formatDate(comment.createdAt)}</span>
-                                </div>
-                                <div style={{ color: "#444", whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{comment.body}</div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
+            {PRIORITY_GROUPS.map((pg) => {
+              const items = byPriority[pg.key];
+              if (!items || items.length === 0) return null;
+              return (
+                <div key={pg.key} style={{ marginBottom: 16 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, borderBottom: `2px solid ${pg.color}`, paddingBottom: 4 }}>
+                    <span style={{ fontSize: 12, fontWeight: 800, color: pg.color, textTransform: "uppercase", letterSpacing: "0.05em" }}>{pg.label}</span>
+                    <span style={{ fontSize: 10, color: "#94a3b8" }}>{items.length}</span>
+                  </div>
 
-                        {/* Add comment input */}
-                        <div className="detail-comment-input-row">
-                          <input
-                            type="text"
-                            className="detail-comment-input"
-                            placeholder="Add a comment..."
-                            value={commentInputs[issue.id] || ""}
-                            onChange={(e) =>
-                              setCommentInputs((prev) => ({ ...prev, [issue.id]: e.target.value }))
-                            }
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter" && commentInputs[issue.id]?.trim()) {
-                                handlePostComment(issue.id);
-                              }
-                            }}
+                  {items.map((issue, idx) => {
+                    const ownerName = issue.assignee ? (normalizeAssigneeName(issue.assignee.displayName) ?? issue.assignee.displayName) : "Unassigned";
+                    const ownerPerson = people.find((p) => p.name === ownerName);
+                    const isSaving = panelSaving === issue.id;
+                    const isEditOwner = panelEditField?.issueId === issue.id && panelEditField.field === "owner";
+                    const isEditStatus = panelEditField?.issueId === issue.id && panelEditField.field === "status";
+                    const isEditDue = panelEditField?.issueId === issue.id && panelEditField.field === "dueDate";
+
+                    return (
+                      <div key={issue.id} style={{
+                        display: "flex", alignItems: "center", gap: 6, padding: "5px 8px", fontSize: 12,
+                        background: idx % 2 === 0 ? "white" : hexToRgba(pg.color, 0.03),
+                        borderTop: idx > 0 ? `1px solid ${hexToRgba(pg.color, 0.08)}` : "none",
+                        opacity: isSaving ? 0.5 : 1,
+                        borderRadius: idx === 0 ? "6px 6px 0 0" : idx === items.length - 1 ? "0 0 6px 6px" : undefined,
+                      }}>
+                        <span style={{ width: 7, height: 7, borderRadius: "50%", flexShrink: 0, backgroundColor: issue.state.color }} />
+
+                        {/* Title */}
+                        <span onClick={() => onIssueClick(issue.id)} style={{ flex: 1, fontWeight: 500, color: "#1e293b", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", cursor: "pointer" }} title={issue.title}>
+                          {issue.title}
+                        </span>
+
+                        {/* Owner */}
+                        <span
+                          onClick={(e) => { e.stopPropagation(); const r = (e.target as HTMLElement).getBoundingClientRect(); setPanelEditField(isEditOwner ? null : { issueId: issue.id, field: "owner", x: r.left, y: r.bottom + 4 }); }}
+                          style={{ fontSize: 10, fontWeight: 600, padding: "1px 6px", borderRadius: 999, cursor: "pointer", flexShrink: 0, backgroundColor: ownerPerson ? hexToRgba(ownerPerson.color, 0.15) : "#f1f5f9", color: ownerPerson?.color ?? "#64748b", maxWidth: 70, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+                        >
+                          {ownerName}
+                        </span>
+
+                        {/* Due date */}
+                        {isEditDue ? (
+                          <input type="date" autoFocus defaultValue={issue.dueDate ? issue.dueDate.split("T")[0] : ""}
+                            onChange={(e) => updateIssueField(issue.id, "dueDate", e.target.value)}
+                            onClick={(e) => e.stopPropagation()}
+                            style={{ fontFamily: "var(--font-sans)", fontSize: 10, padding: "1px 3px", border: "1px solid #e2e8f0", borderRadius: 4, width: 95, flexShrink: 0 }}
                           />
-                          <button
-                            className="detail-comment-send-btn"
-                            disabled={!commentInputs[issue.id]?.trim() || postingComment[issue.id]}
-                            onClick={() => handlePostComment(issue.id)}
+                        ) : (
+                          <span
+                            onClick={(e) => { e.stopPropagation(); const r = (e.target as HTMLElement).getBoundingClientRect(); setPanelEditField({ issueId: issue.id, field: "dueDate", x: r.left, y: r.bottom + 4 }); }}
+                            style={{ fontSize: 10, color: issue.dueDate ? "#475569" : "#cbd5e1", cursor: "pointer", flexShrink: 0, minWidth: 50, textAlign: "right" }}
                           >
-                            {postingComment[issue.id] ? "..." : "Send"}
-                          </button>
-                        </div>
+                            {issue.dueDate ? fmtIssueDate(issue.dueDate) : "Add date"}
+                          </span>
+                        )}
 
-                        <div style={{ marginTop: 4 }}>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onIssueClick(issue.id);
-                            }}
-                            style={{
-                              background: "none",
-                              border: "1px solid #e0e0ea",
-                              borderRadius: 6,
-                              padding: "4px 10px",
-                              fontSize: 11,
-                              fontWeight: 600,
-                              fontFamily: "var(--font-sans)",
-                              color: "#6366f1",
-                              cursor: "pointer",
-                            }}
-                          >
-                            View full details in Linear
-                          </button>
-                        </div>
+                        {/* Status */}
+                        <span
+                          onClick={(e) => { e.stopPropagation(); const r = (e.target as HTMLElement).getBoundingClientRect(); setPanelEditField(isEditStatus ? null : { issueId: issue.id, field: "status", x: r.right, y: r.bottom + 4 }); }}
+                          style={{ fontSize: 9, fontWeight: 600, padding: "1px 6px", borderRadius: 999, cursor: "pointer", flexShrink: 0, backgroundColor: hexToRgba(issue.state.color, 0.15), color: issue.state.color, whiteSpace: "nowrap" }}
+                        >
+                          {issue.state.name}
+                        </span>
                       </div>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
+                    );
+                  })}
+                </div>
+              );
+            })}
           </div>
         )}
-
-        {/* Notes section */}
-        <div className="detail-bottom-section">
-          <h3 className="detail-tasks-title">Notes</h3>
-          <textarea
-            className="detail-notes-textarea"
-            placeholder="Add a note..."
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-          />
-          <div style={{ marginTop: 8, display: "flex", justifyContent: "flex-end" }}>
-            <button
-              className="detail-notes-save-btn"
-              disabled={!notes.trim() || savingNotes}
-              onClick={handleSaveNotes}
-            >
-              {savingNotes ? "Saving..." : "Save Note"}
-            </button>
-          </div>
-        </div>
 
         {/* Delete button at the bottom */}
         <div className="detail-bottom-section">
@@ -1174,6 +1029,46 @@ function LinearProjectDetailPanel({
           </button>
         </div>
       </div>
+
+      {/* Inline edit dropdowns — rendered inside overlay but outside panel to avoid clipping */}
+      {panelEditField && <div onClick={() => setPanelEditField(null)} style={{ position: "fixed", inset: 0, zIndex: 9998 }} />}
+
+      {panelEditField && panelEditField.field === "owner" && (
+        <div data-dropdown onClick={(e) => e.stopPropagation()} style={{
+          position: "fixed", top: panelEditField.y, left: panelEditField.x, zIndex: 9999,
+          background: "white", border: "1px solid #e2e8f0", borderRadius: 8,
+          boxShadow: "0 8px 24px rgba(0,0,0,0.16)", padding: 4, minWidth: 180, maxHeight: 240, overflowY: "auto",
+        }}>
+          {panelMembers.length === 0 && <div style={{ padding: "8px 12px", fontSize: 12, color: "#94a3b8" }}>Loading...</div>}
+          {panelMembers.map((m) => (
+            <div key={m.id} onClick={() => updateIssueField(panelEditField.issueId, "assigneeId", m.id)}
+              style={{ padding: "6px 12px", fontSize: 13, cursor: "pointer", borderRadius: 6 }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.background = "#f8fafc"; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = "transparent"; }}
+            >{m.displayName}</div>
+          ))}
+        </div>
+      )}
+
+      {panelEditField && panelEditField.field === "status" && (
+        <div data-dropdown onClick={(e) => e.stopPropagation()} style={{
+          position: "fixed", top: panelEditField.y, left: panelEditField.x - 160, zIndex: 9999,
+          background: "white", border: "1px solid #e2e8f0", borderRadius: 8,
+          boxShadow: "0 8px 24px rgba(0,0,0,0.16)", padding: 4, minWidth: 160, maxHeight: 260, overflowY: "auto",
+        }}>
+          {panelWfStates.length === 0 && <div style={{ padding: "8px 12px", fontSize: 12, color: "#94a3b8" }}>Loading...</div>}
+          {panelWfStates.map((ws) => (
+            <div key={ws.id} onClick={() => updateIssueField(panelEditField.issueId, "stateId", ws.id)}
+              style={{ padding: "6px 12px", fontSize: 13, cursor: "pointer", borderRadius: 6, display: "flex", alignItems: "center", gap: 8 }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.background = hexToRgba(ws.color, 0.08); }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = "transparent"; }}
+            >
+              <span style={{ width: 8, height: 8, borderRadius: "50%", backgroundColor: ws.color, flexShrink: 0 }} />
+              <span style={{ color: ws.color }}>{ws.name}</span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -1686,6 +1581,77 @@ function AddProjectForm({
 
 // ── Filter bar ─────────────────────────────────────────────────────────────
 
+function MultiSelect({ label, options, selected, onToggle, onClear }: {
+  label: string;
+  options: string[];
+  selected: Set<string>;
+  onToggle: (v: string) => void;
+  onClear: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    requestAnimationFrame(() => document.addEventListener("mousedown", handler));
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  const count = selected.size;
+
+  return (
+    <div ref={ref} style={{ position: "relative" }}>
+      <button
+        onClick={() => setOpen(!open)}
+        style={{
+          fontFamily: "var(--font-sans)", fontSize: 13, fontWeight: 600,
+          padding: "6px 12px", cursor: "pointer", borderRadius: 6,
+          border: "1px solid #e2e8f0", background: count > 0 ? "#eef2ff" : "#fff", color: "#1e293b",
+          display: "flex", alignItems: "center", gap: 6,
+        }}
+      >
+        {count > 0 ? `${label} (${count})` : `All ${label}`}
+        <span style={{ fontSize: 10, opacity: 0.5 }}>{open ? "\u25B2" : "\u25BC"}</span>
+      </button>
+      {open && (
+        <div style={{
+          position: "absolute", top: "100%", left: 0, marginTop: 4, zIndex: 200,
+          background: "white", border: "1px solid #e2e8f0", borderRadius: 8,
+          boxShadow: "0 8px 24px rgba(0,0,0,0.12)", padding: "4px 0", minWidth: 180, maxHeight: 280, overflowY: "auto",
+        }}>
+          {count > 0 && (
+            <div
+              onClick={() => { onClear(); setOpen(false); }}
+              style={{ padding: "6px 12px", fontSize: 12, color: "#dc2626", cursor: "pointer", borderBottom: "1px solid #f1f5f9" }}
+            >
+              Clear all
+            </div>
+          )}
+          {options.map((opt) => (
+            <label
+              key={opt}
+              style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 12px", fontSize: 13, cursor: "pointer" }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLLabelElement).style.background = "#f8fafc"; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLLabelElement).style.background = "transparent"; }}
+            >
+              <input
+                type="checkbox"
+                checked={selected.has(opt)}
+                onChange={() => onToggle(opt)}
+                style={{ accentColor: "#3b82f6" }}
+              />
+              {opt}
+            </label>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function FilterBar({
   search,
   onSearch,
@@ -1704,10 +1670,12 @@ function FilterBar({
   onViewMode,
   teams,
   people,
-  filterTeam,
-  onFilterTeam,
-  filterPerson,
-  onFilterPerson,
+  filterTeams,
+  onToggleTeam,
+  onClearTeams,
+  filterPeople,
+  onTogglePerson,
+  onClearPeople,
 }: {
   search: string;
   onSearch: (v: string) => void;
@@ -1726,10 +1694,12 @@ function FilterBar({
   onViewMode: (m: "projects" | "subtestEdits" | "cycles") => void;
   teams: Team[];
   people: Person[];
-  filterTeam: string | null;
-  onFilterTeam: (t: string | null) => void;
-  filterPerson: string | null;
-  onFilterPerson: (p: string | null) => void;
+  filterTeams: Set<string>;
+  onToggleTeam: (t: string) => void;
+  onClearTeams: () => void;
+  filterPeople: Set<string>;
+  onTogglePerson: (p: string) => void;
+  onClearPeople: () => void;
 }) {
   return (
     <div className="filter-bar">
@@ -1775,26 +1745,26 @@ function FilterBar({
         </div>
       </div>
       <div className="filter-bar-right">
-        <select
-          value={filterTeam ?? ""}
-          onChange={(e) => { onFilterTeam(e.target.value || null); onFilterPerson(null); }}
-          style={{ fontFamily: "var(--font-sans)", fontSize: 13, padding: "6px 10px", borderRadius: 6, border: "1px solid #e2e8f0", background: filterTeam ? "#eef2ff" : "#fff", color: "#1e293b", cursor: "pointer" }}
-        >
-          <option value="">All Teams</option>
-          {teams.map((t) => (
-            <option key={t.name} value={t.name}>{t.name}</option>
-          ))}
-        </select>
-        <select
-          value={filterPerson ?? ""}
-          onChange={(e) => onFilterPerson(e.target.value || null)}
-          style={{ fontFamily: "var(--font-sans)", fontSize: 13, padding: "6px 10px", borderRadius: 6, border: "1px solid #e2e8f0", background: filterPerson ? "#eef2ff" : "#fff", color: "#1e293b", cursor: "pointer" }}
-        >
-          <option value="">All People</option>
-          {(filterTeam ? people.filter((p) => p.team === filterTeam) : people).map((p) => (
-            <option key={p.name} value={p.name}>{p.name}</option>
-          ))}
-        </select>
+        <MultiSelect
+          label="Teams"
+          options={teams.map((t) => t.name)}
+          selected={filterTeams}
+          onToggle={onToggleTeam}
+          onClear={onClearTeams}
+        />
+        <MultiSelect
+          label="People"
+          options={(filterTeams.size > 0 ? people.filter((p) => {
+            for (const tn of filterTeams) {
+              const t = teams.find((t2) => t2.name === tn);
+              if (t?.members.includes(p.name)) return true;
+            }
+            return false;
+          }) : people).map((p) => p.name)}
+          selected={filterPeople}
+          onToggle={onTogglePerson}
+          onClear={onClearPeople}
+        />
         <CycleSelect
           cycles={cycles}
           selectedCycleId={selectedCycleId}
@@ -1875,9 +1845,10 @@ type LinearBar = {
   title: string;
   cleanedTitle: string;
   assigneeName: string;
+  assigneeId: string | null;
   startDate: Date;
   endDate: Date;
-  state: { name: string; color: string };
+  state: { name: string; color: string; type?: string };
   priority: number;
   priorityLabel: string;
   labels: { name: string; color: string }[];
@@ -1949,25 +1920,670 @@ type CycleIssue = {
   priorityLabel: string;
 };
 
+// ── Subtest Edits List View ──────────────────────────────────────────────
+
+const PRIORITY_GROUPS: { key: number; label: string; color: string }[] = [
+  { key: 1, label: "Urgent", color: "#dc2626" },
+  { key: 2, label: "High", color: "#f59e0b" },
+  { key: 3, label: "Medium", color: "#3b82f6" },
+  { key: 4, label: "Low", color: "#94a3b8" },
+  { key: 0, label: "No Priority", color: "#cbd5e1" },
+];
+
+function SubtestEditsList({
+  bars,
+  loading,
+  people,
+  onIssueClick,
+}: {
+  bars: LinearBar[];
+  loading: boolean;
+  people: Person[];
+  onIssueClick: (issueId: string) => void;
+}) {
+  const [filterOwner, setFilterOwner] = useState<string | null>(null);
+  const [sortField, setSortField] = useState<"due" | "status" | "owner" | null>("due");
+  const [editingField, setEditingField] = useState<{ issueId: string; field: "owner" | "status" | "dueDate"; x: number; y: number } | null>(null);
+  const [localBars, setLocalBars] = useState<LinearBar[]>(bars);
+  const [saving, setSaving] = useState<string | null>(null);
+
+  // Workflow states + team members (fetched once on mount)
+  const [workflowStates, setWorkflowStates] = useState<WorkflowState[]>([]);
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+
+  useEffect(() => { setLocalBars(bars); }, [bars]);
+
+  useEffect(() => {
+    linearQuery<{ teams: { nodes: { id: string; states: { nodes: WorkflowState[] }; members: { nodes: TeamMember[] } }[] } }>(
+      `query { teams(first: 10) { nodes { id states { nodes { id name color position } } members(first: 50) { nodes { id displayName avatarUrl } } } } }`,
+    ).then((data) => {
+      const stateMap = new Map<string, WorkflowState>();
+      const memberMap = new Map<string, TeamMember>();
+      for (const team of data.teams.nodes) {
+        for (const s of team.states.nodes) { if (!stateMap.has(s.name)) stateMap.set(s.name, s); }
+        for (const m of team.members.nodes) memberMap.set(m.id, m);
+      }
+      setWorkflowStates([...stateMap.values()].sort((a, b) => a.position - b.position));
+      setTeamMembers([...memberMap.values()].sort((a, b) => a.displayName.localeCompare(b.displayName)));
+    }).catch((err) => console.error("[SUBTEST] Failed to load teams:", err));
+  }, []);
+
+  const ownerNames = useMemo(() => [...new Set(localBars.map((b) => b.assigneeName))].sort(), [localBars]);
+
+  const filtered = useMemo(() => {
+    let list = localBars;
+    if (filterOwner) list = list.filter((b) => b.assigneeName === filterOwner);
+    return list;
+  }, [localBars, filterOwner]);
+
+  // Group by priority
+  const byPriority = useMemo(() => {
+    const groups: Record<number, LinearBar[]> = {};
+    for (const bar of filtered) {
+      if (!groups[bar.priority]) groups[bar.priority] = [];
+      groups[bar.priority].push(bar);
+    }
+    // Sort within each group
+    for (const key in groups) {
+      groups[key].sort((a, b) => {
+        if (sortField === "due") return a.endDate.getTime() - b.endDate.getTime();
+        if (sortField === "status") return a.state.name.localeCompare(b.state.name);
+        if (sortField === "owner") return a.assigneeName.localeCompare(b.assigneeName);
+        return a.endDate.getTime() - b.endDate.getTime();
+      });
+    }
+    return groups;
+  }, [filtered, sortField]);
+
+  const fmtDate = (d: Date) => d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+
+  const updateField = async (issueId: string, field: string, value: string) => {
+    setSaving(issueId);
+    try {
+      const res = await fetch("/api/linear/update", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ issueId, [field]: value }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        const u = json.issue;
+        setLocalBars((prev) => prev.map((bar) => {
+          if (bar.issueId !== issueId) return bar;
+          const updated = { ...bar };
+          if (u.state) updated.state = { name: u.state.name, color: u.state.color, type: u.state.type };
+          if (u.dueDate !== undefined) updated.endDate = u.dueDate ? new Date(u.dueDate) : bar.endDate;
+          if (u.assignee) {
+            updated.assigneeName = normalizeAssigneeName(u.assignee.displayName) ?? u.assignee.displayName;
+            updated.assigneeId = u.assignee.id;
+          }
+          // Remove if now completed/canceled
+          if (u.state?.type === "completed" || u.state?.type === "canceled") return null as unknown as LinearBar;
+          return updated;
+        }).filter(Boolean));
+      }
+    } catch (err) { console.error("Update failed:", err); }
+    finally { setSaving(null); setEditingField(null); }
+  };
+
+  const selectStyle: React.CSSProperties = {
+    fontFamily: "var(--font-sans)", fontSize: 13, fontWeight: 600,
+    padding: "6px 12px", cursor: "pointer", borderRadius: 6,
+    border: "1px solid #e2e8f0", background: "white", color: "#1e293b",
+  };
+
+  const COL = { title: "1 1 0", owner: "0 0 110px", due: "0 0 90px", status: "0 0 100px" };
+
+  return (
+    <>
+    <div style={{ padding: "24px 32px", fontFamily: "var(--font-sans)", maxHeight: "calc(100vh - 120px)", overflow: "auto", maxWidth: 860, margin: "0 auto" }}>
+      {/* Filters */}
+      <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 20 }}>
+        <select value={filterOwner ?? ""} onChange={(e) => setFilterOwner(e.target.value || null)} style={selectStyle}>
+          <option value="">All owners</option>
+          {ownerNames.map((n) => <option key={n} value={n}>{n}</option>)}
+        </select>
+        <span style={{ fontSize: 12, color: "#94a3b8" }}>
+          {filtered.length} open task{filtered.length !== 1 ? "s" : ""}
+        </span>
+      </div>
+
+      {loading && <div style={{ color: "#94a3b8", padding: "40px 0", textAlign: "center" }}>Loading...</div>}
+
+      {!loading && filtered.length === 0 && (
+        <div style={{ color: "#94a3b8", padding: "40px 0", textAlign: "center" }}>No open tasks found.</div>
+      )}
+
+      {!loading && PRIORITY_GROUPS.map((pg) => {
+        const items = byPriority[pg.key];
+        if (!items || items.length === 0) return null;
+        return (
+          <div key={pg.key} style={{ marginBottom: 24 }}>
+            {/* Priority group header */}
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8, borderBottom: `2px solid ${pg.color}`, paddingBottom: 6 }}>
+              <span style={{ fontSize: 14, fontWeight: 800, color: pg.color, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                {pg.label}
+              </span>
+              <span style={{ fontSize: 11, color: "#94a3b8", fontWeight: 500 }}>
+                {items.length} task{items.length !== 1 ? "s" : ""}
+              </span>
+            </div>
+
+            {/* Column headers */}
+            <div style={{
+              display: "flex", alignItems: "center", gap: 8, padding: "4px 12px",
+              background: hexToRgba(pg.color, 0.05), fontSize: 10, fontWeight: 700, color: "#94a3b8",
+              textTransform: "uppercase", letterSpacing: "0.04em", borderRadius: "8px 8px 0 0",
+            }}>
+              <span style={{ width: 8 }} />
+              <span style={{ flex: COL.title }}>Task</span>
+              <span style={{ flex: COL.owner, cursor: "pointer", color: sortField === "owner" ? pg.color : undefined }} onClick={() => setSortField(sortField === "owner" ? null : "owner")}>
+                Owner {sortField === "owner" ? "\u25B2" : ""}
+              </span>
+              <span style={{ flex: COL.due, textAlign: "right", cursor: "pointer", color: sortField === "due" ? pg.color : undefined }} onClick={() => setSortField(sortField === "due" ? null : "due")}>
+                Due {sortField === "due" ? "\u25B2" : ""}
+              </span>
+              <span style={{ flex: COL.status, cursor: "pointer", color: sortField === "status" ? pg.color : undefined }} onClick={() => setSortField(sortField === "status" ? null : "status")}>
+                Status {sortField === "status" ? "\u25B2" : ""}
+              </span>
+            </div>
+
+            {/* Task rows */}
+            <div style={{ border: `1px solid ${hexToRgba(pg.color, 0.15)}`, borderTop: "none", borderRadius: "0 0 8px 8px", overflow: "visible" }}>
+              {items.map((bar, idx) => {
+                const ownerPerson = people.find((p) => p.name === bar.assigneeName);
+                const isSaving = saving === bar.issueId;
+                const isEditingOwner = editingField?.issueId === bar.issueId && editingField.field === "owner";
+                const isEditingStatus = editingField?.issueId === bar.issueId && editingField.field === "status";
+                const isEditingDue = editingField?.issueId === bar.issueId && editingField.field === "dueDate";
+
+                return (
+                  <div
+                    key={bar.issueId}
+                    style={{
+                      display: "flex", alignItems: "center", gap: 8,
+                      padding: "6px 12px", fontSize: 12,
+                      background: idx % 2 === 0 ? "white" : hexToRgba(pg.color, 0.02),
+                      borderTop: idx > 0 ? `1px solid ${hexToRgba(pg.color, 0.08)}` : "none",
+                      opacity: isSaving ? 0.5 : 1,
+                      position: (isEditingOwner || isEditingStatus || isEditingDue) ? "relative" : undefined,
+                      zIndex: (isEditingOwner || isEditingStatus || isEditingDue) ? 60 : undefined,
+                    }}
+                  >
+                    <span style={{ width: 8, height: 8, borderRadius: "50%", flexShrink: 0, backgroundColor: bar.state.color }} />
+
+                    {/* Title — click to open detail */}
+                    <span
+                      onClick={() => onIssueClick(bar.issueId)}
+                      style={{ flex: COL.title, fontWeight: 500, color: "#1e293b", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", cursor: "pointer" }}
+                      title={bar.title}
+                    >
+                      {bar.cleanedTitle}
+                    </span>
+
+                    {/* Owner */}
+                    <span style={{ flex: COL.owner }}>
+                      <span
+                        onClick={(e) => { e.stopPropagation(); const r = (e.target as HTMLElement).getBoundingClientRect(); setEditingField(isEditingOwner ? null : { issueId: bar.issueId, field: "owner", x: r.left, y: r.bottom + 4 }); }}
+                        style={{
+                          fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 999, cursor: "pointer",
+                          backgroundColor: ownerPerson ? hexToRgba(ownerPerson.color, 0.15) : "#f1f5f9",
+                          color: ownerPerson?.color ?? "#64748b",
+                          display: "inline-block", maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                        }}
+                      >
+                        {bar.assigneeName}
+                      </span>
+                    </span>
+
+                    {/* Due date */}
+                    <span style={{ flex: COL.due, textAlign: "right" }}>
+                      {isEditingDue ? (
+                        <span onClick={(e) => e.stopPropagation()} style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                          <input
+                            type="date"
+                            autoFocus
+                            defaultValue={bar.endDate.toISOString().split("T")[0]}
+                            onChange={(e) => updateField(bar.issueId, "dueDate", e.target.value)}
+                            style={{ fontFamily: "var(--font-sans)", fontSize: 11, padding: "2px 4px", border: "1px solid #e2e8f0", borderRadius: 4, width: 110 }}
+                          />
+                        </span>
+                      ) : (
+                        <span
+                          onClick={(e) => { e.stopPropagation(); const r = (e.target as HTMLElement).getBoundingClientRect(); setEditingField({ issueId: bar.issueId, field: "dueDate", x: r.left, y: r.bottom + 4 }); }}
+                          style={{ fontSize: 11, color: "#475569", cursor: "pointer", padding: "2px 6px", borderRadius: 4, border: "1px solid transparent" }}
+                          onMouseEnter={(e) => { (e.currentTarget as HTMLSpanElement).style.borderColor = "#e2e8f0"; }}
+                          onMouseLeave={(e) => { (e.currentTarget as HTMLSpanElement).style.borderColor = "transparent"; }}
+                        >
+                          {fmtDate(bar.endDate)}
+                        </span>
+                      )}
+                    </span>
+
+                    {/* Status */}
+                    <span style={{ flex: COL.status }}>
+                      <span
+                        onClick={(e) => { e.stopPropagation(); const r = (e.target as HTMLElement).getBoundingClientRect(); setEditingField(isEditingStatus ? null : { issueId: bar.issueId, field: "status", x: r.right, y: r.bottom + 4 }); }}
+                        style={{
+                          fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 999, cursor: "pointer",
+                          backgroundColor: hexToRgba(bar.state.color, 0.15), color: bar.state.color, whiteSpace: "nowrap",
+                          display: "inline-block",
+                        }}
+                      >
+                        {bar.state.name}
+                      </span>
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+
+    {/* Backdrop */}
+    {editingField && <div onClick={() => setEditingField(null)} style={{ position: "fixed", inset: 0, zIndex: 9998 }} />}
+
+    {/* Owner dropdown */}
+    {editingField && editingField.field === "owner" && (
+      <div data-dropdown onClick={(e) => e.stopPropagation()} style={{
+        position: "fixed", top: editingField.y, left: editingField.x, zIndex: 9999,
+        background: "white", border: "1px solid #e2e8f0", borderRadius: 8,
+        boxShadow: "0 8px 24px rgba(0,0,0,0.16)", padding: 4, minWidth: 180, maxHeight: 240, overflowY: "auto",
+      }}>
+        {teamMembers.length === 0 && <div style={{ padding: "8px 12px", fontSize: 12, color: "#94a3b8" }}>Loading...</div>}
+        {teamMembers.map((m) => {
+          const bar = localBars.find((b) => b.issueId === editingField.issueId);
+          const isSelected = m.displayName === bar?.assigneeName || normalizeAssigneeName(m.displayName) === bar?.assigneeName;
+          return (
+            <div key={m.id} onClick={() => updateField(editingField.issueId, "assigneeId", m.id)}
+              style={{ padding: "6px 12px", fontSize: 13, cursor: "pointer", borderRadius: 6, fontWeight: isSelected ? 700 : 400, background: isSelected ? "#f1f5f9" : "transparent" }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.background = "#f8fafc"; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = isSelected ? "#f1f5f9" : "transparent"; }}
+            >{m.displayName}</div>
+          );
+        })}
+      </div>
+    )}
+
+    {/* Status dropdown */}
+    {editingField && editingField.field === "status" && (
+      <div data-dropdown onClick={(e) => e.stopPropagation()} style={{
+        position: "fixed", top: editingField.y, left: editingField.x - 160, zIndex: 9999,
+        background: "white", border: "1px solid #e2e8f0", borderRadius: 8,
+        boxShadow: "0 8px 24px rgba(0,0,0,0.16)", padding: 4, minWidth: 160, maxHeight: 260, overflowY: "auto",
+      }}>
+        {workflowStates.length === 0 && <div style={{ padding: "8px 12px", fontSize: 12, color: "#94a3b8" }}>Loading...</div>}
+        {workflowStates.map((ws) => {
+          const bar = localBars.find((b) => b.issueId === editingField.issueId);
+          const isSelected = ws.name === bar?.state.name;
+          return (
+            <div key={ws.id} onClick={() => updateField(editingField.issueId, "stateId", ws.id)}
+              style={{ padding: "6px 12px", fontSize: 13, cursor: "pointer", borderRadius: 6, display: "flex", alignItems: "center", gap: 8, fontWeight: isSelected ? 700 : 400, background: isSelected ? hexToRgba(ws.color, 0.1) : "transparent" }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.background = hexToRgba(ws.color, 0.08); }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = isSelected ? hexToRgba(ws.color, 0.1) : "transparent"; }}
+            >
+              <span style={{ width: 8, height: 8, borderRadius: "50%", backgroundColor: ws.color, flexShrink: 0 }} />
+              <span style={{ color: ws.color }}>{ws.name}</span>
+            </div>
+          );
+        })}
+      </div>
+    )}
+    </>
+  );
+}
+
 const CYCLE_TEAMS = new Set(["Engineering", "Data Science", "Product"]);
+
+// ── Cycle Issue Detail Panel ────────────────────────────────────────────
+
+type WorkflowState = { id: string; name: string; color: string; position: number };
+type TeamMember = { id: string; displayName: string; avatarUrl: string | null };
+
+function CycleIssueDetailPanel({
+  issueId,
+  onClose,
+  onUpdated,
+}: {
+  issueId: string;
+  onClose: () => void;
+  onUpdated: (issueId: string, changes: { state?: { name: string; color: string }; dueDate?: string | null; assignee?: { displayName: string; avatarUrl: string | null } | null }) => void;
+}) {
+  const [issue, setIssue] = useState<LinearIssue | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [workflowStates, setWorkflowStates] = useState<WorkflowState[]>([]);
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [saving, setSaving] = useState<string | null>(null);
+
+  // Close on Escape
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [onClose]);
+
+  // Fetch issue detail + workflow states + team members
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+
+    Promise.all([
+      linearQuery<{ issue: LinearIssue & { team: { id: string } } }>(
+        `query Issue($id: String!) {
+          issue(id: $id) {
+            id title description priority priorityLabel identifier
+            state { name color }
+            assignee { id displayName avatarUrl }
+            project { id name }
+            cycle { number startsAt endsAt }
+            labels { nodes { name color } }
+            startedAt dueDate createdAt updatedAt
+            team { id }
+            comments { nodes { body createdAt user { displayName avatarUrl } } }
+          }
+        }`,
+        { id: issueId },
+      ),
+    ])
+      .then(([issueData]) => {
+        if (cancelled) return;
+        setIssue(issueData.issue);
+        const teamId = issueData.issue.team?.id;
+        if (teamId) {
+          // Fetch workflow states and members for this team
+          Promise.all([
+            linearQuery<{ workflowStates: { nodes: WorkflowState[] } }>(
+              `query States($teamId: String!) {
+                workflowStates(filter: { team: { id: { eq: $teamId } } }, first: 50) {
+                  nodes { id name color position }
+                }
+              }`,
+              { teamId },
+            ),
+            linearQuery<{ team: { members: { nodes: TeamMember[] } } }>(
+              `query Members($teamId: String!) {
+                team(id: $teamId) {
+                  members(first: 50) { nodes { id displayName avatarUrl } }
+                }
+              }`,
+              { teamId },
+            ),
+          ]).then(([statesData, membersData]) => {
+            if (cancelled) return;
+            console.log("[DETAIL] Loaded", statesData.workflowStates.nodes.length, "states,", membersData.team.members.nodes.length, "members");
+            setWorkflowStates(statesData.workflowStates.nodes.sort((a, b) => a.position - b.position));
+            setTeamMembers(membersData.team.members.nodes.sort((a, b) => a.displayName.localeCompare(b.displayName)));
+          }).catch((err) => { if (!cancelled) console.error("[DETAIL] Failed to load states/members:", err); });
+        }
+      })
+      .catch((err) => { if (!cancelled) console.error("Detail fetch error:", err); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+
+    return () => { cancelled = true; };
+  }, [issueId]);
+
+  const updateIssue = async (field: string, value: string) => {
+    if (!issue) return;
+    setSaving(field);
+    try {
+      const res = await fetch("/api/linear/update", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ issueId: issue.id, [field]: value }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        const updated = json.issue;
+        // Update local issue state
+        setIssue((prev) => {
+          if (!prev) return prev;
+          const changes: Record<string, unknown> = {};
+          if (updated.state) changes.state = updated.state;
+          if (updated.dueDate !== undefined) changes.dueDate = updated.dueDate;
+          if (updated.assignee !== undefined) changes.assignee = updated.assignee;
+          return { ...prev, ...changes };
+        });
+        // Notify parent to update the list
+        onUpdated(issue.id, {
+          state: updated.state ? { name: updated.state.name, color: updated.state.color } : undefined,
+          dueDate: updated.dueDate !== undefined ? updated.dueDate : undefined,
+          assignee: updated.assignee !== undefined
+            ? updated.assignee
+              ? { displayName: updated.assignee.displayName, avatarUrl: updated.assignee.avatarUrl }
+              : null
+            : undefined,
+        });
+      }
+    } catch (err) {
+      console.error("Update failed:", err);
+    } finally {
+      setSaving(null);
+    }
+  };
+
+  const fmtDate = (d: string) => new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+
+  return (
+    <div className="detail-overlay" onClick={onClose}>
+      <div className="detail-panel" onClick={(e) => e.stopPropagation()}>
+        {loading && (
+          <div style={{ padding: 40, textAlign: "center", color: "#94a3b8" }}>
+            <div className="loading-spinner" />
+            <span>Loading...</span>
+          </div>
+        )}
+        {issue && !loading && (
+          <>
+            {/* Header */}
+            <div className="detail-header" style={{ borderColor: issue.state.color }}>
+              <div className="detail-header-top">
+                {issue.identifier && (
+                  <span className="linear-identifier">{issue.identifier}</span>
+                )}
+                <span style={{ flex: 1 }} />
+                <button className="detail-close" onClick={onClose}>&times;</button>
+              </div>
+              <h2 className="detail-title">{issue.title}</h2>
+            </div>
+
+            {/* Editable fields */}
+            <div style={{ padding: "16px 24px", display: "flex", flexDirection: "column", gap: 16 }}>
+              {/* Status */}
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 600, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 6 }}>
+                  Status {saving === "stateId" && <span style={{ fontWeight: 400, textTransform: "none" }}>(saving...)</span>}
+                </label>
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  {workflowStates.map((ws) => (
+                    <button
+                      key={ws.id}
+                      onClick={() => updateIssue("stateId", ws.id)}
+                      style={{
+                        fontFamily: "var(--font-sans)", fontSize: 12, fontWeight: 600,
+                        padding: "4px 12px", borderRadius: 999, cursor: "pointer",
+                        border: issue.state.name === ws.name ? `2px solid ${ws.color}` : "2px solid transparent",
+                        background: issue.state.name === ws.name ? hexToRgba(ws.color, 0.2) : hexToRgba(ws.color, 0.08),
+                        color: ws.color,
+                      }}
+                    >
+                      <span style={{ display: "inline-block", width: 8, height: 8, borderRadius: "50%", backgroundColor: ws.color, marginRight: 6, verticalAlign: "middle" }} />
+                      {ws.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Due Date */}
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 600, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 6 }}>
+                  Due Date {saving === "dueDate" && <span style={{ fontWeight: 400, textTransform: "none" }}>(saving...)</span>}
+                </label>
+                <input
+                  type="date"
+                  value={issue.dueDate ? issue.dueDate.split("T")[0] : ""}
+                  onChange={(e) => updateIssue("dueDate", e.target.value || "")}
+                  style={{
+                    fontFamily: "var(--font-sans)", fontSize: 13, padding: "6px 10px",
+                    borderRadius: 6, border: "1px solid #e2e8f0", background: "white", color: "#1e293b",
+                  }}
+                />
+              </div>
+
+              {/* Assignee */}
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 600, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 6 }}>
+                  Owner {saving === "assigneeId" && <span style={{ fontWeight: 400, textTransform: "none" }}>(saving...)</span>}
+                </label>
+                {teamMembers.length > 0 ? (
+                  <select
+                    value={issue.assignee?.id ?? teamMembers.find((m) => m.displayName === issue.assignee?.displayName)?.id ?? ""}
+                    onChange={(e) => updateIssue("assigneeId", e.target.value)}
+                    style={{
+                      fontFamily: "var(--font-sans)", fontSize: 13, padding: "6px 10px",
+                      borderRadius: 6, border: "1px solid #e2e8f0", background: "white", color: "#1e293b",
+                      width: "100%",
+                    }}
+                  >
+                    <option value="">Unassigned</option>
+                    {teamMembers.map((m) => (
+                      <option key={m.id} value={m.id}>{m.displayName}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <div style={{ fontSize: 13, color: "#94a3b8", padding: "6px 0" }}>
+                    {issue.assignee?.displayName ?? "Unassigned"} (loading team...)
+                  </div>
+                )}
+              </div>
+
+              {/* Project & Priority (read-only) */}
+              <div style={{ display: "flex", gap: 24 }}>
+                {issue.project && (
+                  <div>
+                    <span style={{ fontSize: 11, fontWeight: 600, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em" }}>Project</span>
+                    <div style={{ fontSize: 13, color: "#1e293b", marginTop: 4 }}>{issue.project.name}</div>
+                  </div>
+                )}
+                <div>
+                  <span style={{ fontSize: 11, fontWeight: 600, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em" }}>Priority</span>
+                  <div style={{ fontSize: 13, color: priorityColor(issue.priority), marginTop: 4 }}>
+                    {priorityIcon(issue.priority)} {issue.priorityLabel}
+                  </div>
+                </div>
+              </div>
+
+              {/* Labels */}
+              {issue.labels.nodes.length > 0 && (
+                <div>
+                  <span style={{ fontSize: 11, fontWeight: 600, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 6 }}>Labels</span>
+                  <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+                    {issue.labels.nodes.map((label) => (
+                      <span key={label.name} style={{
+                        fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 999,
+                        backgroundColor: hexToRgba(label.color, 0.15), color: label.color,
+                      }}>
+                        {label.name}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Description */}
+            {issue.description && (
+              <div style={{ padding: "0 24px 16px", borderTop: "1px solid #f1f5f9" }}>
+                <h3 style={{ fontSize: 13, fontWeight: 700, color: "#1e293b", margin: "16px 0 8px" }}>Description</h3>
+                <div style={{ fontSize: 13, color: "#475569", lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{issue.description}</div>
+              </div>
+            )}
+
+            {/* Comments */}
+            {issue.comments && issue.comments.nodes.length > 0 && (
+              <div style={{ padding: "0 24px 24px", borderTop: "1px solid #f1f5f9" }}>
+                <h3 style={{ fontSize: 13, fontWeight: 700, color: "#1e293b", margin: "16px 0 8px" }}>
+                  Comments ({issue.comments.nodes.length})
+                </h3>
+                {issue.comments.nodes.map((comment, idx) => (
+                  <div key={idx} style={{ marginBottom: 12, padding: "10px 12px", background: "#f8fafc", borderRadius: 8 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+                      {comment.user.avatarUrl ? (
+                        <img src={comment.user.avatarUrl} alt="" style={{ width: 20, height: 20, borderRadius: "50%" }} />
+                      ) : (
+                        <div style={{ width: 20, height: 20, borderRadius: "50%", background: "#cbd5e1", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: "white" }}>
+                          {comment.user.displayName.charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                      <span style={{ fontSize: 12, fontWeight: 600, color: "#1e293b" }}>{comment.user.displayName}</span>
+                      <span style={{ fontSize: 11, color: "#94a3b8", marginLeft: "auto" }}>{fmtDate(comment.createdAt)}</span>
+                    </div>
+                    <div style={{ fontSize: 12, color: "#475569", lineHeight: 1.5, whiteSpace: "pre-wrap" }}>{comment.body}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
 
 function CyclesView({ cycles, people }: { cycles: LinearCycle[]; people: Person[] }) {
   const [selectedCycleId, setSelectedCycleId] = useState<string | null>(null);
   const [issues, setIssues] = useState<CycleIssue[]>([]);
   const [loading, setLoading] = useState(false);
+  const [filterOwner, setFilterOwner] = useState<string | null>(null);
+  const [selectedIssueId, setSelectedIssueId] = useState<string | null>(null);
+  type PriorityBucket = "priority" | "secondary" | "backlog";
+  const [buckets, setBuckets] = useState<Record<PriorityBucket, string[]>>({ priority: [], secondary: [], backlog: [] });
+  const [dragProject, setDragProject] = useState<{ name: string; bucket: PriorityBucket; startIdx: number; currentIdx: number; currentBucket: PriorityBucket } | null>(null);
+  const dragYRef = useRef<{ name: string; bucket: PriorityBucket; startY: number; startIdx: number; sectionTops: { bucket: PriorityBucket; top: number }[] } | null>(null);
+  const sectionRefs = useRef<Record<PriorityBucket, HTMLDivElement | null>>({ priority: null, secondary: null, backlog: null });
 
-  // Auto-select first cycle
-  useEffect(() => {
-    if (cycles.length > 0 && !selectedCycleId) {
-      setSelectedCycleId(cycles[0].id);
+  // Inline edit state
+  const [editingField, setEditingField] = useState<{ issueId: string; field: "owner" | "status" | "dueDate"; x: number; y: number } | null>(null);
+  const [workflowStates, setWorkflowStates] = useState<WorkflowState[]>([]);
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [saving, setSaving] = useState<string | null>(null);
+  type SortField = "due" | "status" | null;
+  const [sortField, setSortField] = useState<SortField>(null);
+
+  // Find this week / last week / next week cycles
+  const weeklyCycles = useMemo(() => {
+    const now = new Date();
+    const sorted = [...cycles].sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime());
+    let thisIdx = sorted.findIndex((c) => {
+      const start = new Date(c.startsAt);
+      const end = new Date(c.endsAt);
+      return now >= start && now <= end;
+    });
+    if (thisIdx === -1) {
+      thisIdx = sorted.findIndex((c) => new Date(c.startsAt) > now);
+      if (thisIdx === -1) thisIdx = sorted.length - 1;
     }
-  }, [cycles, selectedCycleId]);
+    const result: { label: string; cycle: LinearCycle }[] = [];
+    if (thisIdx > 0) result.push({ label: "Last week", cycle: sorted[thisIdx - 1] });
+    if (thisIdx >= 0 && thisIdx < sorted.length) result.push({ label: "This week", cycle: sorted[thisIdx] });
+    if (thisIdx + 1 < sorted.length) result.push({ label: "Next week", cycle: sorted[thisIdx + 1] });
+    return result;
+  }, [cycles]);
+
+  // Auto-select "This week"
+  useEffect(() => {
+    if (weeklyCycles.length > 0 && !selectedCycleId) {
+      const thisWeek = weeklyCycles.find((w) => w.label === "This week");
+      setSelectedCycleId((thisWeek ?? weeklyCycles[0]).cycle.id);
+    }
+  }, [weeklyCycles, selectedCycleId]);
 
   // Fetch issues when cycle changes
   useEffect(() => {
     if (!selectedCycleId) return;
     setLoading(true);
-    linearQuery<{ cycle: { issues: { nodes: CycleIssue[] } } }>(
+    linearQuery<{ cycle: { issues: { nodes: (CycleIssue & { team?: { id: string } })[] } } }>(
       `query CycleIssues($id: String!) {
         cycle(id: $id) {
           issues(first: 200) {
@@ -1976,6 +2592,7 @@ function CyclesView({ cycles, people }: { cycles: LinearCycle[]; people: Person[
               state { name color }
               assignee { displayName avatarUrl }
               project { name }
+              team { id }
             }
           }
         }
@@ -1983,7 +2600,6 @@ function CyclesView({ cycles, people }: { cycles: LinearCycle[]; people: Person[
       { id: selectedCycleId },
     )
       .then((data) => {
-        console.log("[CYCLES] Fetched", data.cycle.issues.nodes.length, "issues");
         setIssues(data.cycle.issues.nodes);
       })
       .catch((err) => {
@@ -1993,140 +2609,577 @@ function CyclesView({ cycles, people }: { cycles: LinearCycle[]; people: Person[
       .finally(() => setLoading(false));
   }, [selectedCycleId]);
 
-  // Filter to only Engineering, Product, Data Science people
-  const relevantPeople = new Set(
-    people.filter((p) => CYCLE_TEAMS.has(p.team)).map((p) => p.name),
-  );
+  // Fetch workflow states and team members on mount (from all teams)
+  useEffect(() => {
+    linearQuery<{ teams: { nodes: { id: string; states: { nodes: WorkflowState[] }; members: { nodes: TeamMember[] } }[] } }>(
+      `query {
+        teams(first: 10) {
+          nodes {
+            id
+            states { nodes { id name color position } }
+            members(first: 50) { nodes { id displayName avatarUrl } }
+          }
+        }
+      }`,
+    )
+      .then((data) => {
+        const stateMap = new Map<string, WorkflowState>();
+        const memberMap = new Map<string, TeamMember>();
+        for (const team of data.teams.nodes) {
+          for (const s of team.states.nodes) { if (!stateMap.has(s.name)) stateMap.set(s.name, s); }
+          for (const m of team.members.nodes) memberMap.set(m.id, m);
+        }
+        setWorkflowStates([...stateMap.values()].sort((a, b) => a.position - b.position));
+        setTeamMembers([...memberMap.values()].sort((a, b) => a.displayName.localeCompare(b.displayName)));
+      })
+      .catch((err) => console.error("[CYCLES] Failed to load teams:", err));
+  }, []);
 
-  // Show all issues (normalize names for display)
-  const filteredIssues = issues;
+  // Collect unique owner names for filter dropdown
+  const ownerNames = useMemo(() => {
+    const names = new Set<string>();
+    for (const issue of issues) {
+      const raw = issue.assignee?.displayName;
+      if (raw) names.add(normalizeAssigneeName(raw) ?? raw);
+    }
+    return [...names].sort();
+  }, [issues]);
+
+  // Apply owner filter
+  const filteredIssues = filterOwner
+    ? issues.filter((issue) => {
+        const name = issue.assignee ? (normalizeAssigneeName(issue.assignee.displayName) ?? issue.assignee.displayName) : "Unassigned";
+        return name === filterOwner;
+      })
+    : issues;
+
+  // Build byProject from ALL issues (not filtered) so bucket tracking is stable
+  const byProjectAll: Record<string, CycleIssue[]> = {};
+  for (const issue of issues) {
+    const key = issue.project?.name ?? "No Project";
+    if (!byProjectAll[key]) byProjectAll[key] = [];
+    byProjectAll[key].push(issue);
+  }
+  const allProjectNamesFromIssues = Object.keys(byProjectAll);
+
+  // Build byProject from filtered issues for display
   const byProject: Record<string, CycleIssue[]> = {};
   for (const issue of filteredIssues) {
     const key = issue.project?.name ?? "No Project";
     if (!byProject[key]) byProject[key] = [];
     byProject[key].push(issue);
   }
-  const projectNames = Object.keys(byProject).sort();
+  const allProjectNames = Object.keys(byProject);
 
-  const selectedCycle = cycles.find((c) => c.id === selectedCycleId);
-  const formatDate = (d: string) => {
-    const date = new Date(d);
-    return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  // Load saved buckets when cycle changes
+  const [bucketsLoaded, setBucketsLoaded] = useState(false);
+  useEffect(() => {
+    if (!selectedCycleId) return;
+    setBucketsLoaded(false);
+    fetchOverrides().then((ov) => {
+      const saved = ov.cycleBuckets?.[selectedCycleId];
+      if (saved) {
+        setBuckets({ priority: saved.priority ?? [], secondary: saved.secondary ?? [], backlog: saved.backlog ?? [] });
+      } else {
+        setBuckets({ priority: [], secondary: [], backlog: [] });
+      }
+      setBucketsLoaded(true);
+    });
+  }, [selectedCycleId]);
+
+  // Sync new projects into backlog (single setBuckets call to avoid duplication)
+  useEffect(() => {
+    if (!bucketsLoaded) return;
+    setBuckets((prev) => {
+      const assigned = new Set([...prev.priority, ...prev.secondary, ...prev.backlog]);
+      const missing = allProjectNamesFromIssues.filter((n) => !assigned.has(n));
+      if (missing.length === 0) return prev;
+      return { ...prev, backlog: [...prev.backlog, ...missing] };
+    });
+  }, [allProjectNamesFromIssues.join(","), bucketsLoaded]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Persist buckets when they change
+  const bucketsRef = useRef(buckets);
+  bucketsRef.current = buckets;
+  useEffect(() => {
+    if (!selectedCycleId || !bucketsLoaded) return;
+    // Debounce save
+    const timer = setTimeout(() => {
+      saveOverride("saveCycleBuckets", { cycleId: selectedCycleId, buckets: bucketsRef.current });
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [buckets, selectedCycleId, bucketsLoaded]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const selectedCycleLabel = weeklyCycles.find((w) => w.cycle.id === selectedCycleId)?.label ?? "";
+  const fmtDate = (d: string) => new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+
+  // Dropdowns are closed via a backdrop overlay rendered below them
+
+  // Inline update helper
+  const updateIssueField = async (issueId: string, field: string, value: string) => {
+    setSaving(issueId);
+    try {
+      const res = await fetch("/api/linear/update", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ issueId, [field]: value }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        const u = json.issue;
+        setIssues((prev) => prev.map((issue) => {
+          if (issue.id !== issueId) return issue;
+          const changes: Partial<CycleIssue> = {};
+          if (u.state) changes.state = { name: u.state.name, color: u.state.color };
+          if (u.dueDate !== undefined) changes.dueDate = u.dueDate;
+          if (u.assignee !== undefined) changes.assignee = u.assignee ? { displayName: u.assignee.displayName, avatarUrl: u.assignee.avatarUrl } : null;
+          return { ...issue, ...changes };
+        }));
+      }
+    } catch (err) {
+      console.error("Update failed:", err);
+    } finally {
+      setSaving(null);
+      setEditingField(null);
+    }
   };
 
-  return (
-    <div style={{ padding: "24px 32px", fontFamily: "var(--font-sans)", maxHeight: "calc(100vh - 120px)", overflow: "auto" }}>
-      {cycles.length === 0 && <div style={{ color: "#94a3b8", padding: "40px 0", textAlign: "center" }}>Loading cycles...</div>}
-      {/* Cycle selector */}
-      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
-        <span style={{ fontSize: 14, fontWeight: 600, color: "#64748b" }}>Cycle:</span>
-        <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
-          {cycles.map((c) => (
-            <button
-              key={c.id}
-              onClick={() => setSelectedCycleId(c.id)}
-              style={{
-                fontFamily: "var(--font-sans)", fontSize: 13, fontWeight: 600,
-                padding: "6px 14px", cursor: "pointer", border: "none", borderRadius: 6,
-                background: selectedCycleId === c.id ? "#1E88E5" : "#f1f5f9",
-                color: selectedCycleId === c.id ? "white" : "#64748b",
-              }}
-            >
-              Cycle {c.number}
-              <span style={{ fontSize: 11, fontWeight: 400, marginLeft: 4, opacity: 0.8 }}>
-                ({formatDate(c.startsAt)} – {formatDate(c.endsAt)})
-              </span>
-            </button>
-          ))}
-        </div>
-      </div>
+  const selectStyle: React.CSSProperties = {
+    fontFamily: "var(--font-sans)", fontSize: 13, fontWeight: 600,
+    padding: "6px 12px", cursor: "pointer", borderRadius: 6,
+    border: "1px solid #e2e8f0", background: "white", color: "#1e293b",
+  };
 
-      {selectedCycle && (
-        <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 16 }}>
-          Showing Engineering, Product & Data Science · {filteredIssues.length} tasks
-        </div>
-      )}
+  // Column widths
+  const COL = { title: "1 1 0", owner: "0 0 110px", due: "0 0 90px", status: "0 0 100px" };
+
+  return (
+    <>
+    <div style={{ padding: "24px 32px", fontFamily: "var(--font-sans)", maxHeight: "calc(100vh - 120px)", overflow: "auto", maxWidth: 860, margin: "0 auto" }}>
+      {cycles.length === 0 && <div style={{ color: "#94a3b8", padding: "40px 0", textAlign: "center" }}>Loading cycles...</div>}
+
+      {/* Filters row */}
+      <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 24 }}>
+        <select value={selectedCycleId ?? ""} onChange={(e) => { setSelectedCycleId(e.target.value); setFilterOwner(null); }} style={selectStyle}>
+          {weeklyCycles.map((w) => (
+            <option key={w.cycle.id} value={w.cycle.id}>{w.label} (Cycle {w.cycle.number})</option>
+          ))}
+        </select>
+        <select value={filterOwner ?? ""} onChange={(e) => setFilterOwner(e.target.value || null)} style={selectStyle}>
+          <option value="">All owners</option>
+          {ownerNames.map((name) => (<option key={name} value={name}>{name}</option>))}
+        </select>
+        <span style={{ fontSize: 12, color: "#94a3b8" }}>
+          {filteredIssues.length} task{filteredIssues.length !== 1 ? "s" : ""}
+        </span>
+      </div>
 
       {loading && <div style={{ color: "#94a3b8", padding: "40px 0", textAlign: "center" }}>Loading...</div>}
 
-      {!loading && projectNames.length === 0 && (
-        <div style={{ color: "#94a3b8", padding: "40px 0", textAlign: "center" }}>No tasks in this cycle for these teams.</div>
+      {!loading && allProjectNames.length === 0 && (
+        <div style={{ color: "#94a3b8", padding: "40px 0", textAlign: "center" }}>No tasks{filterOwner ? ` for ${filterOwner}` : ""} in {selectedCycleLabel.toLowerCase() || "this cycle"}.</div>
       )}
 
-      {!loading && projectNames.map((projectName) => {
-        const projectIssues = byProject[projectName];
-        return (
-          <div key={projectName} style={{ marginBottom: 24 }}>
-            {/* Project header */}
-            <div style={{
-              background: "#f8fafc", borderRadius: "10px 10px 0 0", padding: "12px 16px",
-              borderBottom: "2px solid #e2e8f0", fontWeight: 700, fontSize: 16, color: "#1e293b",
-            }}>
-              {projectName}
-              <span style={{ fontSize: 12, fontWeight: 400, color: "#94a3b8", marginLeft: 8 }}>
-                {projectIssues.length} task{projectIssues.length !== 1 ? "s" : ""}
+      {!loading && (() => {
+        const sectionConfig: { key: PriorityBucket; label: string; color: string; emptyMsg: string }[] = [
+          { key: "priority", label: "Priority", color: "#dc2626", emptyMsg: "Drag projects here to set as top priority" },
+          { key: "secondary", label: "Secondary", color: "#f59e0b", emptyMsg: "Drag projects here for secondary priority" },
+          { key: "backlog", label: "Backlog", color: "#94a3b8", emptyMsg: "Unranked projects land here" },
+        ];
+        const projectColors = ["#1E88E5", "#43A047", "#F9A825", "#00ACC1", "#E65100", "#7CB342", "#AD1457", "#00897B"];
+
+        const getBucketList = (bucket: PriorityBucket): string[] => {
+          let list = buckets[bucket].filter((n) => byProject[n]);
+          if (dragProject) {
+            list = list.filter((n) => n !== dragProject.name);
+            if (dragProject.currentBucket === bucket) {
+              const idx = Math.min(dragProject.currentIdx, list.length);
+              list.splice(idx, 0, dragProject.name);
+            }
+          }
+          return list;
+        };
+
+        let globalIdx = 0;
+
+        const handleDragStart = (e: React.MouseEvent, projectName: string, bucket: PriorityBucket, idx: number) => {
+          e.preventDefault();
+          const tops: { bucket: PriorityBucket; top: number }[] = [];
+          for (const cfg of sectionConfig) {
+            const el = sectionRefs.current[cfg.key];
+            if (el) tops.push({ bucket: cfg.key, top: el.getBoundingClientRect().top });
+          }
+          dragYRef.current = { name: projectName, bucket, startY: e.clientY, startIdx: idx, sectionTops: tops };
+          setDragProject({ name: projectName, bucket, startIdx: idx, currentIdx: idx, currentBucket: bucket });
+
+          const onMove = (ev: MouseEvent) => {
+            if (!dragYRef.current) return;
+            const dy = ev.clientY - dragYRef.current.startY;
+            let targetBucket: PriorityBucket = dragYRef.current.bucket;
+            for (let i = dragYRef.current.sectionTops.length - 1; i >= 0; i--) {
+              if (ev.clientY >= dragYRef.current.sectionTops[i].top) {
+                targetBucket = dragYRef.current.sectionTops[i].bucket;
+                break;
+              }
+            }
+            const offset = Math.round(dy / 70);
+            const bucketList = buckets[targetBucket].filter((n) => n !== dragYRef.current!.name);
+            const baseIdx = targetBucket === dragYRef.current.bucket ? dragYRef.current.startIdx : 0;
+            const newIdx = Math.max(0, Math.min(bucketList.length, baseIdx + offset));
+            setDragProject((prev) => prev ? { ...prev, currentIdx: newIdx, currentBucket: targetBucket } : null);
+          };
+
+          const onUp = () => {
+            window.removeEventListener("mousemove", onMove);
+            window.removeEventListener("mouseup", onUp);
+            setDragProject((prev) => {
+              if (!prev) return null;
+              setBuckets((b) => {
+                // Remove from ALL buckets first to prevent any duplication
+                const cleaned = {
+                  priority: b.priority.filter((n) => n !== prev.name),
+                  secondary: b.secondary.filter((n) => n !== prev.name),
+                  backlog: b.backlog.filter((n) => n !== prev.name),
+                };
+                // Insert into target bucket
+                const targetList = [...cleaned[prev.currentBucket]];
+                targetList.splice(Math.min(prev.currentIdx, targetList.length), 0, prev.name);
+                cleaned[prev.currentBucket] = targetList;
+                return cleaned;
+              });
+              return null;
+            });
+            dragYRef.current = null;
+          };
+
+          window.addEventListener("mousemove", onMove);
+          window.addEventListener("mouseup", onUp);
+        };
+
+        // Render an inline task row with editable columns
+        const renderTaskRow = (issue: CycleIssue, issueIdx: number, pColor: string) => {
+          const ownerName = (issue.assignee && normalizeAssigneeName(issue.assignee.displayName)) ?? issue.assignee?.displayName ?? "Unassigned";
+          const ownerPerson = people.find((p) => p.name === ownerName);
+          const isSaving = saving === issue.id;
+
+          const isEditingOwner = editingField?.issueId === issue.id && editingField.field === "owner";
+          const isEditingStatus = editingField?.issueId === issue.id && editingField.field === "status";
+          const isEditingDue = editingField?.issueId === issue.id && editingField.field === "dueDate";
+          const hasActiveDropdown = isEditingOwner || isEditingStatus || isEditingDue;
+
+          return (
+            <div
+              key={issue.id}
+              style={{
+                display: "flex", alignItems: "center", gap: 8,
+                padding: "6px 12px",
+                background: issueIdx % 2 === 0 ? "white" : hexToRgba(pColor, 0.03),
+                borderTop: issueIdx > 0 ? `1px solid ${hexToRgba(pColor, 0.1)}` : "none",
+                opacity: isSaving ? 0.5 : 1,
+                fontSize: 12,
+                position: hasActiveDropdown ? "relative" : undefined,
+                zIndex: hasActiveDropdown ? 60 : undefined,
+              }}
+            >
+              {/* Status dot */}
+              <span style={{ width: 8, height: 8, borderRadius: "50%", flexShrink: 0, backgroundColor: issue.state.color }} />
+
+              {/* Title — click to open detail panel */}
+              <span
+                onClick={() => setSelectedIssueId(issue.id)}
+                style={{ flex: COL.title, fontWeight: 500, color: "#1e293b", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", cursor: "pointer" }}
+                title={issue.title}
+              >
+                {issue.title}
               </span>
-            </div>
 
-            {/* Task list */}
-            <div style={{ border: "1px solid #e2e8f0", borderTop: "none", borderRadius: "0 0 10px 10px", overflow: "hidden" }}>
-              {/* Header row */}
-              <div style={{
-                display: "grid", gridTemplateColumns: "2fr 120px 120px 100px",
-                gap: "0 12px", padding: "8px 16px", background: "#fafafa",
-                fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.08em",
-              }}>
-                <div>Task</div>
-                <div>Owner</div>
-                <div>Due Date</div>
-                <div>Status</div>
-              </div>
-
-              {projectIssues.map((issue) => (
-                <div
-                  key={issue.id}
+              {/* Owner — clickable */}
+              <span style={{ flex: COL.owner }}>
+                <span
+                  onClick={(e) => { e.stopPropagation(); const r = (e.target as HTMLElement).getBoundingClientRect(); setEditingField(isEditingOwner ? null : { issueId: issue.id, field: "owner", x: r.left, y: r.bottom + 4 }); }}
                   style={{
-                    display: "grid", gridTemplateColumns: "2fr 120px 120px 100px",
-                    gap: "0 12px", padding: "10px 16px", borderTop: "1px solid #f1f5f9",
-                    alignItems: "center", fontSize: 13,
+                    fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 999, cursor: "pointer",
+                    backgroundColor: ownerPerson ? hexToRgba(ownerPerson.color, 0.15) : "#f1f5f9",
+                    color: ownerPerson?.color ?? "#64748b",
+                    display: "inline-block", maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
                   }}
                 >
-                  <div style={{ fontWeight: 500, color: "#1e293b" }}>{issue.title}</div>
-                  <div style={{ color: "#64748b", fontSize: 12 }}>
-                    {(issue.assignee && normalizeAssigneeName(issue.assignee.displayName)) ?? issue.assignee?.displayName ?? "Unassigned"}
-                  </div>
-                  <div style={{ color: "#64748b", fontSize: 12 }}>
-                    {issue.dueDate ? formatDate(issue.dueDate) : "—"}
-                  </div>
-                  <div>
-                    <span style={{
-                      display: "inline-flex", alignItems: "center", gap: 5,
-                      fontSize: 11, fontWeight: 600, padding: "3px 8px", borderRadius: 999,
-                      backgroundColor: hexToRgba(issue.state.color, 0.15),
-                      color: issue.state.color,
-                    }}>
-                      <span style={{
-                        width: 7, height: 7, borderRadius: "50%",
-                        backgroundColor: issue.state.color,
-                      }} />
-                      {issue.state.name}
-                    </span>
-                  </div>
-                </div>
-              ))}
+                  {ownerName}
+                </span>
+              </span>
+
+              {/* Due date — clickable */}
+              <span style={{ flex: COL.due, position: "relative", textAlign: "right" }}>
+                {isEditingDue ? (
+                  <span onClick={(e) => e.stopPropagation()} style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                    <input
+                      type="date"
+                      autoFocus
+                      defaultValue={issue.dueDate ? issue.dueDate.split("T")[0] : ""}
+                      onChange={(e) => updateIssueField(issue.id, "dueDate", e.target.value)}
+                      style={{ fontFamily: "var(--font-sans)", fontSize: 11, padding: "2px 4px", border: "1px solid #e2e8f0", borderRadius: 4, width: 110 }}
+                    />
+                    {issue.dueDate && (
+                      <button
+                        onClick={() => updateIssueField(issue.id, "dueDate", "")}
+                        style={{ fontSize: 10, color: "#dc2626", background: "none", border: "none", cursor: "pointer", padding: 0 }}
+                        title="Remove due date"
+                      >
+                        &times;
+                      </button>
+                    )}
+                  </span>
+                ) : (
+                  <span
+                    onClick={(e) => { e.stopPropagation(); const r = (e.target as HTMLElement).getBoundingClientRect(); setEditingField({ issueId: issue.id, field: "dueDate", x: r.left, y: r.bottom + 4 }); }}
+                    style={{
+                      fontSize: 11, color: issue.dueDate ? "#475569" : "#cbd5e1", cursor: "pointer",
+                      padding: "2px 6px", borderRadius: 4, border: "1px solid transparent",
+                    }}
+                    onMouseEnter={(e) => { (e.currentTarget as HTMLSpanElement).style.borderColor = "#e2e8f0"; }}
+                    onMouseLeave={(e) => { (e.currentTarget as HTMLSpanElement).style.borderColor = "transparent"; }}
+                  >
+                    {issue.dueDate ? fmtDate(issue.dueDate) : "Add date"}
+                  </span>
+                )}
+              </span>
+
+              {/* Status — clickable */}
+              <span style={{ flex: COL.status }}>
+                <span
+                  onClick={(e) => { e.stopPropagation(); const r = (e.target as HTMLElement).getBoundingClientRect(); setEditingField(isEditingStatus ? null : { issueId: issue.id, field: "status", x: r.right, y: r.bottom + 4 }); }}
+                  style={{
+                    fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 999, cursor: "pointer",
+                    backgroundColor: hexToRgba(issue.state.color, 0.15), color: issue.state.color, whiteSpace: "nowrap",
+                    display: "inline-block",
+                  }}
+                >
+                  {issue.state.name}
+                </span>
+              </span>
             </div>
-          </div>
-        );
-      })}
+          );
+        };
+
+        return sectionConfig.map((section) => {
+          const list = getBucketList(section.key);
+          const sectionStart = globalIdx;
+
+          const sectionContent = (
+            <div key={section.key} ref={(el) => { sectionRefs.current[section.key] = el; }} style={{ marginBottom: 24 }}>
+              {/* Section header */}
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10, borderBottom: `2px solid ${section.color}`, paddingBottom: 6 }}>
+                <span style={{ fontSize: 14, fontWeight: 800, color: section.color, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                  {section.label}
+                </span>
+                <span style={{ fontSize: 11, color: "#94a3b8", fontWeight: 500 }}>
+                  {list.length} project{list.length !== 1 ? "s" : ""}
+                </span>
+              </div>
+
+              {list.length === 0 && (
+                <div style={{ padding: "16px 12px", textAlign: "center", color: "#94a3b8", fontSize: 12, border: "2px dashed #e2e8f0", borderRadius: 8, marginBottom: 6 }}>
+                  {section.emptyMsg}
+                </div>
+              )}
+
+              {list.map((projectName, idxInSection) => {
+                const projectIssues = byProject[projectName];
+                if (!projectIssues) return null;
+                const displayIdx = sectionStart + idxInSection;
+                const pColor = projectColors[displayIdx % projectColors.length];
+                const isDragging = dragProject?.name === projectName;
+                globalIdx++;
+
+                return (
+                  <div key={projectName} style={{ marginBottom: 10, opacity: isDragging ? 0.5 : 1, transition: isDragging ? "none" : "all 0.15s ease" }}>
+                    {/* Project header */}
+                    <div
+                      style={{
+                        background: pColor, borderRadius: "8px 8px 0 0", padding: "7px 12px",
+                        fontWeight: 700, fontSize: 13, color: "white",
+                        display: "flex", alignItems: "center", gap: 8,
+                        cursor: "grab", userSelect: "none",
+                      }}
+                      onMouseDown={(e) => handleDragStart(e, projectName, section.key, idxInSection)}
+                    >
+                      <span style={{
+                        width: 22, height: 22, borderRadius: "50%",
+                        background: "rgba(255,255,255,0.25)", display: "flex", alignItems: "center", justifyContent: "center",
+                        fontSize: 11, fontWeight: 800, flexShrink: 0,
+                      }}>
+                        {idxInSection + 1}
+                      </span>
+                      <span style={{ fontSize: 12, opacity: 0.5, flexShrink: 0 }}>&#x2630;</span>
+                      <span style={{ flex: 1 }}>{projectName}</span>
+                      <span style={{ fontSize: 11, fontWeight: 500, opacity: 0.8 }}>
+                        {projectIssues.length}
+                      </span>
+                    </div>
+
+                    {/* Column headers — Due and Status are sortable */}
+                    <div style={{
+                      display: "flex", alignItems: "center", gap: 8, padding: "4px 12px",
+                      background: hexToRgba(pColor, 0.06), fontSize: 10, fontWeight: 700, color: "#94a3b8",
+                      textTransform: "uppercase", letterSpacing: "0.04em",
+                    }}>
+                      <span style={{ width: 8 }} />
+                      <span style={{ flex: COL.title }}>Task</span>
+                      <span style={{ flex: COL.owner }}>Owner</span>
+                      <span
+                        onClick={() => setSortField((prev) => prev === "due" ? null : "due")}
+                        style={{ flex: COL.due, textAlign: "right", cursor: "pointer", color: sortField === "due" ? pColor : undefined }}
+                      >
+                        Due {sortField === "due" ? "\u25B2" : ""}
+                      </span>
+                      <span
+                        onClick={() => setSortField((prev) => prev === "status" ? null : "status")}
+                        style={{ flex: COL.status, cursor: "pointer", color: sortField === "status" ? pColor : undefined }}
+                      >
+                        Status {sortField === "status" ? "\u25B2" : ""}
+                      </span>
+                    </div>
+
+                    {/* Task rows */}
+                    <div style={{ border: `1px solid ${hexToRgba(pColor, 0.2)}`, borderTop: "none", borderRadius: "0 0 8px 8px", overflow: "visible", position: "relative" }}>
+                      {(() => {
+                        let sorted = projectIssues;
+                        if (sortField === "due") {
+                          sorted = [...projectIssues].sort((a, b) => {
+                            if (!a.dueDate && !b.dueDate) return 0;
+                            if (!a.dueDate) return 1;
+                            if (!b.dueDate) return -1;
+                            return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+                          });
+                        } else if (sortField === "status") {
+                          const stateOrder = new Map(workflowStates.map((ws, i) => [ws.name, i]));
+                          sorted = [...projectIssues].sort((a, b) => {
+                            return (stateOrder.get(a.state.name) ?? 99) - (stateOrder.get(b.state.name) ?? 99);
+                          });
+                        }
+                        return sorted.map((issue, issueIdx) => renderTaskRow(issue, issueIdx, pColor));
+                      })()}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          );
+
+          globalIdx = sectionStart + list.length;
+          return sectionContent;
+        });
+      })()}
+
     </div>
+
+    {/* Backdrop to close dropdowns */}
+    {editingField && (
+      <div
+        onClick={() => setEditingField(null)}
+        style={{ position: "fixed", inset: 0, zIndex: 9998 }}
+      />
+    )}
+
+    {/* Fixed-position dropdowns — rendered outside scroll container */}
+    {editingField && editingField.field === "owner" && (
+      <div
+        data-dropdown
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          position: "fixed", top: editingField.y, left: editingField.x, zIndex: 9999,
+          background: "white", border: "1px solid #e2e8f0", borderRadius: 8,
+          boxShadow: "0 8px 24px rgba(0,0,0,0.16)", padding: 4, minWidth: 180, maxHeight: 240, overflowY: "auto",
+        }}
+      >
+        {teamMembers.length === 0 && (
+          <div style={{ padding: "8px 12px", fontSize: 12, color: "#94a3b8" }}>Loading team...</div>
+        )}
+        {teamMembers.map((m) => {
+          const editIssue = issues.find((i) => i.id === editingField.issueId);
+          const isSelected = m.displayName === editIssue?.assignee?.displayName;
+          return (
+            <div
+              key={m.id}
+              onClick={() => updateIssueField(editingField.issueId, "assigneeId", m.id)}
+              style={{
+                padding: "6px 12px", fontSize: 13, cursor: "pointer", borderRadius: 6,
+                fontWeight: isSelected ? 700 : 400,
+                background: isSelected ? "#f1f5f9" : "transparent",
+              }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.background = "#f8fafc"; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = isSelected ? "#f1f5f9" : "transparent"; }}
+            >
+              {m.displayName}
+            </div>
+          );
+        })}
+      </div>
+    )}
+
+    {editingField && editingField.field === "status" && (
+      <div
+        data-dropdown
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          position: "fixed", top: editingField.y, left: editingField.x - 160, zIndex: 9999,
+          background: "white", border: "1px solid #e2e8f0", borderRadius: 8,
+          boxShadow: "0 8px 24px rgba(0,0,0,0.16)", padding: 4, minWidth: 160, maxHeight: 260, overflowY: "auto",
+        }}
+      >
+        {workflowStates.length === 0 && (
+          <div style={{ padding: "8px 12px", fontSize: 12, color: "#94a3b8" }}>Loading states...</div>
+        )}
+        {workflowStates.map((ws) => {
+          const editIssue = issues.find((i) => i.id === editingField.issueId);
+          const isSelected = ws.name === editIssue?.state.name;
+          return (
+            <div
+              key={ws.id}
+              onClick={() => updateIssueField(editingField.issueId, "stateId", ws.id)}
+              style={{
+                padding: "6px 12px", fontSize: 13, cursor: "pointer", borderRadius: 6,
+                display: "flex", alignItems: "center", gap: 8,
+                fontWeight: isSelected ? 700 : 400,
+                background: isSelected ? hexToRgba(ws.color, 0.1) : "transparent",
+              }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.background = hexToRgba(ws.color, 0.08); }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = isSelected ? hexToRgba(ws.color, 0.1) : "transparent"; }}
+            >
+              <span style={{ width: 8, height: 8, borderRadius: "50%", backgroundColor: ws.color, flexShrink: 0 }} />
+              <span style={{ color: ws.color }}>{ws.name}</span>
+            </div>
+          );
+        })}
+      </div>
+    )}
+
+    {/* Detail panel */}
+    {selectedIssueId && (
+      <CycleIssueDetailPanel
+        issueId={selectedIssueId}
+        onClose={() => setSelectedIssueId(null)}
+        onUpdated={(id, changes) => {
+          setIssues((prev) => prev.map((issue) => {
+            if (issue.id !== id) return issue;
+            const updated = { ...issue };
+            if (changes.state) updated.state = changes.state;
+            if (changes.dueDate !== undefined) updated.dueDate = changes.dueDate;
+            if (changes.assignee !== undefined) updated.assignee = changes.assignee;
+            return updated;
+          }));
+        }}
+      />
+    )}
+    </>
   );
 }
 
 export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps) {
   const [search, setSearch] = useState("");
   const [viewMode, setViewMode] = useState<"projects" | "subtestEdits" | "cycles">("projects");
-  const [filterTeam, setFilterTeam] = useState<string | null>(null);
-  const [filterPerson, setFilterPerson] = useState<string | null>(null);
+  const [filterTeams, setFilterTeams] = useState<Set<string>>(new Set());
+  const [filterPeople, setFilterPeople] = useState<Set<string>>(new Set());
   const [selected, setSelected] = useState<{
     project: Project;
     personName: string;
@@ -2398,11 +3451,11 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
     }>(
       `query ProjectIssues($projectId: String!) {
         project(id: $projectId) {
-          issues {
+          issues(first: 250) {
             nodes {
               id title priority priorityLabel
-              state { name color }
-              assignee { displayName avatarUrl }
+              state { name color type }
+              assignee { id displayName avatarUrl }
               labels { nodes { name color } }
               startedAt dueDate createdAt updatedAt
             }
@@ -2429,14 +3482,19 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
           // Only show if within timeline
           if (end < TIMELINE_START || start >= TIMELINE_END) continue;
 
+          // Skip completed/canceled issues
+          const stateType = (issue.state as { type?: string }).type;
+          if (stateType === "completed" || stateType === "canceled") continue;
+
           bars.push({
             issueId: issue.id,
             title: issue.title,
             cleanedTitle: cleanTitle(issue.title),
             assigneeName: personName,
+            assigneeId: issue.assignee.id ?? null,
             startDate: start,
             endDate: end,
-            state: issue.state,
+            state: { name: issue.state.name, color: issue.state.color, type: stateType },
             priority: issue.priority,
             priorityLabel: issue.priorityLabel,
             labels: issue.labels.nodes,
@@ -2607,18 +3665,22 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
       .filter(Boolean) as Person[];
   }, [localPeople, search, isMobile, mobilePersonFilter]);
 
-  // Apply team and person filters
+  // Apply team and person filters (multi-select)
   const teamAndPersonFiltered = useMemo(() => {
     let result = filteredPeople;
-    if (filterTeam) {
-      const teamMembers = new Set(teams.find((t) => t.name === filterTeam)?.members || []);
-      result = result.filter((p) => teamMembers.has(p.name));
+    if (filterTeams.size > 0) {
+      const teamMemberNames = new Set<string>();
+      for (const teamName of filterTeams) {
+        const t = teams.find((t) => t.name === teamName);
+        if (t) for (const m of t.members) teamMemberNames.add(m);
+      }
+      result = result.filter((p) => teamMemberNames.has(p.name));
     }
-    if (filterPerson) {
-      result = result.filter((p) => p.name === filterPerson);
+    if (filterPeople.size > 0) {
+      result = result.filter((p) => filterPeople.has(p.name));
     }
     return result;
-  }, [filteredPeople, filterTeam, filterPerson, teams]);
+  }, [filteredPeople, filterTeams, filterPeople, teams]);
 
   // Group people by team
   const teamGroups = useMemo(() => {
@@ -2823,27 +3885,37 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
       // Always re-render during drag for smooth visual feedback
       let changed = true;
 
-      // Horizontal: always track date changes (move or resize)
-      const approxMonthWidth = (() => {
-        if (zoom === "month") return colWidth;
-        if (zoom === "biweekly") return colWidth * (30.44 / 14);
-        return colWidth * (30.44 / 7);
-      })();
-      const monthDelta = dx / approxMonthWidth;
+      // Horizontal: snap to column boundaries
+      // Convert pixel delta to column delta, round to nearest column, then to month delta
+      const colDelta = dx / colWidth;
+      const snappedColDelta = Math.round(colDelta);
+      // Convert snapped column delta to month delta using column dates
+      const originalColPos = monthIndexToColPos(ds.originalStartMonth, zoom, columns);
+      const targetColPos = originalColPos + snappedColDelta;
 
-      // Snap granularity: month=1, biweekly=0.5, week=0.25
-      const snap = zoom === "month" ? 1 : zoom === "biweekly" ? 0.5 : 0.25;
-      const roundToSnap = (v: number) => Math.round(v / snap) * snap;
+      // Convert column position back to month index
+      const colPosToMonthIndex = (cp: number): number => {
+        const colIdx = Math.max(0, Math.min(columns.length - 1, Math.floor(cp)));
+        const frac = cp - colIdx;
+        const colStart = columns[colIdx]?.date ?? TIMELINE_START;
+        const colEnd = colIdx + 1 < columns.length ? columns[colIdx + 1].date : TIMELINE_END;
+        const dateMs = colStart.getTime() + frac * (colEnd.getTime() - colStart.getTime());
+        const d = new Date(dateMs);
+        return (d.getFullYear() - 2026) * 12 + d.getMonth() - 2 + d.getDate() / 30.44;
+      };
 
       if (ds.mode === "move") {
-        const newStart = Math.max(0, roundToSnap(ds.originalStartMonth + monthDelta));
-        if (newStart !== ds.currentStartMonth) {
+        const newStart = Math.max(0, colPosToMonthIndex(targetColPos));
+        if (Math.abs(newStart - ds.currentStartMonth) > 0.01) {
           ds.currentStartMonth = newStart;
           changed = true;
         }
       } else {
-        const newDuration = Math.max(snap, roundToSnap(ds.originalDuration + monthDelta));
-        if (newDuration !== ds.currentDuration) {
+        const originalEndColPos = monthIndexToColPos(ds.originalStartMonth + ds.originalDuration, zoom, columns);
+        const targetEndColPos = originalEndColPos + snappedColDelta;
+        const newEnd = colPosToMonthIndex(targetEndColPos);
+        const newDuration = Math.max(colPosToMonthIndex(originalColPos + 1) - ds.originalStartMonth, newEnd - ds.originalStartMonth);
+        if (Math.abs(newDuration - ds.currentDuration) > 0.01) {
           ds.currentDuration = newDuration;
           changed = true;
         }
@@ -3380,14 +4452,18 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
         }}
         teams={teams}
         people={localPeople}
-        filterTeam={filterTeam}
-        onFilterTeam={setFilterTeam}
-        filterPerson={filterPerson}
-        onFilterPerson={setFilterPerson}
+        filterTeams={filterTeams}
+        onToggleTeam={(t) => setFilterTeams((prev) => { const next = new Set(prev); if (next.has(t)) next.delete(t); else next.add(t); return next; })}
+        onClearTeams={() => { setFilterTeams(new Set()); setFilterPeople(new Set()); }}
+        filterPeople={filterPeople}
+        onTogglePerson={(p) => setFilterPeople((prev) => { const next = new Set(prev); if (next.has(p)) next.delete(p); else next.add(p); return next; })}
+        onClearPeople={() => setFilterPeople(new Set())}
       />
 
       {viewMode === "cycles" ? (
         <CyclesView cycles={cycles} people={localPeople} />
+      ) : viewMode === "subtestEdits" ? (
+        <SubtestEditsList bars={linearBars} loading={linearBarsLoading} people={localPeople} onIssueClick={setSelectedLinearIssueId} />
       ) : (
       <div className="roadmap-container" ref={scrollRef}>
         {/* ── Sticky header (phases + month columns) ──────────────────── */}
@@ -3532,7 +4608,7 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
                       const pos = getProjectPosition(project);
                       const colPos = monthIndexToColPos(pos.startMonth, zoom, columns);
                       const colSpan = monthDurationToCols(pos.startMonth, pos.duration, zoom, columns);
-                      const x = colPos * colWidth + 2;
+                      const x = colPos * colWidth;
 
                       // During reorder, shift all bars to preview the new arrangement
                       let effectiveLane = lane;
@@ -3710,46 +4786,6 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
                     })
                   }
 
-                  {/* Linear bars (Subtest project issues) within this row */}
-                  {viewMode === "subtestEdits" && (() => {
-                    const bars = linearBarsPerPerson[entry.person.name];
-                    if (!bars || bars.length === 0) return null;
-
-                    return bars.map((bar, barIdx) => {
-                      const startCol = dateToColPos(bar.startDate, columns);
-                      const endCol = dateToColPos(bar.endDate, columns);
-                      const x = startCol * colWidth + 2;
-                      const w = Math.max((endCol - startCol) * colWidth - 4, 30);
-                      const y = barIdx * ROW_HEIGHT + BAR_V_PAD;
-                      const isHovered = hoveredProject === `linear-${bar.issueId}`;
-
-                      return (
-                        <div
-                          key={`linear-${bar.issueId}`}
-                          className={`project-bar linear-bar${isHovered ? " project-bar-hover" : ""}`}
-                          style={{
-                            left: x,
-                            top: y,
-                            width: w,
-                            height: BAR_HEIGHT,
-                            backgroundColor: "rgba(251, 191, 36, 0.25)",
-                            border: "1.5px solid rgba(251, 191, 36, 0.6)",
-                            borderLeft: "3px solid #f59e0b",
-                          }}
-                          onClick={() => setSelectedLinearIssueId(bar.issueId)}
-                          onMouseEnter={() => setHoveredProject(`linear-${bar.issueId}`)}
-                          onMouseLeave={() => setHoveredProject(null)}
-                        >
-                          <span
-                            className="project-bar-label linear-bar-label"
-                            style={{ color: "#92400e" }}
-                          >
-                            {bar.cleanedTitle}
-                          </span>
-                        </div>
-                      );
-                    });
-                  })()}
                 </div>
               </div>
             );

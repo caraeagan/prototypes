@@ -1,11 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
-import { queryLinear, UPDATE_ISSUE_DATES } from "~/lib/linear";
-import type { IssueUpdateResponse } from "~/lib/linear";
+import { queryLinear } from "~/lib/linear";
+
+const UPDATE_ISSUE = `
+  mutation IssueUpdate($id: String!, $input: IssueUpdateInput!) {
+    issueUpdate(id: $id, input: $input) {
+      success
+      issue {
+        id
+        startedAt
+        dueDate
+        state { id name color }
+        assignee { id displayName avatarUrl }
+      }
+    }
+  }
+`;
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { issueId, startDate, dueDate } = body;
+    const { issueId, startDate, dueDate, stateId, assigneeId } = body;
 
     if (!issueId || typeof issueId !== "string") {
       return NextResponse.json(
@@ -15,24 +29,30 @@ export async function POST(request: NextRequest) {
     }
 
     const input: Record<string, string> = {};
-    if (startDate !== undefined) {
-      input.startedAt = startDate;
-    }
-    if (dueDate !== undefined) {
-      input.dueDate = dueDate;
-    }
+    if (startDate !== undefined) input.startedAt = startDate;
+    if (dueDate !== undefined) input.dueDate = dueDate;
+    if (stateId !== undefined) input.stateId = stateId;
+    if (assigneeId !== undefined) input.assigneeId = assigneeId;
 
     if (Object.keys(input).length === 0) {
       return NextResponse.json(
-        { error: "At least one of 'startDate' or 'dueDate' is required" },
+        { error: "At least one field to update is required" },
         { status: 400 },
       );
     }
 
-    const data = await queryLinear<IssueUpdateResponse>(
-      UPDATE_ISSUE_DATES,
-      { id: issueId, input },
-    );
+    const data = await queryLinear<{
+      issueUpdate: {
+        success: boolean;
+        issue: {
+          id: string;
+          startedAt: string | null;
+          dueDate: string | null;
+          state: { id: string; name: string; color: string };
+          assignee: { id: string; displayName: string; avatarUrl: string | null } | null;
+        };
+      };
+    }>(UPDATE_ISSUE, { id: issueId, input });
 
     if (!data.issueUpdate.success) {
       return NextResponse.json(

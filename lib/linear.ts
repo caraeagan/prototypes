@@ -208,6 +208,7 @@ export type LinearState = {
 };
 
 export type LinearAssignee = {
+  id?: string;
   displayName: string;
   avatarUrl: string | null;
 };

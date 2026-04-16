@@ -4,6 +4,12 @@ import { join } from "path";
 
 const OVERRIDES_PATH = join(process.cwd(), "data", "overrides.json");
 
+export type CycleBuckets = {
+  priority: string[];
+  secondary: string[];
+  backlog: string[];
+};
+
 export type RoadmapOverrides = {
   positions?: Record<string, { startMonth: number; duration: number; order?: number }>;
   additions?: Record<
@@ -13,6 +19,7 @@ export type RoadmapOverrides = {
   deletions?: string[]; // "personName:projectName" keys
   renames?: Record<string, string>; // "personName:oldName" -> newName
   dependencies?: { from: string; to: string }[]; // projectId pairs
+  cycleBuckets?: Record<string, CycleBuckets>; // cycleId -> buckets
 };
 
 async function readOverrides(): Promise<RoadmapOverrides> {
@@ -104,6 +111,12 @@ export async function POST(request: NextRequest) {
             (d) => !(d.from === from && d.to === to),
           );
         }
+        break;
+      }
+      case "saveCycleBuckets": {
+        const { cycleId, buckets } = payload;
+        if (!overrides.cycleBuckets) overrides.cycleBuckets = {};
+        overrides.cycleBuckets[cycleId] = buckets;
         break;
       }
       default:

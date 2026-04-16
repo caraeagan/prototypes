@@ -498,7 +498,7 @@ body.dragging * {
 }
 
 .detail-panel {
-  width: 420px;
+  width: 560px;
   max-width: 90vw;
   height: 100%;
   background: #fff;
