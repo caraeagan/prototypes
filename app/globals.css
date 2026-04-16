@@ -125,31 +125,56 @@ body {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
-/* ── Main container ─────────────────────────────────────────────────────── */
+/* ── Main container — single scroll surface ────────────────────────────── */
 
 .roadmap-container {
-  display: flex;
   flex: 1;
-  overflow: hidden;
+  overflow: auto;
   position: relative;
 }
 
-/* ── Sidebar ────────────────────────────────────────────────────────────── */
-
-.roadmap-sidebar {
-  flex-shrink: 0;
-  background: #fff;
-  border-right: 1px solid #e8e8ef;
-  z-index: 10;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
+/* Custom scrollbar */
+.roadmap-container::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
 }
 
-.sidebar-corner {
+.roadmap-container::-webkit-scrollbar-track {
+  background: #f0f0f5;
+}
+
+.roadmap-container::-webkit-scrollbar-thumb {
+  background: #c8c8d8;
+  border-radius: 4px;
+}
+
+.roadmap-container::-webkit-scrollbar-thumb:hover {
+  background: #a0a0b8;
+}
+
+.roadmap-container::-webkit-scrollbar-corner {
+  background: #f0f0f5;
+}
+
+/* ── Sticky header (phases + month columns) ────────────────────────────── */
+
+.roadmap-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.roadmap-header-row {
+  display: flex;
+}
+
+.roadmap-header-corner {
   flex-shrink: 0;
-  border-bottom: 1px solid #e8e8ef;
+  position: sticky;
+  left: 0;
+  z-index: 12;
   background: #fff;
+  border-right: 1px solid #e8e8ef;
   display: flex;
   align-items: flex-end;
   padding: 0 16px 8px;
@@ -160,14 +185,20 @@ body {
   letter-spacing: 0.05em;
 }
 
-.sidebar-person {
+/* ── Sidebar cell (sticky left in each body row) ───────────────────────── */
+
+.sidebar-cell {
+  flex-shrink: 0;
+  position: sticky;
+  left: 0;
+  z-index: 5;
+  background: #fff;
+  border-right: 1px solid #e8e8ef;
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 0 16px;
-  border-bottom: none;
+  padding: 0 16px 0 40px; /* leave room for team label overlay */
   box-sizing: border-box;
-  position: relative;
 }
 
 .sidebar-color-bar {
@@ -186,19 +217,7 @@ body {
   text-overflow: ellipsis;
 }
 
-/* ── Vertical team labels in sidebar ───────────────────────────────────── */
-
-.sidebar-inner {
-  display: flex;
-  flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
-}
-
-.sidebar-team-labels {
-  width: 30px;
-  flex-shrink: 0;
-}
+/* ── Vertical team labels ──────────────────────────────────────────────── */
 
 .sidebar-team-label {
   writing-mode: vertical-rl;
@@ -213,49 +232,28 @@ body {
   text-transform: uppercase;
   user-select: none;
   border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+  cursor: pointer;
 }
 
-.sidebar-person-list {
-  flex: 1;
-}
+/* ── Body rows ─────────────────────────────────────────────────────────── */
 
-/* ── Scrollable area ────────────────────────────────────────────────────── */
-
-.roadmap-scroll {
-  flex: 1;
-  overflow: auto;
+.roadmap-body {
   position: relative;
 }
 
-/* Custom scrollbar */
-.roadmap-scroll::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+.roadmap-row {
+  display: flex;
 }
 
-.roadmap-scroll::-webkit-scrollbar-track {
-  background: #f0f0f5;
-}
-
-.roadmap-scroll::-webkit-scrollbar-thumb {
-  background: #c8c8d8;
-  border-radius: 4px;
-}
-
-.roadmap-scroll::-webkit-scrollbar-thumb:hover {
-  background: #a0a0b8;
-}
-
-.roadmap-scroll::-webkit-scrollbar-corner {
-  background: #f0f0f5;
+.roadmap-row-grid {
+  position: relative;
+  flex-shrink: 0;
 }
 
 /* ── Phase row ──────────────────────────────────────────────────────────── */
 
 .phase-row {
-  position: sticky;
-  top: 0;
-  z-index: 5;
+  position: relative;
   display: flex;
   background: #fff;
 }
@@ -278,8 +276,7 @@ body {
 /* ── Month headers ──────────────────────────────────────────────────────── */
 
 .month-header-row {
-  position: sticky;
-  top: 36px;
+  position: relative;
   z-index: 4;
   background: #fff;
   border-bottom: 2px solid #e8e8ef;
@@ -311,11 +308,6 @@ body {
 }
 
 /* ── Grid body ──────────────────────────────────────────────────────────── */
-
-.grid-body {
-  position: relative;
-  transition: width 0.3s ease;
-}
 
 .grid-row-bg {
   position: absolute;
@@ -820,20 +812,7 @@ body.dragging * {
   flex-shrink: 0;
 }
 
-/* ── Sidebar scrollbar ──────────────────────────────────────────────────── */
-
-.sidebar-inner::-webkit-scrollbar {
-  width: 4px;
-}
-
-.sidebar-inner::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.sidebar-inner::-webkit-scrollbar-thumb {
-  background: #d8d8e5;
-  border-radius: 2px;
-}
+/* ── Sidebar add button container ─────────────────────────────────────── */
 
 /* ── Cycle select ──────────────────────────────────────────────────────── */
 
@@ -1227,7 +1206,7 @@ body.dragging * {
   font-family: var(--font-sans);
 }
 
-.sidebar-person:hover .sidebar-add-btn {
+.sidebar-cell:hover .sidebar-add-btn {
   opacity: 1;
 }
 
@@ -1451,7 +1430,8 @@ body.dragging * {
     display: none !important;
   }
 
-  .roadmap-sidebar {
+  .sidebar-cell,
+  .roadmap-header-corner {
     display: none !important;
   }
 
@@ -1465,10 +1445,6 @@ body.dragging * {
   }
 
   .roadmap-container {
-    overflow: visible;
-  }
-
-  .roadmap-scroll {
     overflow: visible;
   }
 
@@ -1521,7 +1497,8 @@ body.dragging * {
     flex: 1;
   }
 
-  .roadmap-sidebar {
+  .sidebar-cell,
+  .roadmap-header-corner {
     display: none;
   }
 

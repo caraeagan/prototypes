@@ -1849,8 +1849,6 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
   const [isMobile, setIsMobile] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement>(null);
-  const sidebarRef = useRef<HTMLDivElement>(null);
-  const syncingRef = useRef(false);
   const dragRef = useRef<DragState | null>(null);
   const [containerWidth, setContainerWidth] = useState(0);
 
@@ -2208,33 +2206,6 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
       });
   }, [selectedCycleId, people]);
 
-  // Sync vertical scroll between sidebar and grid
-  const handleGridScroll = useCallback(() => {
-    if (syncingRef.current) return;
-    syncingRef.current = true;
-    const grid = scrollRef.current;
-    const sidebar = sidebarRef.current;
-    if (grid && sidebar) {
-      sidebar.scrollTop = grid.scrollTop;
-    }
-    requestAnimationFrame(() => {
-      syncingRef.current = false;
-    });
-  }, []);
-
-  const handleSidebarScroll = useCallback(() => {
-    if (syncingRef.current) return;
-    syncingRef.current = true;
-    const grid = scrollRef.current;
-    const sidebar = sidebarRef.current;
-    if (grid && sidebar) {
-      grid.scrollTop = sidebar.scrollTop;
-    }
-    requestAnimationFrame(() => {
-      syncingRef.current = false;
-    });
-  }, []);
-
   // Toggle team collapse
   const toggleTeam = useCallback((teamName: string) => {
     setCollapsedTeams((prev) => {
@@ -2363,9 +2334,6 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
     return entries;
   }, [teamGroups, collapsedTeams, linearBarsPerPerson, viewMode]);
 
-  const totalGridHeight = rowEntries.length > 0
-    ? rowEntries[rowEntries.length - 1].yOffset + rowEntries[rowEntries.length - 1].totalHeight
-    : 0;
   const totalGridWidth = columns.length * colWidth;
 
   const personEntries = rowEntries;
@@ -2397,10 +2365,11 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
     if (todayX === null) return;
     const grid = scrollRef.current;
     if (!grid) return;
-    // Scroll so today is roughly 1/4 from the left edge
-    const targetScroll = Math.max(0, todayX - grid.clientWidth * 0.25);
+    // Scroll so today is roughly 1/4 from the left edge (account for sidebar width)
+    const sidebarOffset = isMobile ? 0 : SIDEBAR_WIDTH;
+    const targetScroll = Math.max(0, sidebarOffset + todayX - grid.clientWidth * 0.25);
     grid.scrollTo({ left: targetScroll, behavior: "smooth" });
-  }, [zoom, todayX]);
+  }, [zoom, todayX, isMobile]);
 
   // Phase positions scaled to current zoom
   const phasePositions = useMemo(() => {
@@ -2760,44 +2729,7 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
   }, []);
 
   const showPhases = true;
-  const stickyTop = PHASE_HEIGHT + HEADER_HEIGHT;
 
-  // ── Compute team label spans for vertical sidebar labels ──────────────
-  const teamLabelSpans = useMemo(() => {
-    const spans: { teamName: string; teamColor: string; yStart: number; height: number }[] = [];
-    let currentTeam: string | null = null;
-    let spanStart = 0;
-    let spanHeight = 0;
-
-    for (const entry of rowEntries) {
-      if (entry.teamName !== currentTeam) {
-        if (currentTeam !== null && spanHeight > 0) {
-          const team = teams.find((t) => t.name === currentTeam);
-          spans.push({
-            teamName: currentTeam,
-            teamColor: team?.color || "#94a3b8",
-            yStart: spanStart,
-            height: spanHeight - PERSON_GAP, // don't include trailing gap
-          });
-        }
-        currentTeam = entry.teamName;
-        spanStart = entry.yOffset;
-        spanHeight = entry.totalHeight + PERSON_GAP;
-      } else {
-        spanHeight += entry.totalHeight + PERSON_GAP;
-      }
-    }
-    if (currentTeam !== null && spanHeight > 0) {
-      const team = teams.find((t) => t.name === currentTeam);
-      spans.push({
-        teamName: currentTeam,
-        teamColor: team?.color || "#94a3b8",
-        yStart: spanStart,
-        height: spanHeight - PERSON_GAP,
-      });
-    }
-    return spans;
-  }, [rowEntries, teams]);
 
   // ── Compute progress pct for a given project ───────────────────────────
   const getBarProgress = useCallback(
@@ -2863,63 +2795,140 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
         }}
       />
 
-      <div className="roadmap-container">
-        {/* Sticky sidebar (hidden on mobile) */}
-        {!isMobile && (
-          <div className="roadmap-sidebar" style={{ width: SIDEBAR_WIDTH }}>
-            <div className="sidebar-corner" style={{ height: stickyTop }}>
-              <span>Team</span>
-            </div>
-            <div
-              className="sidebar-inner"
-              ref={sidebarRef}
-              onScroll={handleSidebarScroll}
-            >
-              {/* Vertical team labels column */}
-              <div className="sidebar-team-labels" style={{ position: "relative", height: totalGridHeight }}>
-                {teamLabelSpans.map((span) => (
+      <div className="roadmap-container" ref={scrollRef}>
+        {/* ── Sticky header (phases + month columns) ──────────────────── */}
+        <div className="roadmap-header">
+          {/* Phase row */}
+          {showPhases && (
+            <div className="roadmap-header-row" style={{ height: PHASE_HEIGHT }}>
+              {!isMobile && (
+                <div
+                  className="roadmap-header-corner"
+                  style={{ width: SIDEBAR_WIDTH, height: PHASE_HEIGHT }}
+                />
+              )}
+              <div className="phase-row" style={{ position: "relative", height: PHASE_HEIGHT, width: totalGridWidth, flexShrink: 0 }}>
+                {phasePositions.map(({ phase, x, w }) => (
                   <div
-                    key={`team-label-${span.teamName}`}
-                    className="sidebar-team-label"
+                    key={phase.name}
+                    className="phase-cell"
                     style={{
-                      position: "absolute",
-                      top: span.yStart,
-                      left: 0,
-                      right: 0,
-                      height: span.height,
-                      backgroundColor: span.teamColor,
+                      left: x,
+                      width: w,
+                      backgroundColor: phase.color,
                     }}
-                    onClick={() => toggleTeam(span.teamName)}
-                    title={span.teamName}
                   >
-                    {span.teamName}
+                    {phase.name}
                   </div>
                 ))}
               </div>
-              {/* Person names column */}
-              <div className="sidebar-person-list" style={{ position: "relative", height: totalGridHeight }}>
-                {rowEntries.map((entry) => (
+            </div>
+          )}
+
+          {/* Month header row */}
+          <div className="roadmap-header-row" style={{ height: HEADER_HEIGHT }}>
+            {!isMobile && (
+              <div
+                className="roadmap-header-corner"
+                style={{ width: SIDEBAR_WIDTH, height: HEADER_HEIGHT, borderBottom: "2px solid #e8e8ef" }}
+              >
+                <span>Team</span>
+              </div>
+            )}
+            <div
+              className="month-header-row"
+              style={{ height: HEADER_HEIGHT, width: totalGridWidth, flexShrink: 0 }}
+            >
+              {columns.map((col, i) => {
+                const parts = col.label.split(" ");
+                const primary = parts[0];
+                const secondary = parts[1] || "";
+                return (
                   <div
-                    key={entry.person.name}
-                    className="sidebar-person"
+                    key={`col-${i}`}
+                    className="month-header-cell"
+                    style={{ left: i * colWidth, width: colWidth }}
+                  >
+                    <span className="month-label">{primary}</span>
+                    <span className="year-label">{secondary}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* ── Body rows ───────────────────────────────────────────────── */}
+        <div className="roadmap-body" style={{ position: "relative", minWidth: (isMobile ? 0 : SIDEBAR_WIDTH) + totalGridWidth }}>
+          {/* Person rows */}
+          {rowEntries.map((entry) => {
+            const rowBg = hexToRgba(
+              entry.person.color,
+              entry.personIndex % 2 === 0 ? 0.10 : 0.16,
+            );
+
+            return (
+              <div
+                key={entry.person.name}
+                className="roadmap-row"
+                style={{ height: entry.totalHeight, marginBottom: PERSON_GAP }}
+              >
+                {/* Sidebar cell (sticky left) */}
+                {!isMobile && (
+                  <div
+                    className="sidebar-cell"
                     style={{
-                      position: "absolute",
-                      top: entry.yOffset,
-                      left: 0,
-                      right: 0,
+                      width: SIDEBAR_WIDTH,
                       height: entry.totalHeight,
-                      backgroundColor: hexToRgba(
-                        entry.person.color,
-                        entry.personIndex % 2 === 0 ? 0.10 : 0.16,
-                      ),
+                      backgroundColor: rowBg,
                     }}
                   >
+                    {/* Team color strip on the left edge */}
+                    {entry.teamName !== "" && (
+                      <div
+                        style={{
+                          position: "absolute",
+                          top: 0,
+                          left: 0,
+                          width: TEAM_LABEL_WIDTH,
+                          height: "100%",
+                          backgroundColor: entry.teamColor,
+                          cursor: "pointer",
+                        }}
+                        onClick={() => toggleTeam(entry.teamName)}
+                      >
+                        {/* Vertical text only on the first member of each team */}
+                        {entry.personIndex === 0 && (
+                          <div
+                            style={{
+                              writingMode: "vertical-rl",
+                              transform: "rotate(180deg)",
+                              color: "#fff",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              width: "100%",
+                              height: "100%",
+                              fontSize: 11,
+                              fontWeight: 700,
+                              letterSpacing: "0.02em",
+                              textTransform: "uppercase",
+                              userSelect: "none",
+                              whiteSpace: "nowrap",
+                              overflow: "hidden",
+                            }}
+                            title={entry.teamName}
+                          >
+                            {entry.teamName}
+                          </div>
+                        )}
+                      </div>
+                    )}
                     <div
                       className="sidebar-color-bar"
                       style={{ backgroundColor: entry.person.color }}
                     />
                     <span className="sidebar-name">{entry.person.name}</span>
-                    {/* Add project button */}
                     <button
                       className="sidebar-add-btn"
                       title="Add project"
@@ -2935,333 +2944,263 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
                       +
                     </button>
                   </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
+                )}
 
-        {/* Scrollable grid */}
-        <div
-          className="roadmap-scroll"
-          ref={scrollRef}
-          onScroll={handleGridScroll}
-        >
-          {/* Phase row (hidden for week/biweekly zoom) */}
-          {showPhases && (
-            <div
-              className="phase-row"
-              style={{ height: PHASE_HEIGHT, width: totalGridWidth }}
-            >
-              {phasePositions.map(({ phase, x, w }) => (
+                {/* Grid cell for this person's row */}
                 <div
-                  key={phase.name}
-                  className="phase-cell"
+                  className="roadmap-row-grid"
                   style={{
-                    left: x,
-                    width: w,
-                    backgroundColor: phase.color,
+                    width: totalGridWidth,
+                    height: entry.totalHeight,
+                    backgroundColor: rowBg,
                   }}
                 >
-                  {phase.name}
+                  {/* Vertical grid lines */}
+                  {columns.map((_, i) => (
+                    <div
+                      key={`vline-${i}`}
+                      className="grid-vline"
+                      style={{ left: i * colWidth, height: entry.totalHeight }}
+                    />
+                  ))}
+
+                  {/* Today line segment for this row */}
+                  {todayX !== null && (
+                    <div
+                      className="today-line"
+                      style={{ left: todayX, height: entry.totalHeight }}
+                    />
+                  )}
+
+                  {/* Project bars (within this row) */}
+                  {viewMode === "projects" &&
+                    entry.lanes.map(({ project, lane }) => {
+                      const pos = getProjectPosition(project);
+                      const colPos = monthIndexToColPos(pos.startMonth, zoom, columns);
+                      const colSpan = monthDurationToCols(pos.startMonth, pos.duration, zoom, columns);
+                      const x = colPos * colWidth + 2;
+                      const y = lane * ROW_HEIGHT + BAR_V_PAD;
+                      const w = Math.max(colSpan * colWidth - 4, 20);
+                      const isHovered = hoveredProject === project.id;
+                      const isDragging = dragState?.projectId === project.id;
+                      const dimmed = selectedCycleId !== null && !isProjectInCycle(project, entry.person.name);
+                      const isRenaming = renamingProjectId === project.id;
+
+                      const doneCount = project.tasks.filter(
+                        (t) => t.status === "done",
+                      ).length;
+                      const total = project.tasks.length;
+                      let progressPct =
+                        total > 0 ? (doneCount / total) * 100 : 0;
+
+                      const linearProgress = getBarProgress(project);
+                      if (linearProgress !== null) {
+                        progressPct = linearProgress;
+                      }
+
+                      let ghostBar = null;
+                      if (isDragging) {
+                        const origColPos = monthIndexToColPos(dragState.originalStartMonth, zoom, columns);
+                        const origColSpan = monthDurationToCols(dragState.originalStartMonth, dragState.originalDuration, zoom, columns);
+                        const gx = origColPos * colWidth + 2;
+                        const gw = Math.max(origColSpan * colWidth - 4, 20);
+                        ghostBar = (
+                          <div
+                            className="project-bar-ghost"
+                            style={{
+                              left: gx,
+                              top: y,
+                              width: gw,
+                              height: BAR_HEIGHT,
+                              borderColor: entry.person.color,
+                            }}
+                          />
+                        );
+                      }
+
+                      return (
+                        <div key={project.id}>
+                          {ghostBar}
+                          <div
+                            className={`project-bar${isHovered ? " project-bar-hover" : ""}${isDragging ? " project-bar-dragging" : ""}${dimmed ? " project-bar-dimmed" : ""}`}
+                            style={{
+                              left: x,
+                              top: y,
+                              width: w,
+                              height: BAR_HEIGHT,
+                              backgroundColor: hexToRgba(entry.person.color, dimmed ? 0.12 : 0.35),
+                              border: `1.5px solid ${dimmed ? hexToRgba(entry.person.color, 0.3) : hexToRgba(entry.person.color, 0.7)}`,
+                              borderLeft: `3px solid ${dimmed ? hexToRgba(entry.person.color, 0.3) : entry.person.color}`,
+                            }}
+                            onClick={() => {
+                              if (!isDragging) {
+                                if (project.linearProjectName) {
+                                  setSelectedLinearProject({
+                                    project,
+                                    personName: entry.person.name,
+                                    personColor: entry.person.color,
+                                    linearProjectName: project.linearProjectName,
+                                  });
+                                } else {
+                                  setSelected({
+                                    project,
+                                    personName: entry.person.name,
+                                    personColor: entry.person.color,
+                                  });
+                                }
+                              }
+                            }}
+                            onMouseEnter={() => setHoveredProject(project.id)}
+                            onMouseLeave={() => setHoveredProject(null)}
+                            onMouseDown={(e) => handleBarMouseDown(e, project, entry.person.name, "move")}
+                            onDoubleClick={(e) => {
+                              e.stopPropagation();
+                              setRenamingProjectId(project.id);
+                              setRenameValue(project.name);
+                            }}
+                          >
+                            <div
+                              className="project-bar-progress"
+                              style={{
+                                width: `${progressPct}%`,
+                                backgroundColor: hexToRgba(entry.person.color, 0.12),
+                              }}
+                            />
+
+                            {isRenaming ? (
+                              <input
+                                type="text"
+                                value={renameValue}
+                                onChange={(e) => setRenameValue(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") {
+                                    handleRenameProject(
+                                      entry.person.name,
+                                      project.id,
+                                      project.name,
+                                      renameValue,
+                                    );
+                                  }
+                                  if (e.key === "Escape") {
+                                    setRenamingProjectId(null);
+                                  }
+                                }}
+                                onBlur={() => {
+                                  handleRenameProject(
+                                    entry.person.name,
+                                    project.id,
+                                    project.name,
+                                    renameValue,
+                                  );
+                                }}
+                                onClick={(e) => e.stopPropagation()}
+                                onMouseDown={(e) => e.stopPropagation()}
+                                autoFocus
+                                style={{
+                                  position: "relative",
+                                  zIndex: 1,
+                                  background: "rgba(255,255,255,0.9)",
+                                  border: "1px solid #6366f1",
+                                  borderRadius: 3,
+                                  padding: "0 4px",
+                                  fontSize: 11,
+                                  fontWeight: 600,
+                                  fontFamily: "var(--font-sans)",
+                                  width: "90%",
+                                  maxWidth: "calc(100% - 16px)",
+                                  outline: "none",
+                                }}
+                              />
+                            ) : (
+                              <span
+                                className="project-bar-label"
+                                style={{ color: dimmed ? hexToRgba(entry.person.color, 0.4) : darkenHex(entry.person.color) }}
+                              >
+                                {project.name}
+                              </span>
+                            )}
+
+                            <div
+                              className="resize-handle"
+                              onMouseDown={(e) => {
+                                e.stopPropagation();
+                                handleBarMouseDown(e, project, entry.person.name, "resize");
+                              }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })
+                  }
+
+                  {/* Linear bars (Subtest project issues) within this row */}
+                  {viewMode === "subtestEdits" && (() => {
+                    const bars = linearBarsPerPerson[entry.person.name];
+                    if (!bars || bars.length === 0) return null;
+
+                    return bars.map((bar, barIdx) => {
+                      const startCol = dateToColPos(bar.startDate, columns);
+                      const endCol = dateToColPos(bar.endDate, columns);
+                      const x = startCol * colWidth + 2;
+                      const w = Math.max((endCol - startCol) * colWidth - 4, 30);
+                      const y = barIdx * ROW_HEIGHT + BAR_V_PAD;
+                      const isHovered = hoveredProject === `linear-${bar.issueId}`;
+
+                      return (
+                        <div
+                          key={`linear-${bar.issueId}`}
+                          className={`project-bar linear-bar${isHovered ? " project-bar-hover" : ""}`}
+                          style={{
+                            left: x,
+                            top: y,
+                            width: w,
+                            height: BAR_HEIGHT,
+                            backgroundColor: "rgba(251, 191, 36, 0.25)",
+                            border: "1.5px solid rgba(251, 191, 36, 0.6)",
+                            borderLeft: "3px solid #f59e0b",
+                          }}
+                          onClick={() => setSelectedLinearIssueId(bar.issueId)}
+                          onMouseEnter={() => setHoveredProject(`linear-${bar.issueId}`)}
+                          onMouseLeave={() => setHoveredProject(null)}
+                        >
+                          <span
+                            className="project-bar-label linear-bar-label"
+                            style={{ color: "#92400e" }}
+                          >
+                            {bar.cleanedTitle}
+                          </span>
+                        </div>
+                      );
+                    });
+                  })()}
                 </div>
-              ))}
+              </div>
+            );
+          })}
+
+          {/* Today line label at top of body */}
+          {todayX !== null && (
+            <div
+              style={{
+                position: "absolute",
+                top: -22,
+                left: (isMobile ? 0 : SIDEBAR_WIDTH) + todayX,
+                transform: "translateX(-50%)",
+                fontSize: 10,
+                fontWeight: 600,
+                color: "#ef4444",
+                background: "#fff",
+                padding: "2px 6px",
+                borderRadius: 4,
+                whiteSpace: "nowrap",
+                border: "1px solid #fecaca",
+                zIndex: 3,
+                pointerEvents: "none",
+              }}
+            >
+              Today
             </div>
           )}
-
-          {/* Column headers */}
-          <div
-            className="month-header-row"
-            style={{ height: HEADER_HEIGHT, width: totalGridWidth, top: showPhases ? PHASE_HEIGHT : 0 }}
-          >
-            {columns.map((col, i) => {
-              const parts = col.label.split(" ");
-              const primary = parts[0];
-              const secondary = parts[1] || "";
-              return (
-                <div
-                  key={`col-${i}`}
-                  className="month-header-cell"
-                  style={{ left: i * colWidth, width: colWidth }}
-                >
-                  <span className="month-label">{primary}</span>
-                  <span className="year-label">{secondary}</span>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Grid body */}
-          <div
-            className="grid-body"
-            style={{
-              width: totalGridWidth,
-              height: totalGridHeight,
-            }}
-          >
-            {/* Vertical grid lines */}
-            {columns.map((_, i) => (
-              <div
-                key={`vline-${i}`}
-                className="grid-vline"
-                style={{ left: i * colWidth, height: totalGridHeight }}
-              />
-            ))}
-
-            {/* Row backgrounds with personal color tints */}
-            {rowEntries.map((entry) => (
-              <div
-                key={`rowbg-${entry.person.name}`}
-                className="grid-row-bg"
-                style={{
-                  top: entry.yOffset,
-                  height: entry.totalHeight,
-                  backgroundColor: hexToRgba(
-                    entry.person.color,
-                    entry.personIndex % 2 === 0 ? 0.10 : 0.16,
-                  ),
-                }}
-              />
-            ))}
-
-            {/* Horizontal row separators */}
-            {rowEntries.map((entry) => (
-              <div
-                key={`hline-${entry.person.name}`}
-                className="grid-hline"
-                style={{ top: entry.yOffset + entry.totalHeight }}
-              />
-            ))}
-
-            {/* Today line */}
-            {todayX !== null && (
-              <div
-                className="today-line"
-                style={{ left: todayX, height: totalGridHeight }}
-              >
-                <div className="today-label">Today</div>
-              </div>
-            )}
-
-            {/* Project bars */}
-            {viewMode === "projects" &&
-            <>
-            {personEntries.map((ri) =>
-              ri.lanes.map(({ project, lane }) => {
-                const pos = getProjectPosition(project);
-                const colPos = monthIndexToColPos(pos.startMonth, zoom, columns);
-                const colSpan = monthDurationToCols(pos.startMonth, pos.duration, zoom, columns);
-                const x = colPos * colWidth + 2;
-                const y = ri.yOffset + lane * ROW_HEIGHT + BAR_V_PAD;
-                const w = Math.max(colSpan * colWidth - 4, 20);
-                const isHovered = hoveredProject === project.id;
-                const isDragging = dragState?.projectId === project.id;
-                const dimmed = selectedCycleId !== null && !isProjectInCycle(project, ri.person.name);
-                const isRenaming = renamingProjectId === project.id;
-
-                const doneCount = project.tasks.filter(
-                  (t) => t.status === "done",
-                ).length;
-                const total = project.tasks.length;
-                let progressPct =
-                  total > 0 ? (doneCount / total) * 100 : 0;
-
-                // Use Linear progress if available
-                const linearProgress = getBarProgress(project);
-                if (linearProgress !== null) {
-                  progressPct = linearProgress;
-                }
-
-                // Ghost bar (original position) when dragging
-                let ghostBar = null;
-                if (isDragging) {
-                  const origColPos = monthIndexToColPos(dragState.originalStartMonth, zoom, columns);
-                  const origColSpan = monthDurationToCols(dragState.originalStartMonth, dragState.originalDuration, zoom, columns);
-                  const gx = origColPos * colWidth + 2;
-                  const gw = Math.max(origColSpan * colWidth - 4, 20);
-                  ghostBar = (
-                    <div
-                      className="project-bar-ghost"
-                      style={{
-                        left: gx,
-                        top: y,
-                        width: gw,
-                        height: BAR_HEIGHT,
-                        borderColor: ri.person.color,
-                      }}
-                    />
-                  );
-                }
-
-                return (
-                  <div key={project.id}>
-                    {ghostBar}
-                    <div
-                      className={`project-bar${isHovered ? " project-bar-hover" : ""}${isDragging ? " project-bar-dragging" : ""}${dimmed ? " project-bar-dimmed" : ""}`}
-                      style={{
-                        left: x,
-                        top: y,
-                        width: w,
-                        height: BAR_HEIGHT,
-                        backgroundColor: hexToRgba(ri.person.color, dimmed ? 0.12 : 0.35),
-                        border: `1.5px solid ${dimmed ? hexToRgba(ri.person.color, 0.3) : hexToRgba(ri.person.color, 0.7)}`,
-                        borderLeft: `3px solid ${dimmed ? hexToRgba(ri.person.color, 0.3) : ri.person.color}`,
-                      }}
-                      onClick={() => {
-                        if (!isDragging) {
-                          if (project.linearProjectName) {
-                            setSelectedLinearProject({
-                              project,
-                              personName: ri.person.name,
-                              personColor: ri.person.color,
-                              linearProjectName: project.linearProjectName,
-                            });
-                          } else {
-                            setSelected({
-                              project,
-                              personName: ri.person.name,
-                              personColor: ri.person.color,
-                            });
-                          }
-                        }
-                      }}
-                      onMouseEnter={() => setHoveredProject(project.id)}
-                      onMouseLeave={() => setHoveredProject(null)}
-                      onMouseDown={(e) => handleBarMouseDown(e, project, ri.person.name, "move")}
-                      onDoubleClick={(e) => {
-                        e.stopPropagation();
-                        setRenamingProjectId(project.id);
-                        setRenameValue(project.name);
-                      }}
-                    >
-                      {/* Progress background fill */}
-                      <div
-                        className="project-bar-progress"
-                        style={{
-                          width: `${progressPct}%`,
-                          backgroundColor: hexToRgba(ri.person.color, 0.12),
-                        }}
-                      />
-
-
-                      {/* Label or inline rename input */}
-                      {isRenaming ? (
-                        <input
-                          type="text"
-                          value={renameValue}
-                          onChange={(e) => setRenameValue(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") {
-                              handleRenameProject(
-                                ri.person.name,
-                                project.id,
-                                project.name,
-                                renameValue,
-                              );
-                            }
-                            if (e.key === "Escape") {
-                              setRenamingProjectId(null);
-                            }
-                          }}
-                          onBlur={() => {
-                            handleRenameProject(
-                              ri.person.name,
-                              project.id,
-                              project.name,
-                              renameValue,
-                            );
-                          }}
-                          onClick={(e) => e.stopPropagation()}
-                          onMouseDown={(e) => e.stopPropagation()}
-                          autoFocus
-                          style={{
-                            position: "relative",
-                            zIndex: 1,
-                            background: "rgba(255,255,255,0.9)",
-                            border: "1px solid #6366f1",
-                            borderRadius: 3,
-                            padding: "0 4px",
-                            fontSize: 11,
-                            fontWeight: 600,
-                            fontFamily: "var(--font-sans)",
-                            width: "90%",
-                            maxWidth: "calc(100% - 16px)",
-                            outline: "none",
-                          }}
-                        />
-                      ) : (
-                        <span
-                          className="project-bar-label"
-                          style={{ color: dimmed ? hexToRgba(ri.person.color, 0.4) : darkenHex(ri.person.color) }}
-                        >
-                          {project.name}
-                        </span>
-                      )}
-
-                      {/* Dependency link dots on hover */}
-
-                      {/* Resize handle */}
-                      <div
-                        className="resize-handle"
-                        onMouseDown={(e) => {
-                          e.stopPropagation();
-                          handleBarMouseDown(e, project, ri.person.name, "resize");
-                        }}
-                      />
-                    </div>
-                  </div>
-                );
-              }),
-            )}
-            </>
-            }
-
-            {/* Linear bars (Subtest project issues) */}
-            {viewMode === "subtestEdits" &&
-            <>
-            {personEntries.map((ri) => {
-              const bars = linearBarsPerPerson[ri.person.name];
-              if (!bars || bars.length === 0) return null;
-              const linearLaneY = ri.yOffset + ri.laneCount * ROW_HEIGHT;
-
-              return bars.map((bar, barIdx) => {
-                const startCol = dateToColPos(bar.startDate, columns);
-                const endCol = dateToColPos(bar.endDate, columns);
-                const x = startCol * colWidth + 2;
-                const w = Math.max((endCol - startCol) * colWidth - 4, 30);
-                const y = linearLaneY + barIdx * ROW_HEIGHT + BAR_V_PAD;
-                const isHovered = hoveredProject === `linear-${bar.issueId}`;
-
-                return (
-                  <div
-                    key={`linear-${bar.issueId}`}
-                    className={`project-bar linear-bar${isHovered ? " project-bar-hover" : ""}`}
-                    style={{
-                      left: x,
-                      top: y,
-                      width: w,
-                      height: BAR_HEIGHT,
-                      backgroundColor: "rgba(251, 191, 36, 0.25)",
-                      border: "1.5px solid rgba(251, 191, 36, 0.6)",
-                      borderLeft: "3px solid #f59e0b",
-                    }}
-                    onClick={() => setSelectedLinearIssueId(bar.issueId)}
-                    onMouseEnter={() => setHoveredProject(`linear-${bar.issueId}`)}
-                    onMouseLeave={() => setHoveredProject(null)}
-                  >
-                    <span
-                      className="project-bar-label linear-bar-label"
-                      style={{ color: "#92400e" }}
-                    >
-                      {bar.cleanedTitle}
-                    </span>
-                  </div>
-                );
-              });
-            })}
-            </>
-            }
-          </div>
         </div>
       </div>
 
