@@ -2644,26 +2644,18 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
           changed = true;
         }
 
-        // Cross-person detection: check which person row the mouse is over
-        // Use the scrollRef to get the container's scroll position
-        const container = scrollRef.current;
-        if (container) {
-          const containerRect = container.getBoundingClientRect();
-          const mouseYInContainer = e.clientY - containerRect.top + container.scrollTop;
-          // Account for the sticky header height
-          const headerHeight = PHASE_HEIGHT + HEADER_HEIGHT;
-          const mouseYInBody = mouseYInContainer - headerHeight;
-
-          // Find which person row the mouse is in
-          for (const entry of rowEntries) {
-            if (mouseYInBody >= entry.yOffset && mouseYInBody < entry.yOffset + entry.totalHeight) {
-              if (entry.person.name !== ds.personName) {
-                ds.personName = entry.person.name;
-                ds.currentLane = 0; // put at top of new person
-                changed = true;
-              }
-              break;
+        // Cross-person detection: find the DOM row under the mouse
+        const rowEls = document.querySelectorAll("[data-person-name]");
+        for (const el of rowEls) {
+          const rect = el.getBoundingClientRect();
+          if (e.clientY >= rect.top && e.clientY < rect.bottom) {
+            const targetPerson = el.getAttribute("data-person-name");
+            if (targetPerson && targetPerson !== ds.personName) {
+              ds.personName = targetPerson;
+              ds.currentLane = 0;
+              changed = true;
             }
+            break;
           }
         }
       }
@@ -3250,6 +3242,7 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
               <div
                 key={entry.person.name}
                 className="roadmap-row"
+                data-person-name={entry.person.name}
                 style={{ height: entry.totalHeight, marginBottom: PERSON_GAP }}
               >
                 {/* Sidebar cell (sticky left) */}
