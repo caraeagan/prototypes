@@ -20,8 +20,7 @@ const ZOOM_COL_WIDTH: Record<ZoomLevel, number> = {
 
 // ── Constants ──────────────────────────────────────────────────────────────
 
-const SIDEBAR_WIDTH = 210;
-const TEAM_LABEL_WIDTH = 30;
+const SIDEBAR_WIDTH = 160;
 const ROW_HEIGHT = 48;
 const PERSON_GAP = 10;
 const HEADER_HEIGHT = 80;
@@ -1602,6 +1601,12 @@ function FilterBar({
   canUndo,
   viewMode,
   onViewMode,
+  teams,
+  people,
+  filterTeam,
+  onFilterTeam,
+  filterPerson,
+  onFilterPerson,
 }: {
   search: string;
   onSearch: (v: string) => void;
@@ -1618,6 +1623,12 @@ function FilterBar({
   canUndo: boolean;
   viewMode: "projects" | "subtestEdits";
   onViewMode: (m: "projects" | "subtestEdits") => void;
+  teams: Team[];
+  people: Person[];
+  filterTeam: string | null;
+  onFilterTeam: (t: string | null) => void;
+  filterPerson: string | null;
+  onFilterPerson: (p: string | null) => void;
 }) {
   return (
     <div className="filter-bar">
@@ -1653,6 +1664,26 @@ function FilterBar({
         </span>
       </div>
       <div className="filter-bar-right">
+        <select
+          value={filterTeam ?? ""}
+          onChange={(e) => { onFilterTeam(e.target.value || null); onFilterPerson(null); }}
+          style={{ fontFamily: "var(--font-sans)", fontSize: 13, padding: "6px 10px", borderRadius: 6, border: "1px solid #e2e8f0", background: filterTeam ? "#eef2ff" : "#fff", color: "#1e293b", cursor: "pointer" }}
+        >
+          <option value="">All Teams</option>
+          {teams.map((t) => (
+            <option key={t.name} value={t.name}>{t.name}</option>
+          ))}
+        </select>
+        <select
+          value={filterPerson ?? ""}
+          onChange={(e) => onFilterPerson(e.target.value || null)}
+          style={{ fontFamily: "var(--font-sans)", fontSize: 13, padding: "6px 10px", borderRadius: 6, border: "1px solid #e2e8f0", background: filterPerson ? "#eef2ff" : "#fff", color: "#1e293b", cursor: "pointer" }}
+        >
+          <option value="">All People</option>
+          {(filterTeam ? people.filter((p) => p.team === filterTeam) : people).map((p) => (
+            <option key={p.name} value={p.name}>{p.name}</option>
+          ))}
+        </select>
         <CycleSelect
           cycles={cycles}
           selectedCycleId={selectedCycleId}
@@ -1662,7 +1693,7 @@ function FilterBar({
         <input
           type="text"
           className="filter-search"
-          placeholder="Search people or projects..."
+          placeholder="Search..."
           value={search}
           onChange={(e) => onSearch(e.target.value)}
         />
@@ -1789,6 +1820,8 @@ function newProjId(): string {
 export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps) {
   const [search, setSearch] = useState("");
   const [viewMode, setViewMode] = useState<"projects" | "subtestEdits">("projects");
+  const [filterTeam, setFilterTeam] = useState<string | null>(null);
+  const [filterPerson, setFilterPerson] = useState<string | null>(null);
   const [selected, setSelected] = useState<{
     project: Project;
     personName: string;
@@ -2244,13 +2277,26 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
       .filter(Boolean) as Person[];
   }, [localPeople, search, isMobile, mobilePersonFilter]);
 
+  // Apply team and person filters
+  const teamAndPersonFiltered = useMemo(() => {
+    let result = filteredPeople;
+    if (filterTeam) {
+      const teamMembers = new Set(teams.find((t) => t.name === filterTeam)?.members || []);
+      result = result.filter((p) => teamMembers.has(p.name));
+    }
+    if (filterPerson) {
+      result = result.filter((p) => p.name === filterPerson);
+    }
+    return result;
+  }, [filteredPeople, filterTeam, filterPerson, teams]);
+
   // Group people by team
   const teamGroups = useMemo(() => {
     const groups: { team: Team; members: Person[] }[] = [];
 
     for (const team of teams) {
       const members = team.members
-        .map((name) => filteredPeople.find((p) => p.name === name))
+        .map((name) => teamAndPersonFiltered.find((p) => p.name === name))
         .filter(Boolean) as Person[];
       if (members.length > 0) {
         groups.push({ team, members });
@@ -2260,7 +2306,7 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
     // Find people not in any team
     const allTeamMembers = new Set(teams.flatMap((t) => t.members));
     const ungrouped: Person[] = [];
-    for (const p of filteredPeople) {
+    for (const p of teamAndPersonFiltered) {
       if (!allTeamMembers.has(p.name)) {
         ungrouped.push(p);
       }
@@ -2338,7 +2384,7 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
 
   const personEntries = rowEntries;
 
-  const projectCount = filteredPeople.reduce(
+  const projectCount = teamAndPersonFiltered.reduce(
     (acc, p) => acc + p.projects.length,
     0,
   );
@@ -2777,7 +2823,7 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
       <FilterBar
         search={search}
         onSearch={setSearch}
-        peopleCount={filteredPeople.length}
+        peopleCount={teamAndPersonFiltered.length}
         projectCount={projectCount}
         zoom={zoom}
         onZoom={setZoom}
@@ -2793,6 +2839,12 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
           setViewMode(m);
           if (m === "subtestEdits") setZoom("week");
         }}
+        teams={teams}
+        people={localPeople}
+        filterTeam={filterTeam}
+        onFilterTeam={setFilterTeam}
+        filterPerson={filterPerson}
+        onFilterPerson={setFilterPerson}
       />
 
       <div className="roadmap-container" ref={scrollRef}>
@@ -2883,47 +2935,6 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
                       backgroundColor: rowBg,
                     }}
                   >
-                    {/* Team color strip on the left edge */}
-                    {entry.teamName !== "" && (
-                      <div
-                        style={{
-                          position: "absolute",
-                          top: 0,
-                          left: 0,
-                          width: TEAM_LABEL_WIDTH,
-                          height: "100%",
-                          backgroundColor: entry.teamColor,
-                          cursor: "pointer",
-                        }}
-                        onClick={() => toggleTeam(entry.teamName)}
-                      >
-                        {/* Vertical text only on the first member of each team */}
-                        {entry.personIndex === 0 && (
-                          <div
-                            style={{
-                              writingMode: "vertical-rl",
-                              transform: "rotate(180deg)",
-                              color: "#fff",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              width: "100%",
-                              height: "100%",
-                              fontSize: 11,
-                              fontWeight: 700,
-                              letterSpacing: "0.02em",
-                              textTransform: "uppercase",
-                              userSelect: "none",
-                              whiteSpace: "nowrap",
-                              overflow: "hidden",
-                            }}
-                            title={entry.teamName}
-                          >
-                            {entry.teamName}
-                          </div>
-                        )}
-                      </div>
-                    )}
                     <div
                       className="sidebar-color-bar"
                       style={{ backgroundColor: entry.person.color }}
