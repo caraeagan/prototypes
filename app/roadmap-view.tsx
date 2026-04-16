@@ -177,15 +177,7 @@ function statusLabel(status: TaskStatus): string {
 type Lane = { project: Project; lane: number };
 
 function packLanes(projects: Project[]): { lanes: Lane[]; laneCount: number } {
-  // If all projects have explicit order, use those directly as lanes
-  const allHaveOrder = projects.length > 0 && projects.every((p) => p.order !== undefined);
-  if (allHaveOrder) {
-    const result: Lane[] = projects.map((p) => ({ project: p, lane: p.order! }));
-    const maxLane = Math.max(0, ...projects.map((p) => p.order!));
-    return { lanes: result, laneCount: maxLane + 1 };
-  }
-
-  // Otherwise, sort by order first (if set), then by startMonth as tiebreaker
+  // Sort by order first (if set), then by startMonth as tiebreaker
   const sorted = [...projects].sort((a, b) => {
     const orderA = a.order ?? Infinity;
     const orderB = b.order ?? Infinity;
@@ -2623,7 +2615,8 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
       ds.mouseX = e.clientX;
       ds.mouseY = e.clientY;
 
-      let changed = false;
+      // Always re-render during drag for smooth visual feedback
+      let changed = true;
 
       // Horizontal: always track date changes (move or resize)
       const approxMonthWidth = (() => {
