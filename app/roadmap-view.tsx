@@ -1992,12 +1992,8 @@ function CyclesView({ cycles, people }: { cycles: LinearCycle[]; people: Person[
     people.filter((p) => CYCLE_TEAMS.has(p.team)).map((p) => p.name),
   );
 
-  // Filter issues to relevant people (normalize Linear names to roadmap names)
-  const filteredIssues = issues.filter((issue) => {
-    if (!issue.assignee) return false;
-    const normalized = normalizeAssigneeName(issue.assignee.displayName);
-    return normalized && relevantPeople.has(normalized);
-  });
+  // Show all issues (normalize names for display)
+  const filteredIssues = issues;
   const byProject: Record<string, CycleIssue[]> = {};
   for (const issue of filteredIssues) {
     const key = issue.project?.name ?? "No Project";
