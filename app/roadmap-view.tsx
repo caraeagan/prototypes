@@ -1844,6 +1844,8 @@ type DragState = {
   linearIssueId?: string; // set when dragging a Linear-sourced bar
   mode: "move" | "resize";
   reorderMode: boolean; // true when vertical drag detected
+  mouseX: number;
+  mouseY: number;
   startMouseX: number;
   startMouseY: number;
   originalStartMonth: number;
@@ -2585,6 +2587,8 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
         linearIssueId,
         mode,
         reorderMode: false,
+        mouseX: e.clientX,
+        mouseY: e.clientY,
         startMouseX: e.clientX,
         startMouseY: e.clientY,
         originalStartMonth: project.startMonth,
@@ -2608,6 +2612,8 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
       const dx = e.clientX - ds.startMouseX;
       const dy = e.clientY - ds.startMouseY;
       if (Math.abs(dx) > 3 || Math.abs(dy) > 3) didDragRef.current = true;
+      ds.mouseX = e.clientX;
+      ds.mouseY = e.clientY;
 
       let changed = false;
 
@@ -3333,10 +3339,8 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
                       const y = effectiveLane * ROW_HEIGHT + BAR_V_PAD;
                       const w = Math.max(colSpan * colWidth - 4, 20);
 
-                      // Hide bar if it's being dragged to a different person
-                      if (dragState?.projectId === project.id && dragState.personName !== entry.person.name) {
-                        return null;
-                      }
+                      // Dim the bar in its original spot during cross-person drag
+                      const isCrossPersonDrag = dragState?.projectId === project.id && dragState.personName !== entry.person.name;
 
                       const isHovered = hoveredProject === project.id;
                       const isDragging = dragState?.projectId === project.id;
@@ -3388,6 +3392,7 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
                               backgroundColor: hexToRgba(entry.person.color, dimmed ? 0.12 : 0.35),
                               border: `1.5px solid ${dimmed ? hexToRgba(entry.person.color, 0.3) : hexToRgba(entry.person.color, 0.7)}`,
                               borderLeft: `3px solid ${dimmed ? hexToRgba(entry.person.color, 0.3) : entry.person.color}`,
+                              opacity: isCrossPersonDrag ? 0.25 : undefined,
                             }}
                             onClick={() => {
                               if (!didDragRef.current) {
@@ -3633,6 +3638,41 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
           onClose={() => setSelectedLinearIssueId(null)}
         />
       )}
+
+      {/* Floating bar during cross-person drag */}
+      {dragState && dragState.personName !== dragState.originalPersonName && (() => {
+        const project = localPeople
+          .flatMap((p) => p.projects)
+          .find((p) => p.id === dragState.projectId);
+        if (!project) return null;
+        const targetPerson = localPeople.find((p) => p.name === dragState.personName);
+        const color = targetPerson?.color ?? "#94a3b8";
+        return (
+          <div
+            style={{
+              position: "fixed",
+              left: dragState.mouseX - 80,
+              top: dragState.mouseY - 15,
+              width: 200,
+              height: BAR_HEIGHT,
+              backgroundColor: hexToRgba(color, 0.5),
+              border: `2px solid ${color}`,
+              borderRadius: 6,
+              display: "flex",
+              alignItems: "center",
+              padding: "0 10px",
+              fontSize: 13,
+              fontWeight: 600,
+              color: barTextColor(color, 0.5),
+              pointerEvents: "none",
+              zIndex: 9999,
+              boxShadow: "0 4px 16px rgba(0,0,0,0.2)",
+            }}
+          >
+            {project.name}
+          </div>
+        );
+      })()}
 
       {/* Toasts */}
       <Toast messages={toasts} onDismiss={dismissToast} />
