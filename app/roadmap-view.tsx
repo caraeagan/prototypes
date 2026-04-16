@@ -2619,14 +2619,18 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
       })();
       const monthDelta = dx / approxMonthWidth;
 
+      // Snap granularity: month=1, biweekly=0.5, week=0.25
+      const snap = zoom === "month" ? 1 : zoom === "biweekly" ? 0.5 : 0.25;
+      const roundToSnap = (v: number) => Math.round(v / snap) * snap;
+
       if (ds.mode === "move") {
-        const newStart = Math.max(0, Math.round(ds.originalStartMonth + monthDelta));
+        const newStart = Math.max(0, roundToSnap(ds.originalStartMonth + monthDelta));
         if (newStart !== ds.currentStartMonth) {
           ds.currentStartMonth = newStart;
           changed = true;
         }
       } else {
-        const newDuration = Math.max(1, Math.round(ds.originalDuration + monthDelta));
+        const newDuration = Math.max(snap, roundToSnap(ds.originalDuration + monthDelta));
         if (newDuration !== ds.currentDuration) {
           ds.currentDuration = newDuration;
           changed = true;
