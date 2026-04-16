@@ -3246,10 +3246,24 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
                       const colPos = monthIndexToColPos(pos.startMonth, zoom, columns);
                       const colSpan = monthDurationToCols(pos.startMonth, pos.duration, zoom, columns);
                       const x = colPos * colWidth + 2;
-                      // When in reorder mode, show the dragged bar at the target lane
-                      const effectiveLane = (dragState?.reorderMode && dragState.projectId === project.id)
-                        ? dragState.currentLane
-                        : lane;
+
+                      // During reorder, shift all bars to preview the new arrangement
+                      let effectiveLane = lane;
+                      if (dragState?.reorderMode && dragState.personName === entry.person.name) {
+                        const from = dragState.originalLane;
+                        const to = dragState.currentLane;
+                        if (project.id === dragState.projectId) {
+                          // Dragged bar goes to target lane
+                          effectiveLane = to;
+                        } else if (from < to) {
+                          // Dragged down: bars between from+1 and to shift up by 1
+                          if (lane > from && lane <= to) effectiveLane = lane - 1;
+                        } else if (from > to) {
+                          // Dragged up: bars between to and from-1 shift down by 1
+                          if (lane >= to && lane < from) effectiveLane = lane + 1;
+                        }
+                      }
+
                       const y = effectiveLane * ROW_HEIGHT + BAR_V_PAD;
                       const w = Math.max(colSpan * colWidth - 4, 20);
                       const isHovered = hoveredProject === project.id;

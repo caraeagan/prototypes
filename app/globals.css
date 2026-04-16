@@ -370,7 +370,7 @@ body {
   overflow: hidden;
   display: flex;
   align-items: center;
-  transition: transform 0.1s, box-shadow 0.15s;
+  transition: transform 0.1s, box-shadow 0.15s, top 0.2s ease-out;
 }
 
 .project-bar:hover,
@@ -386,6 +386,7 @@ body {
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
   transform: translateY(-2px);
   opacity: 0.92;
+  transition: none !important;
 }
 
 .project-bar-ghost {
