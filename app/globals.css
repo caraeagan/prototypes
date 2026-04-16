@@ -407,10 +407,11 @@ body {
 }
 
 .project-bar-label {
-  position: relative;
+  position: sticky;
+  left: 8px;
   z-index: 1;
   padding: 0 8px;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 600;
   white-space: nowrap;
   overflow: hidden;

@@ -1883,6 +1883,7 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<DragState | null>(null);
+  const didDragRef = useRef(false);
   const [containerWidth, setContainerWidth] = useState(0);
 
   const columns = useMemo(() => generateColumns(zoom), [zoom]);
@@ -2450,7 +2451,7 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
       if (e.button !== 0) return; // only left click
       e.preventDefault();
       e.stopPropagation();
-      console.log("[DRAG] mousedown on", project.name, mode);
+      didDragRef.current = false;
       const state: DragState = {
         projectId: project.id,
         personName,
@@ -2476,7 +2477,7 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
       if (!ds) return;
 
       const dx = e.clientX - ds.startMouseX;
-      if (Math.abs(dx) > 5) console.log("[DRAG] moving", dx);
+      if (Math.abs(dx) > 3) didDragRef.current = true;
       const approxMonthWidth = (() => {
         if (zoom === "month") return colWidth;
         if (zoom === "biweekly") return colWidth * (30.44 / 14);
@@ -3044,7 +3045,7 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
                               borderLeft: `3px solid ${dimmed ? hexToRgba(entry.person.color, 0.3) : entry.person.color}`,
                             }}
                             onClick={() => {
-                              if (!isDragging) {
+                              if (!didDragRef.current) {
                                 if (project.linearProjectName) {
                                   setSelectedLinearProject({
                                     project,
