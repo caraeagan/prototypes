@@ -36,8 +36,8 @@ body {
   align-items: center;
   justify-content: space-between;
   padding: 16px 24px;
-  background: #fef3c7;
-  border-bottom: 2px solid #fde68a;
+  background: #fdf6e3;
+  border-bottom: 2px solid #d4a843;
   flex-shrink: 0;
   z-index: 20;
 }

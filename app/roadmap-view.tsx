@@ -215,11 +215,22 @@ function hexToRgba(hex: string, alpha: number): string {
   return `rgba(${r},${g},${b},${alpha})`;
 }
 
-function darkenHex(hex: string, factor = 0.15): string {
-  const r = Math.round(parseInt(hex.slice(1, 3), 16) * factor);
-  const g = Math.round(parseInt(hex.slice(3, 5), 16) * factor);
-  const b = Math.round(parseInt(hex.slice(5, 7), 16) * factor);
-  return `rgb(${r},${g},${b})`;
+function barTextColor(hex: string, bgAlpha: number): string {
+  // Calculate perceived luminance of the bar background (hex at bgAlpha on white)
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  // Blend with white at given alpha
+  const br = Math.round(r * bgAlpha + 255 * (1 - bgAlpha));
+  const bg = Math.round(g * bgAlpha + 255 * (1 - bgAlpha));
+  const bb = Math.round(b * bgAlpha + 255 * (1 - bgAlpha));
+  const luminance = (0.299 * br + 0.587 * bg + 0.114 * bb) / 255;
+  // If the bar is dark enough, use white text; otherwise use very dark version of the color
+  if (luminance < 0.6) return "#ffffff";
+  const dr = Math.round(r * 0.2);
+  const dg = Math.round(g * 0.2);
+  const db = Math.round(b * 0.2);
+  return `rgb(${dr},${dg},${db})`;
 }
 
 // ── Linear API client helper ──────────────────────────────────────────────
@@ -1832,7 +1843,7 @@ type DragState = {
   originalPersonName: string;
   linearIssueId?: string; // set when dragging a Linear-sourced bar
   mode: "move" | "resize";
-  reorderMode: boolean; // true when vertical drag detected (>20px)
+  reorderMode: boolean; // true when vertical drag detected
   startMouseX: number;
   startMouseY: number;
   originalStartMonth: number;
@@ -2598,45 +2609,68 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
       const dy = e.clientY - ds.startMouseY;
       if (Math.abs(dx) > 3 || Math.abs(dy) > 3) didDragRef.current = true;
 
-      // Detect reorder mode: significant vertical movement while in move mode
-      if (ds.mode === "move" && !ds.reorderMode && Math.abs(dy) > 20) {
-        ds.reorderMode = true;
-      }
+      let changed = false;
 
-      if (ds.reorderMode) {
-        // In reorder mode: only track vertical lane changes, don't change startMonth/duration
-        const laneDelta = Math.round(dy / ROW_HEIGHT);
-        const newLane = Math.max(0, ds.originalLane + laneDelta);
-        if (newLane !== ds.currentLane) {
-          ds.currentLane = newLane;
-          setDragState({ ...ds });
-        }
-        return;
-      }
-
+      // Horizontal: always track date changes (move or resize)
       const approxMonthWidth = (() => {
         if (zoom === "month") return colWidth;
         if (zoom === "biweekly") return colWidth * (30.44 / 14);
         return colWidth * (30.44 / 7);
       })();
-
       const monthDelta = dx / approxMonthWidth;
 
       if (ds.mode === "move") {
         const newStart = Math.max(0, Math.round(ds.originalStartMonth + monthDelta));
         if (newStart !== ds.currentStartMonth) {
           ds.currentStartMonth = newStart;
-          setDragState({ ...ds });
+          changed = true;
         }
       } else {
         const newDuration = Math.max(1, Math.round(ds.originalDuration + monthDelta));
         if (newDuration !== ds.currentDuration) {
           ds.currentDuration = newDuration;
-          setDragState({ ...ds });
+          changed = true;
         }
       }
+
+      // Vertical: detect reorder within person or cross-person drag
+      if (ds.mode === "move" && Math.abs(dy) > 10) {
+        ds.reorderMode = true;
+        // Lane reorder within the same person
+        const laneDelta = Math.round(dy / ROW_HEIGHT);
+        const newLane = Math.max(0, ds.originalLane + laneDelta);
+        if (newLane !== ds.currentLane) {
+          ds.currentLane = newLane;
+          changed = true;
+        }
+
+        // Cross-person detection: check which person row the mouse is over
+        // Use the scrollRef to get the container's scroll position
+        const container = scrollRef.current;
+        if (container) {
+          const containerRect = container.getBoundingClientRect();
+          const mouseYInContainer = e.clientY - containerRect.top + container.scrollTop;
+          // Account for the sticky header height
+          const headerHeight = PHASE_HEIGHT + HEADER_HEIGHT;
+          const mouseYInBody = mouseYInContainer - headerHeight;
+
+          // Find which person row the mouse is in
+          for (const entry of rowEntries) {
+            if (mouseYInBody >= entry.yOffset && mouseYInBody < entry.yOffset + entry.totalHeight) {
+              if (entry.person.name !== ds.personName) {
+                ds.personName = entry.person.name;
+                ds.currentLane = 0; // put at top of new person
+                changed = true;
+              }
+              break;
+            }
+          }
+        }
+      }
+
+      if (changed) setDragState({ ...ds });
     },
-    [zoom, colWidth],
+    [zoom, colWidth, rowEntries],
   );
 
   const handleMouseUp = useCallback(() => {
@@ -2699,6 +2733,43 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
       );
 
       addToast("success", "Reordered");
+      dragRef.current = null;
+      setDragState(null);
+      return;
+    }
+
+    // Cross-person drag: move project to a different person
+    if (ds.personName !== ds.originalPersonName) {
+      setLocalPeople((prev) => {
+        let movedProject: Project | null = null;
+        // Remove from original person
+        const updated = prev.map((person) => {
+          if (person.name === ds.originalPersonName) {
+            const proj = person.projects.find((p) => p.id === ds.projectId);
+            if (proj) movedProject = { ...proj, startMonth: ds.currentStartMonth, duration: ds.currentDuration };
+            return { ...person, projects: person.projects.filter((p) => p.id !== ds.projectId) };
+          }
+          return person;
+        });
+        if (!movedProject) return prev;
+        // Add to target person
+        return updated.map((person) => {
+          if (person.name === ds.personName) {
+            return { ...person, projects: [...person.projects, movedProject!] };
+          }
+          return person;
+        });
+      });
+      pushUndo({
+        type: "move",
+        projectId: ds.projectId,
+        personName: ds.originalPersonName,
+        prevStart: ds.originalStartMonth,
+        prevDuration: ds.originalDuration,
+        newStart: ds.currentStartMonth,
+        newDuration: ds.currentDuration,
+      });
+      addToast("success", `Moved to ${ds.personName}`);
       dragRef.current = null;
       setDragState(null);
       return;
@@ -3266,6 +3337,12 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
 
                       const y = effectiveLane * ROW_HEIGHT + BAR_V_PAD;
                       const w = Math.max(colSpan * colWidth - 4, 20);
+
+                      // Hide bar if it's being dragged to a different person
+                      if (dragState?.projectId === project.id && dragState.personName !== entry.person.name) {
+                        return null;
+                      }
+
                       const isHovered = hoveredProject === project.id;
                       const isDragging = dragState?.projectId === project.id;
                       const dimmed = selectedCycleId !== null && !isProjectInCycle(project, entry.person.name);
@@ -3399,7 +3476,7 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
                             ) : (
                               <span
                                 className="project-bar-label"
-                                style={{ color: dimmed ? hexToRgba(entry.person.color, 0.4) : darkenHex(entry.person.color) }}
+                                style={{ color: dimmed ? hexToRgba(entry.person.color, 0.4) : barTextColor(entry.person.color, 0.35) }}
                               >
                                 {project.name}
                               </span>
