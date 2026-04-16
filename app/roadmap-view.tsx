@@ -1722,8 +1722,8 @@ function FilterBar({
   onPrint: () => void;
   onUndo: () => void;
   canUndo: boolean;
-  viewMode: "projects" | "subtestEdits";
-  onViewMode: (m: "projects" | "subtestEdits") => void;
+  viewMode: "projects" | "subtestEdits" | "cycles";
+  onViewMode: (m: "projects" | "subtestEdits" | "cycles") => void;
   teams: Team[];
   people: Person[];
   filterTeam: string | null;
@@ -1753,12 +1753,24 @@ function FilterBar({
             style={{
               fontFamily: "var(--font-sans)", fontSize: 15, fontWeight: 700,
               padding: "8px 20px", cursor: "pointer", border: "none",
-              borderRadius: "0 8px 8px 0",
+              borderRadius: 0,
               background: viewMode === "subtestEdits" ? "#f59e0b" : "#f1f5f9",
               color: viewMode === "subtestEdits" ? "white" : "#64748b",
             }}
           >
             Subtest Edits
+          </button>
+          <button
+            onClick={() => onViewMode("cycles")}
+            style={{
+              fontFamily: "var(--font-sans)", fontSize: 15, fontWeight: 700,
+              padding: "8px 20px", cursor: "pointer", border: "none",
+              borderRadius: "0 8px 8px 0",
+              background: viewMode === "cycles" ? "#1E88E5" : "#f1f5f9",
+              color: viewMode === "cycles" ? "white" : "#64748b",
+            }}
+          >
+            Cycles
           </button>
         </div>
       </div>
@@ -1921,9 +1933,190 @@ function newProjId(): string {
 
 // ── Main component ─────────────────────────────────────────────────────────
 
+// ── Cycles View ─────────────────────────────────────────────────────────────
+
+type CycleIssue = {
+  id: string;
+  title: string;
+  state: { name: string; color: string };
+  assignee: { displayName: string; avatarUrl: string | null } | null;
+  project: { name: string } | null;
+  dueDate: string | null;
+  priority: number;
+  priorityLabel: string;
+};
+
+const CYCLE_TEAMS = new Set(["Engineering", "Data Science", "Product"]);
+
+function CyclesView({ cycles, people }: { cycles: LinearCycle[]; people: Person[] }) {
+  const [selectedCycleId, setSelectedCycleId] = useState<string | null>(null);
+  const [issues, setIssues] = useState<CycleIssue[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  // Auto-select first cycle
+  useEffect(() => {
+    if (cycles.length > 0 && !selectedCycleId) {
+      setSelectedCycleId(cycles[0].id);
+    }
+  }, [cycles, selectedCycleId]);
+
+  // Fetch issues when cycle changes
+  useEffect(() => {
+    if (!selectedCycleId) return;
+    setLoading(true);
+    linearQuery<{ cycle: { issues: { nodes: CycleIssue[] } } }>(
+      `query CycleIssues($id: String!) {
+        cycle(id: $id) {
+          issues(first: 200) {
+            nodes {
+              id title priority priorityLabel dueDate
+              state { name color }
+              assignee { displayName avatarUrl }
+              project { name }
+            }
+          }
+        }
+      }`,
+      { id: selectedCycleId },
+    )
+      .then((data) => setIssues(data.cycle.issues.nodes))
+      .catch(() => setIssues([]))
+      .finally(() => setLoading(false));
+  }, [selectedCycleId]);
+
+  // Filter to only Engineering, Product, Data Science people
+  const relevantPeople = new Set(
+    people.filter((p) => CYCLE_TEAMS.has(p.team)).map((p) => p.name),
+  );
+
+  // Filter issues to relevant people and group by project
+  const filteredIssues = issues.filter(
+    (issue) => issue.assignee && relevantPeople.has(issue.assignee.displayName),
+  );
+  const byProject: Record<string, CycleIssue[]> = {};
+  for (const issue of filteredIssues) {
+    const key = issue.project?.name ?? "No Project";
+    if (!byProject[key]) byProject[key] = [];
+    byProject[key].push(issue);
+  }
+  const projectNames = Object.keys(byProject).sort();
+
+  const selectedCycle = cycles.find((c) => c.id === selectedCycleId);
+  const formatDate = (d: string) => {
+    const date = new Date(d);
+    return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  };
+
+  return (
+    <div style={{ padding: "24px 32px", fontFamily: "var(--font-sans)", maxHeight: "calc(100vh - 120px)", overflow: "auto" }}>
+      {/* Cycle selector */}
+      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
+        <span style={{ fontSize: 14, fontWeight: 600, color: "#64748b" }}>Cycle:</span>
+        <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+          {cycles.map((c) => (
+            <button
+              key={c.id}
+              onClick={() => setSelectedCycleId(c.id)}
+              style={{
+                fontFamily: "var(--font-sans)", fontSize: 13, fontWeight: 600,
+                padding: "6px 14px", cursor: "pointer", border: "none", borderRadius: 6,
+                background: selectedCycleId === c.id ? "#1E88E5" : "#f1f5f9",
+                color: selectedCycleId === c.id ? "white" : "#64748b",
+              }}
+            >
+              Cycle {c.number}
+              <span style={{ fontSize: 11, fontWeight: 400, marginLeft: 4, opacity: 0.8 }}>
+                ({formatDate(c.startsAt)} – {formatDate(c.endsAt)})
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {selectedCycle && (
+        <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 16 }}>
+          Showing Engineering, Product & Data Science · {filteredIssues.length} tasks
+        </div>
+      )}
+
+      {loading && <div style={{ color: "#94a3b8", padding: "40px 0", textAlign: "center" }}>Loading...</div>}
+
+      {!loading && projectNames.length === 0 && (
+        <div style={{ color: "#94a3b8", padding: "40px 0", textAlign: "center" }}>No tasks in this cycle for these teams.</div>
+      )}
+
+      {!loading && projectNames.map((projectName) => {
+        const projectIssues = byProject[projectName];
+        return (
+          <div key={projectName} style={{ marginBottom: 24 }}>
+            {/* Project header */}
+            <div style={{
+              background: "#f8fafc", borderRadius: "10px 10px 0 0", padding: "12px 16px",
+              borderBottom: "2px solid #e2e8f0", fontWeight: 700, fontSize: 16, color: "#1e293b",
+            }}>
+              {projectName}
+              <span style={{ fontSize: 12, fontWeight: 400, color: "#94a3b8", marginLeft: 8 }}>
+                {projectIssues.length} task{projectIssues.length !== 1 ? "s" : ""}
+              </span>
+            </div>
+
+            {/* Task list */}
+            <div style={{ border: "1px solid #e2e8f0", borderTop: "none", borderRadius: "0 0 10px 10px", overflow: "hidden" }}>
+              {/* Header row */}
+              <div style={{
+                display: "grid", gridTemplateColumns: "2fr 120px 120px 100px",
+                gap: "0 12px", padding: "8px 16px", background: "#fafafa",
+                fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.08em",
+              }}>
+                <div>Task</div>
+                <div>Owner</div>
+                <div>Due Date</div>
+                <div>Status</div>
+              </div>
+
+              {projectIssues.map((issue) => (
+                <div
+                  key={issue.id}
+                  style={{
+                    display: "grid", gridTemplateColumns: "2fr 120px 120px 100px",
+                    gap: "0 12px", padding: "10px 16px", borderTop: "1px solid #f1f5f9",
+                    alignItems: "center", fontSize: 13,
+                  }}
+                >
+                  <div style={{ fontWeight: 500, color: "#1e293b" }}>{issue.title}</div>
+                  <div style={{ color: "#64748b", fontSize: 12 }}>
+                    {issue.assignee?.displayName ?? "Unassigned"}
+                  </div>
+                  <div style={{ color: "#64748b", fontSize: 12 }}>
+                    {issue.dueDate ? formatDate(issue.dueDate) : "—"}
+                  </div>
+                  <div>
+                    <span style={{
+                      display: "inline-flex", alignItems: "center", gap: 5,
+                      fontSize: 11, fontWeight: 600, padding: "3px 8px", borderRadius: 999,
+                      backgroundColor: hexToRgba(issue.state.color, 0.15),
+                      color: issue.state.color,
+                    }}>
+                      <span style={{
+                        width: 7, height: 7, borderRadius: "50%",
+                        backgroundColor: issue.state.color,
+                      }} />
+                      {issue.state.name}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps) {
   const [search, setSearch] = useState("");
-  const [viewMode, setViewMode] = useState<"projects" | "subtestEdits">("projects");
+  const [viewMode, setViewMode] = useState<"projects" | "subtestEdits" | "cycles">("projects");
   const [filterTeam, setFilterTeam] = useState<string | null>(null);
   const [filterPerson, setFilterPerson] = useState<string | null>(null);
   const [selected, setSelected] = useState<{
@@ -3185,6 +3378,9 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
         onFilterPerson={setFilterPerson}
       />
 
+      {viewMode === "cycles" ? (
+        <CyclesView cycles={cycles} people={localPeople} />
+      ) : (
       <div className="roadmap-container" ref={scrollRef}>
         {/* ── Sticky header (phases + month columns) ──────────────────── */}
         <div className="roadmap-header">
@@ -3576,6 +3772,7 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
           )}
         </div>
       </div>
+      )}
 
       {/* Add project form popup */}
       {addingForPerson && (
