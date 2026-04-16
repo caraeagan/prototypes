@@ -1901,10 +1901,13 @@ function normalizeAssigneeName(displayName: string): string | null {
   const lower = displayName.toLowerCase();
   const map: Record<string, string> = {
     oleksii: "Oleksii",
+    "oleksii.zhaboiedov": "Oleksii",
     flo: "Flo",
-    "florian": "Flo",
+    florian: "Flo",
     maciej: "Maciej",
     "maciej.walusiak": "Maciej",
+    liuda: "Luida",
+    lillian: "Luida",
     john: "John",
     luida: "Luida",
     ak: "AK",
@@ -1989,10 +1992,12 @@ function CyclesView({ cycles, people }: { cycles: LinearCycle[]; people: Person[
     people.filter((p) => CYCLE_TEAMS.has(p.team)).map((p) => p.name),
   );
 
-  // Filter issues to relevant people and group by project
-  const filteredIssues = issues.filter(
-    (issue) => issue.assignee && relevantPeople.has(issue.assignee.displayName),
-  );
+  // Filter issues to relevant people (normalize Linear names to roadmap names)
+  const filteredIssues = issues.filter((issue) => {
+    if (!issue.assignee) return false;
+    const normalized = normalizeAssigneeName(issue.assignee.displayName);
+    return normalized && relevantPeople.has(normalized);
+  });
   const byProject: Record<string, CycleIssue[]> = {};
   for (const issue of filteredIssues) {
     const key = issue.project?.name ?? "No Project";
@@ -2085,7 +2090,7 @@ function CyclesView({ cycles, people }: { cycles: LinearCycle[]; people: Person[
                 >
                   <div style={{ fontWeight: 500, color: "#1e293b" }}>{issue.title}</div>
                   <div style={{ color: "#64748b", fontSize: 12 }}>
-                    {issue.assignee?.displayName ?? "Unassigned"}
+                    {(issue.assignee && normalizeAssigneeName(issue.assignee.displayName)) ?? issue.assignee?.displayName ?? "Unassigned"}
                   </div>
                   <div style={{ color: "#64748b", fontSize: 12 }}>
                     {issue.dueDate ? formatDate(issue.dueDate) : "—"}
