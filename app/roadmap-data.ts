@@ -15,6 +15,7 @@ export type Project = {
   duration: number; // number of months
   tasks: Task[];
   linearProjectName?: string | null; // Linear project name for API integration
+  order?: number; // Manual sort order within a person's row (lower = higher lane)
 };
 
 export type Person = {

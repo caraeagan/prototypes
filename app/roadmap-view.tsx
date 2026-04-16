@@ -177,7 +177,13 @@ function statusLabel(status: TaskStatus): string {
 type Lane = { project: Project; lane: number };
 
 function packLanes(projects: Project[]): { lanes: Lane[]; laneCount: number } {
-  const sorted = [...projects].sort((a, b) => a.startMonth - b.startMonth);
+  // Sort by order first (if set), then by startMonth as tiebreaker
+  const sorted = [...projects].sort((a, b) => {
+    const orderA = a.order ?? Infinity;
+    const orderB = b.order ?? Infinity;
+    if (orderA !== orderB) return orderA - orderB;
+    return a.startMonth - b.startMonth;
+  });
   const ends: number[] = [];
   const result: Lane[] = [];
 
@@ -324,6 +330,18 @@ function formatMonthIndex(monthIndex: number): string {
     day: "numeric",
     year: "numeric",
   });
+}
+
+/** Convert a month index (0 = Mar 2026) to an ISO date string for input[type=date] */
+function monthIndexToDate(idx: number): string {
+  const d = new Date(2026, 2 + idx, 1); // March 2026 = month index 0
+  return d.toISOString().split("T")[0]; // "2026-03-01" format
+}
+
+/** Convert a date string from input[type=date] to a month index (Mar 2026 = 0) */
+function dateToMonthIndex(dateStr: string): number {
+  const d = new Date(dateStr + "T00:00:00");
+  return (d.getFullYear() - 2026) * 12 + d.getMonth() - 2; // March 2026 = 0
 }
 
 function formatCycleLabel(cycle: LinearCycle): string {
@@ -624,6 +642,9 @@ function LinearProjectDetailPanel({
   onClose,
   onIssueClick,
   onDelete,
+  people,
+  onChangeOwner,
+  onUpdateDates,
 }: {
   project: Project;
   personName: string;
@@ -633,13 +654,17 @@ function LinearProjectDetailPanel({
   onClose: () => void;
   onIssueClick: (issueId: string) => void;
   onDelete: (personName: string, projectId: string, projectName: string) => void;
+  people: Person[];
+  onChangeOwner: (projectId: string, fromPerson: string, toPerson: string) => void;
+  onUpdateDates: (projectId: string, personName: string, startMonth: number, duration: number) => void;
 }) {
   const [issues, setIssues] = useState<LinearProjectIssue[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [editStart, setEditStart] = useState(project.startMonth);
-  const [editDuration, setEditDuration] = useState(project.duration);
+  const [editStartDate, setEditStartDate] = useState(monthIndexToDate(project.startMonth));
+  const [editEndDate, setEditEndDate] = useState(monthIndexToDate(project.startMonth + project.duration));
+  const [editOwner, setEditOwner] = useState(personName);
   const [notes, setNotes] = useState("");
   const [savingNotes, setSavingNotes] = useState(false);
   const [issueComments, setIssueComments] = useState<Record<string, LinearIssue["comments"]>>({});
@@ -721,9 +746,26 @@ function LinearProjectDetailPanel({
       ? Math.round((doneIssues.length / issues.length) * 100)
       : 0;
 
-  const startDateStr = formatMonthIndex(isEditing ? editStart : project.startMonth);
-  const endDateStr = formatMonthIndex((isEditing ? editStart : project.startMonth) + (isEditing ? editDuration : project.duration));
+  // Derived edit values
+  const editStartMonth = dateToMonthIndex(editStartDate);
+  const editEndMonth = dateToMonthIndex(editEndDate);
+  const editDuration = Math.max(1, editEndMonth - editStartMonth);
+
+  const startDateStr = formatMonthIndex(project.startMonth);
+  const endDateStr = formatMonthIndex(project.startMonth + project.duration);
   const [expandedIssueId, setExpandedIssueId] = useState<string | null>(null);
+
+  const handleSaveEdits = () => {
+    const newStart = editStartMonth;
+    const newDuration = editDuration;
+    if (newStart !== project.startMonth || newDuration !== project.duration) {
+      onUpdateDates(project.id, personName, newStart, newDuration);
+    }
+    if (editOwner !== personName) {
+      onChangeOwner(project.id, personName, editOwner);
+    }
+    setIsEditing(false);
+  };
 
   // Fetch comments for an expanded issue
   const fetchIssueComments = useCallback((issueId: string) => {
@@ -796,15 +838,16 @@ function LinearProjectDetailPanel({
               className="detail-edit-btn"
               onClick={() => {
                 if (isEditing) {
-                  setIsEditing(false);
+                  handleSaveEdits();
                 } else {
-                  setEditStart(project.startMonth);
-                  setEditDuration(project.duration);
+                  setEditStartDate(monthIndexToDate(project.startMonth));
+                  setEditEndDate(monthIndexToDate(project.startMonth + project.duration));
+                  setEditOwner(personName);
                   setIsEditing(true);
                 }
               }}
             >
-              {isEditing ? "Done" : "Edit"}
+              {isEditing ? "Save" : "Edit"}
             </button>
             <button className="detail-close" onClick={onClose}>
               &times;
@@ -818,8 +861,23 @@ function LinearProjectDetailPanel({
             <div className="detail-info-row">
               <span className="detail-info-label">Owner</span>
               <span className="detail-info-value">
-                <span className="detail-owner-dot" style={{ backgroundColor: personColor }} />
-                {personName}
+                {isEditing ? (
+                  <select
+                    className="detail-editable-input"
+                    value={editOwner}
+                    onChange={(e) => setEditOwner(e.target.value)}
+                    style={{ width: 160 }}
+                  >
+                    {people.map((p) => (
+                      <option key={p.name} value={p.name}>{p.name}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <>
+                    <span className="detail-owner-dot" style={{ backgroundColor: personColor }} />
+                    {personName}
+                  </>
+                )}
               </span>
             </div>
             <div className="detail-info-row">
@@ -827,12 +885,10 @@ function LinearProjectDetailPanel({
               <span className="detail-info-value">
                 {isEditing ? (
                   <input
-                    type="number"
+                    type="date"
                     className="detail-editable-input"
-                    value={editStart}
-                    min={0}
-                    max={22}
-                    onChange={(e) => setEditStart(Number(e.target.value))}
+                    value={editStartDate}
+                    onChange={(e) => setEditStartDate(e.target.value)}
                   />
                 ) : (
                   startDateStr
@@ -841,29 +897,27 @@ function LinearProjectDetailPanel({
             </div>
             <div className="detail-info-row">
               <span className="detail-info-label">End</span>
-              <span className="detail-info-value">{endDateStr}</span>
-            </div>
-            <div className="detail-info-row">
-              <span className="detail-info-label">Duration</span>
               <span className="detail-info-value">
                 {isEditing ? (
-                  <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                    <input
-                      type="number"
-                      className="detail-editable-input"
-                      value={editDuration}
-                      min={1}
-                      max={23}
-                      onChange={(e) => setEditDuration(Number(e.target.value))}
-                      style={{ width: 70 }}
-                    />
-                    <span style={{ fontSize: 12, color: "#8b8b9e" }}>months</span>
-                  </span>
+                  <input
+                    type="date"
+                    className="detail-editable-input"
+                    value={editEndDate}
+                    onChange={(e) => setEditEndDate(e.target.value)}
+                  />
                 ) : (
-                  <>{project.duration} month{project.duration > 1 ? "s" : ""}</>
+                  endDateStr
                 )}
               </span>
             </div>
+            {!isEditing && (
+              <div className="detail-info-row">
+                <span className="detail-info-label">Duration</span>
+                <span className="detail-info-value">
+                  {project.duration} month{project.duration > 1 ? "s" : ""}
+                </span>
+              </div>
+            )}
           </div>
           <div className="detail-meta">
             <span className="detail-progress-text">
@@ -1121,12 +1175,18 @@ function DetailPanel({
   personColor,
   onClose,
   onDelete,
+  people,
+  onChangeOwner,
+  onUpdateDates,
 }: {
   project: Project;
   personName: string;
   personColor: string;
   onClose: () => void;
   onDelete: (personName: string, projectId: string, projectName: string) => void;
+  people: Person[];
+  onChangeOwner: (projectId: string, fromPerson: string, toPerson: string) => void;
+  onUpdateDates: (projectId: string, personName: string, startMonth: number, duration: number) => void;
 }) {
   const doneCount = project.tasks.filter((t) => t.status === "done").length;
   const inProgressCount = project.tasks.filter(
@@ -1137,10 +1197,16 @@ function DetailPanel({
   const progress = total > 0 ? Math.round((doneCount / total) * 100) : 0;
 
   const [isEditing, setIsEditing] = useState(false);
-  const [editStart, setEditStart] = useState(project.startMonth);
-  const [editDuration, setEditDuration] = useState(project.duration);
+  const [editStartDate, setEditStartDate] = useState(monthIndexToDate(project.startMonth));
+  const [editEndDate, setEditEndDate] = useState(monthIndexToDate(project.startMonth + project.duration));
+  const [editOwner, setEditOwner] = useState(personName);
   const [notes, setNotes] = useState("");
   const [savingNotes, setSavingNotes] = useState(false);
+
+  // Derived edit values
+  const editStartMonth = dateToMonthIndex(editStartDate);
+  const editEndMonth = dateToMonthIndex(editEndDate);
+  const editDuration = Math.max(1, editEndMonth - editStartMonth);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -1150,8 +1216,8 @@ function DetailPanel({
     return () => window.removeEventListener("keydown", handler);
   }, [onClose]);
 
-  const startDateStr = formatMonthIndex(isEditing ? editStart : project.startMonth);
-  const endDateStr = formatMonthIndex((isEditing ? editStart : project.startMonth) + (isEditing ? editDuration : project.duration));
+  const startDateStr = formatMonthIndex(project.startMonth);
+  const endDateStr = formatMonthIndex(project.startMonth + project.duration);
   const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null);
 
   const handleSaveNotes = async () => {
@@ -1162,6 +1228,18 @@ function DetailPanel({
       setSavingNotes(false);
       setNotes("");
     }, 500);
+  };
+
+  const handleSaveEdits = () => {
+    const newStart = editStartMonth;
+    const newDuration = editDuration;
+    if (newStart !== project.startMonth || newDuration !== project.duration) {
+      onUpdateDates(project.id, personName, newStart, newDuration);
+    }
+    if (editOwner !== personName) {
+      onChangeOwner(project.id, personName, editOwner);
+    }
+    setIsEditing(false);
   };
 
   return (
@@ -1178,15 +1256,16 @@ function DetailPanel({
               className="detail-edit-btn"
               onClick={() => {
                 if (isEditing) {
-                  setIsEditing(false);
+                  handleSaveEdits();
                 } else {
-                  setEditStart(project.startMonth);
-                  setEditDuration(project.duration);
+                  setEditStartDate(monthIndexToDate(project.startMonth));
+                  setEditEndDate(monthIndexToDate(project.startMonth + project.duration));
+                  setEditOwner(personName);
                   setIsEditing(true);
                 }
               }}
             >
-              {isEditing ? "Done" : "Edit"}
+              {isEditing ? "Save" : "Edit"}
             </button>
             <button className="detail-close" onClick={onClose}>
               &times;
@@ -1197,8 +1276,23 @@ function DetailPanel({
             <div className="detail-info-row">
               <span className="detail-info-label">Owner</span>
               <span className="detail-info-value">
-                <span className="detail-owner-dot" style={{ backgroundColor: personColor }} />
-                {personName}
+                {isEditing ? (
+                  <select
+                    className="detail-editable-input"
+                    value={editOwner}
+                    onChange={(e) => setEditOwner(e.target.value)}
+                    style={{ width: 160 }}
+                  >
+                    {people.map((p) => (
+                      <option key={p.name} value={p.name}>{p.name}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <>
+                    <span className="detail-owner-dot" style={{ backgroundColor: personColor }} />
+                    {personName}
+                  </>
+                )}
               </span>
             </div>
             <div className="detail-info-row">
@@ -1206,12 +1300,10 @@ function DetailPanel({
               <span className="detail-info-value">
                 {isEditing ? (
                   <input
-                    type="number"
+                    type="date"
                     className="detail-editable-input"
-                    value={editStart}
-                    min={0}
-                    max={22}
-                    onChange={(e) => setEditStart(Number(e.target.value))}
+                    value={editStartDate}
+                    onChange={(e) => setEditStartDate(e.target.value)}
                   />
                 ) : (
                   startDateStr
@@ -1220,29 +1312,27 @@ function DetailPanel({
             </div>
             <div className="detail-info-row">
               <span className="detail-info-label">End</span>
-              <span className="detail-info-value">{endDateStr}</span>
-            </div>
-            <div className="detail-info-row">
-              <span className="detail-info-label">Duration</span>
               <span className="detail-info-value">
                 {isEditing ? (
-                  <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                    <input
-                      type="number"
-                      className="detail-editable-input"
-                      value={editDuration}
-                      min={1}
-                      max={23}
-                      onChange={(e) => setEditDuration(Number(e.target.value))}
-                      style={{ width: 70 }}
-                    />
-                    <span style={{ fontSize: 12, color: "#8b8b9e" }}>months</span>
-                  </span>
+                  <input
+                    type="date"
+                    className="detail-editable-input"
+                    value={editEndDate}
+                    onChange={(e) => setEditEndDate(e.target.value)}
+                  />
                 ) : (
-                  <>{project.duration} month{project.duration > 1 ? "s" : ""}</>
+                  endDateStr
                 )}
               </span>
             </div>
+            {!isEditing && (
+              <div className="detail-info-row">
+                <span className="detail-info-label">Duration</span>
+                <span className="detail-info-value">
+                  {project.duration} month{project.duration > 1 ? "s" : ""}
+                </span>
+              </div>
+            )}
           </div>
           <div className="detail-meta">
             <span className="detail-progress-text">{progress}% complete</span>
@@ -1633,6 +1723,7 @@ function FilterBar({
   return (
     <div className="filter-bar">
       <div className="filter-bar-left">
+        <h1 style={{ fontFamily: "var(--font-sans)", fontSize: 22, fontWeight: 800, color: "#f59e0b", margin: "0 0 6px 0", letterSpacing: "-0.01em" }}>Marker Method Roadmap</h1>
         <div style={{ display: "flex", alignItems: "center", gap: 0, marginBottom: 4 }}>
           <button
             onClick={() => onViewMode("projects")}
@@ -1659,9 +1750,6 @@ function FilterBar({
             Subtest Edits
           </button>
         </div>
-        <span className="filter-counts">
-          {peopleCount} people &middot; {projectCount} {viewMode === "projects" ? "projects" : "tasks"}
-        </span>
       </div>
       <div className="filter-bar-right">
         <select
@@ -1744,12 +1832,15 @@ type DragState = {
   originalPersonName: string;
   linearIssueId?: string; // set when dragging a Linear-sourced bar
   mode: "move" | "resize";
+  reorderMode: boolean; // true when vertical drag detected (>20px)
   startMouseX: number;
   startMouseY: number;
   originalStartMonth: number;
   originalDuration: number;
   currentStartMonth: number;
   currentDuration: number;
+  originalLane: number; // lane where the dragged project started
+  currentLane: number; // lane the project is being dragged to
 };
 
 // ── Linear bar types ──────────────────────────────────────────────────────
@@ -1844,7 +1935,8 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
   type UndoAction = { type: "move"; projectId: string; personName: string; prevStart: number; prevDuration: number; newStart: number; newDuration: number }
     | { type: "delete"; personName: string; project: Project }
     | { type: "rename"; personName: string; projectId: string; prevName: string; newName: string }
-    | { type: "add"; personName: string; projectId: string };
+    | { type: "add"; personName: string; projectId: string }
+    | { type: "reorder"; personName: string; prevOrders: { id: string; order: number | undefined }[] };
   const [undoStack, setUndoStack] = useState<UndoAction[]>([]);
 
   const pushUndo = useCallback((action: UndoAction) => {
@@ -1966,12 +2058,33 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
           })));
           saveOverride("delete", { key: `${action.personName}:${action.projectId}` });
           break;
+        case "reorder":
+          setLocalPeople((p) => p.map((person) => {
+            if (person.name !== action.personName) return person;
+            return {
+              ...person,
+              projects: person.projects.map((proj) => {
+                const prev = action.prevOrders.find((o) => o.id === proj.id);
+                return prev ? { ...proj, order: prev.order } : proj;
+              }),
+            };
+          }));
+          // Persist each project's order
+          for (const po of action.prevOrders) {
+            saveOverride("updatePosition", {
+              key: `${action.personName}:${po.id}`,
+              startMonth: localPeople.find((p) => p.name === action.personName)?.projects.find((pr) => pr.id === po.id)?.startMonth ?? 0,
+              duration: localPeople.find((p) => p.name === action.personName)?.projects.find((pr) => pr.id === po.id)?.duration ?? 1,
+              order: po.order,
+            });
+          }
+          break;
       }
 
       addToast("success", "Undone");
       return rest;
     });
-  }, [addToast]);
+  }, [addToast, localPeople]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -1996,15 +2109,17 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
               const key = `${person.name}:${proj.name}`;
               return !ov.deletions?.includes(key);
             })
-            .map((proj) => {
+            .map((proj): Project => {
               const key = `${person.name}:${proj.name}`;
-              const posOv = ov.positions?.[key];
+              const keyById = `${person.name}:${proj.id}`;
+              const posOv = ov.positions?.[key] ?? ov.positions?.[keyById];
               const renameOv = ov.renames?.[key];
               return {
                 ...proj,
                 name: renameOv || proj.name,
                 startMonth: posOv?.startMonth ?? proj.startMonth,
                 duration: posOv?.duration ?? proj.duration,
+                order: posOv?.order ?? proj.order,
               };
             }),
         }));
@@ -2014,7 +2129,7 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
           for (const [personName, additions] of Object.entries(ov.additions)) {
             updated = updated.map((person) => {
               if (person.name !== personName) return person;
-              const newProjects = additions.map((a) => ({
+              const newProjects: Project[] = additions.map((a) => ({
                 id: newProjId(),
                 name: a.name,
                 startMonth: a.startMonth,
@@ -2447,7 +2562,7 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
   // ── Drag handlers ──────────────────────────────────────────────────────
 
   const handleBarMouseDown = useCallback(
-    (e: React.MouseEvent, project: Project, personName: string, mode: "move" | "resize", linearIssueId?: string) => {
+    (e: React.MouseEvent, project: Project, personName: string, mode: "move" | "resize", linearIssueId?: string, lane?: number) => {
       if (e.button !== 0) return; // only left click
       e.preventDefault();
       e.stopPropagation();
@@ -2458,12 +2573,15 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
         originalPersonName: personName,
         linearIssueId,
         mode,
+        reorderMode: false,
         startMouseX: e.clientX,
         startMouseY: e.clientY,
         originalStartMonth: project.startMonth,
         originalDuration: project.duration,
         currentStartMonth: project.startMonth,
         currentDuration: project.duration,
+        originalLane: lane ?? 0,
+        currentLane: lane ?? 0,
       };
       dragRef.current = state;
       setDragState(state);
@@ -2477,7 +2595,25 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
       if (!ds) return;
 
       const dx = e.clientX - ds.startMouseX;
-      if (Math.abs(dx) > 3) didDragRef.current = true;
+      const dy = e.clientY - ds.startMouseY;
+      if (Math.abs(dx) > 3 || Math.abs(dy) > 3) didDragRef.current = true;
+
+      // Detect reorder mode: significant vertical movement while in move mode
+      if (ds.mode === "move" && !ds.reorderMode && Math.abs(dy) > 20) {
+        ds.reorderMode = true;
+      }
+
+      if (ds.reorderMode) {
+        // In reorder mode: only track vertical lane changes, don't change startMonth/duration
+        const laneDelta = Math.round(dy / ROW_HEIGHT);
+        const newLane = Math.max(0, ds.originalLane + laneDelta);
+        if (newLane !== ds.currentLane) {
+          ds.currentLane = newLane;
+          setDragState({ ...ds });
+        }
+        return;
+      }
+
       const approxMonthWidth = (() => {
         if (zoom === "month") return colWidth;
         if (zoom === "biweekly") return colWidth * (30.44 / 14);
@@ -2506,6 +2642,67 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
   const handleMouseUp = useCallback(() => {
     const ds = dragRef.current;
     if (!ds) return;
+
+    // Handle reorder mode
+    if (ds.reorderMode && ds.currentLane !== ds.originalLane) {
+      setLocalPeople((prev) =>
+        prev.map((person) => {
+          if (person.name !== ds.personName) return person;
+
+          // Get current lane assignments for this person
+          const { lanes } = packLanes(person.projects);
+          const draggedLaneEntry = lanes.find((l) => l.project.id === ds.projectId);
+          const targetLaneEntry = lanes.find((l) => l.lane === ds.currentLane);
+
+          if (!draggedLaneEntry) return person;
+
+          // Save previous orders for undo
+          const prevOrders = person.projects.map((p) => ({ id: p.id, order: p.order }));
+          pushUndo({ type: "reorder", personName: person.name, prevOrders });
+
+          // Build new order: assign order values based on current lane positions,
+          // then swap the dragged project's order with the target lane's project
+          const newProjects = person.projects.map((p) => {
+            const laneEntry = lanes.find((l) => l.project.id === p.id);
+            return { ...p, order: laneEntry?.lane ?? 0 };
+          });
+
+          // Swap orders between dragged project and project at target lane
+          if (targetLaneEntry) {
+            const draggedIdx = newProjects.findIndex((p) => p.id === ds.projectId);
+            const targetIdx = newProjects.findIndex((p) => p.id === targetLaneEntry.project.id);
+            if (draggedIdx >= 0 && targetIdx >= 0) {
+              const tmpOrder = newProjects[draggedIdx].order;
+              newProjects[draggedIdx] = { ...newProjects[draggedIdx], order: newProjects[targetIdx].order };
+              newProjects[targetIdx] = { ...newProjects[targetIdx], order: tmpOrder };
+            }
+          } else {
+            // No project at target lane, just move dragged to that order
+            const draggedIdx = newProjects.findIndex((p) => p.id === ds.projectId);
+            if (draggedIdx >= 0) {
+              newProjects[draggedIdx] = { ...newProjects[draggedIdx], order: ds.currentLane };
+            }
+          }
+
+          // Persist each changed order
+          for (const p of newProjects) {
+            saveOverride("updatePosition", {
+              key: `${person.name}:${p.id}`,
+              startMonth: p.startMonth,
+              duration: p.duration,
+              order: p.order,
+            }).catch((err) => console.error("Failed to save order override:", err));
+          }
+
+          return { ...person, projects: newProjects };
+        }),
+      );
+
+      addToast("success", "Reordered");
+      dragRef.current = null;
+      setDragState(null);
+      return;
+    }
 
     const changed =
       ds.currentStartMonth !== ds.originalStartMonth ||
@@ -2575,7 +2772,7 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
 
     dragRef.current = null;
     setDragState(null);
-  }, [addToast]);
+  }, [addToast, pushUndo]);
 
   useEffect(() => {
     if (dragState) {
@@ -2594,6 +2791,10 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
   const getProjectPosition = useCallback(
     (project: Project) => {
       if (dragState && dragState.projectId === project.id) {
+        // In reorder mode, don't change start/duration - only lane changes
+        if (dragState.reorderMode) {
+          return { startMonth: project.startMonth, duration: project.duration };
+        }
         return {
           startMonth: dragState.currentStartMonth,
           duration: dragState.currentDuration,
@@ -2774,6 +2975,60 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
   const handlePrint = useCallback(() => {
     window.print();
   }, []);
+
+  // ── Change owner handler (move project between people) ────────────────
+  const handleChangeOwner = useCallback(
+    (projectId: string, fromPerson: string, toPerson: string) => {
+      if (fromPerson === toPerson) return;
+      setLocalPeople((prev) => {
+        let movedProject: Project | null = null;
+        const updated = prev.map((person) => {
+          if (person.name === fromPerson) {
+            const proj = person.projects.find((p) => p.id === projectId);
+            if (proj) movedProject = { ...proj };
+            return {
+              ...person,
+              projects: person.projects.filter((p) => p.id !== projectId),
+            };
+          }
+          return person;
+        });
+        if (!movedProject) return prev;
+        return updated.map((person) => {
+          if (person.name === toPerson) {
+            return { ...person, projects: [...person.projects, movedProject!] };
+          }
+          return person;
+        });
+      });
+      addToast("success", `Moved to ${toPerson}`);
+      // Close the panel since the person context has changed
+      setSelected(null);
+      setSelectedLinearProject(null);
+    },
+    [addToast],
+  );
+
+  // ── Update dates handler (from edit panel) ────────────────────────────
+  const handleUpdateDates = useCallback(
+    (projectId: string, pName: string, startMonth: number, duration: number) => {
+      setLocalPeople((prev) =>
+        prev.map((person) => ({
+          ...person,
+          projects: person.projects.map((proj) => {
+            if (proj.id !== projectId) return proj;
+            return { ...proj, startMonth, duration };
+          }),
+        })),
+      );
+      const key = `${pName}:${projectId}`;
+      saveOverride("updatePosition", { key, startMonth, duration }).catch(
+        (err) => console.error("Failed to save position override:", err),
+      );
+      addToast("success", "Dates updated");
+    },
+    [addToast],
+  );
 
   const showPhases = true;
 
@@ -2991,7 +3246,11 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
                       const colPos = monthIndexToColPos(pos.startMonth, zoom, columns);
                       const colSpan = monthDurationToCols(pos.startMonth, pos.duration, zoom, columns);
                       const x = colPos * colWidth + 2;
-                      const y = lane * ROW_HEIGHT + BAR_V_PAD;
+                      // When in reorder mode, show the dragged bar at the target lane
+                      const effectiveLane = (dragState?.reorderMode && dragState.projectId === project.id)
+                        ? dragState.currentLane
+                        : lane;
+                      const y = effectiveLane * ROW_HEIGHT + BAR_V_PAD;
                       const w = Math.max(colSpan * colWidth - 4, 20);
                       const isHovered = hoveredProject === project.id;
                       const isDragging = dragState?.projectId === project.id;
@@ -3064,7 +3323,7 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
                             }}
                             onMouseEnter={() => setHoveredProject(project.id)}
                             onMouseLeave={() => setHoveredProject(null)}
-                            onMouseDown={(e) => handleBarMouseDown(e, project, entry.person.name, "move")}
+                            onMouseDown={(e) => handleBarMouseDown(e, project, entry.person.name, "move", undefined, lane)}
                             onDoubleClick={(e) => {
                               e.stopPropagation();
                               setRenamingProjectId(project.id);
@@ -3255,6 +3514,9 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
           personColor={selected.personColor}
           onClose={() => setSelected(null)}
           onDelete={handleDeleteProject}
+          people={localPeople}
+          onChangeOwner={handleChangeOwner}
+          onUpdateDates={handleUpdateDates}
         />
       )}
 
@@ -3272,6 +3534,9 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
             setSelectedLinearIssueId(issueId);
           }}
           onDelete={handleDeleteProject}
+          people={localPeople}
+          onChangeOwner={handleChangeOwner}
+          onUpdateDates={handleUpdateDates}
         />
       )}
 

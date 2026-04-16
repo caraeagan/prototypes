@@ -5,7 +5,7 @@ import { join } from "path";
 const OVERRIDES_PATH = join(process.cwd(), "data", "overrides.json");
 
 export type RoadmapOverrides = {
-  positions?: Record<string, { startMonth: number; duration: number }>;
+  positions?: Record<string, { startMonth: number; duration: number; order?: number }>;
   additions?: Record<
     string,
     { name: string; startMonth: number; duration: number }[]
@@ -55,9 +55,9 @@ export async function POST(request: NextRequest) {
 
     switch (action) {
       case "updatePosition": {
-        const { key, startMonth, duration } = payload;
+        const { key, startMonth, duration, order } = payload;
         if (!overrides.positions) overrides.positions = {};
-        overrides.positions[key] = { startMonth, duration };
+        overrides.positions[key] = { startMonth, duration, ...(order !== undefined ? { order } : {}) };
         break;
       }
       case "addProject": {

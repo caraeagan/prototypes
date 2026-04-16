@@ -1,29 +1,20 @@
 {
   "positions": {
-    "Oleksii:proj-3": {
-      "startMonth": 7,
-      "duration": 3
+    "Oleksii:proj-1": {
+      "startMonth": 2,
+      "duration": 2
     },
-    "Flo:proj-10": {
-      "startMonth": 3,
-      "duration": 3
-    },
-    "Flo:proj-11": {
+    "Oleksii:proj-5": {
       "startMonth": 0,
       "duration": 4
     },
-    "Lucie:proj-59": {
+    "Oleksii:proj-6": {
       "startMonth": 4,
+      "duration": 3
+    },
+    "Oleksii:proj-7": {
+      "startMonth": 0,
       "duration": 2
     }
-  },
-  "deletions": [
-    "Oleksii:iPad Optimization for Examiners"
-  ],
-  "dependencies": [
-    {
-      "from": "proj-11",
-      "to": "proj-1"
-    }
-  ]
+  }
 }
