@@ -2673,7 +2673,42 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
     const ds = dragRef.current;
     if (!ds) return;
 
-    // Handle reorder mode
+    // Cross-person drag: move project to a different person (check FIRST)
+    if (ds.personName !== ds.originalPersonName) {
+      setLocalPeople((prev) => {
+        let movedProject: Project | null = null;
+        const updated = prev.map((person) => {
+          if (person.name === ds.originalPersonName) {
+            const proj = person.projects.find((p) => p.id === ds.projectId);
+            if (proj) movedProject = { ...proj, startMonth: ds.currentStartMonth, duration: ds.currentDuration };
+            return { ...person, projects: person.projects.filter((p) => p.id !== ds.projectId) };
+          }
+          return person;
+        });
+        if (!movedProject) return prev;
+        return updated.map((person) => {
+          if (person.name === ds.personName) {
+            return { ...person, projects: [...person.projects, movedProject!] };
+          }
+          return person;
+        });
+      });
+      pushUndo({
+        type: "move",
+        projectId: ds.projectId,
+        personName: ds.originalPersonName,
+        prevStart: ds.originalStartMonth,
+        prevDuration: ds.originalDuration,
+        newStart: ds.currentStartMonth,
+        newDuration: ds.currentDuration,
+      });
+      addToast("success", `Moved to ${ds.personName}`);
+      dragRef.current = null;
+      setDragState(null);
+      return;
+    }
+
+    // Handle reorder mode (within same person)
     if (ds.reorderMode && ds.currentLane !== ds.originalLane) {
       setLocalPeople((prev) =>
         prev.map((person) => {
@@ -2729,43 +2764,6 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
       );
 
       addToast("success", "Reordered");
-      dragRef.current = null;
-      setDragState(null);
-      return;
-    }
-
-    // Cross-person drag: move project to a different person
-    if (ds.personName !== ds.originalPersonName) {
-      setLocalPeople((prev) => {
-        let movedProject: Project | null = null;
-        // Remove from original person
-        const updated = prev.map((person) => {
-          if (person.name === ds.originalPersonName) {
-            const proj = person.projects.find((p) => p.id === ds.projectId);
-            if (proj) movedProject = { ...proj, startMonth: ds.currentStartMonth, duration: ds.currentDuration };
-            return { ...person, projects: person.projects.filter((p) => p.id !== ds.projectId) };
-          }
-          return person;
-        });
-        if (!movedProject) return prev;
-        // Add to target person
-        return updated.map((person) => {
-          if (person.name === ds.personName) {
-            return { ...person, projects: [...person.projects, movedProject!] };
-          }
-          return person;
-        });
-      });
-      pushUndo({
-        type: "move",
-        projectId: ds.projectId,
-        personName: ds.originalPersonName,
-        prevStart: ds.originalStartMonth,
-        prevDuration: ds.originalDuration,
-        newStart: ds.currentStartMonth,
-        newDuration: ds.currentDuration,
-      });
-      addToast("success", `Moved to ${ds.personName}`);
       dragRef.current = null;
       setDragState(null);
       return;
