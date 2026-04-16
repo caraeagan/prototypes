@@ -1982,8 +1982,14 @@ function CyclesView({ cycles, people }: { cycles: LinearCycle[]; people: Person[
       }`,
       { id: selectedCycleId },
     )
-      .then((data) => setIssues(data.cycle.issues.nodes))
-      .catch(() => setIssues([]))
+      .then((data) => {
+        console.log("[CYCLES] Fetched", data.cycle.issues.nodes.length, "issues");
+        setIssues(data.cycle.issues.nodes);
+      })
+      .catch((err) => {
+        console.error("[CYCLES] Fetch error:", err);
+        setIssues([]);
+      })
       .finally(() => setLoading(false));
   }, [selectedCycleId]);
 
@@ -2010,6 +2016,7 @@ function CyclesView({ cycles, people }: { cycles: LinearCycle[]; people: Person[
 
   return (
     <div style={{ padding: "24px 32px", fontFamily: "var(--font-sans)", maxHeight: "calc(100vh - 120px)", overflow: "auto" }}>
+      {cycles.length === 0 && <div style={{ color: "#94a3b8", padding: "40px 0", textAlign: "center" }}>Loading cycles...</div>}
       {/* Cycle selector */}
       <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
         <span style={{ fontSize: 14, fontWeight: 600, color: "#64748b" }}>Cycle:</span>
