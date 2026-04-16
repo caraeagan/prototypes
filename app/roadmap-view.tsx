@@ -2867,10 +2867,6 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
   const getProjectPosition = useCallback(
     (project: Project) => {
       if (dragState && dragState.projectId === project.id) {
-        // In reorder mode, don't change start/duration - only lane changes
-        if (dragState.reorderMode) {
-          return { startMonth: project.startMonth, duration: project.duration };
-        }
         return {
           startMonth: dragState.currentStartMonth,
           duration: dragState.currentDuration,
