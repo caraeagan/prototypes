@@ -177,7 +177,15 @@ function statusLabel(status: TaskStatus): string {
 type Lane = { project: Project; lane: number };
 
 function packLanes(projects: Project[]): { lanes: Lane[]; laneCount: number } {
-  // Sort by order first (if set), then by startMonth as tiebreaker
+  // If all projects have explicit order, use those directly as lanes
+  const allHaveOrder = projects.length > 0 && projects.every((p) => p.order !== undefined);
+  if (allHaveOrder) {
+    const result: Lane[] = projects.map((p) => ({ project: p, lane: p.order! }));
+    const maxLane = Math.max(0, ...projects.map((p) => p.order!));
+    return { lanes: result, laneCount: maxLane + 1 };
+  }
+
+  // Otherwise, sort by order first (if set), then by startMonth as tiebreaker
   const sorted = [...projects].sort((a, b) => {
     const orderA = a.order ?? Infinity;
     const orderB = b.order ?? Infinity;
@@ -2694,7 +2702,10 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
         if (!movedProject) return prev;
         return updated.map((person) => {
           if (person.name === ds.personName) {
-            return { ...person, projects: [...person.projects, movedProject!] };
+            // Add at the end with a new lane order
+            const maxOrder = Math.max(-1, ...person.projects.map((p) => p.order ?? -1));
+            const newProject = { ...movedProject!, order: maxOrder + 1 };
+            return { ...person, projects: [...person.projects, newProject] };
           }
           return person;
         });
@@ -2779,7 +2790,7 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
       ds.currentStartMonth !== ds.originalStartMonth ||
       ds.currentDuration !== ds.originalDuration;
 
-    // Apply changes to local state
+    // Apply changes to local state — preserve lane by keeping order
     setLocalPeople((prev) =>
       prev.map((person) => ({
         ...person,
@@ -2789,6 +2800,7 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
             ...proj,
             startMonth: ds.currentStartMonth,
             duration: ds.currentDuration,
+            order: proj.order ?? ds.originalLane, // preserve lane position
           };
         }),
       })),
