@@ -229,6 +229,7 @@ export type LinearComment = {
 
 export type LinearIssue = {
   id: string;
+  url?: string;
   title: string;
   description?: string;
   priority: number;

@@ -28,11 +28,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const input: Record<string, string> = {};
+    const input: Record<string, string | null> = {};
     if (startDate !== undefined) input.startedAt = startDate;
-    if (dueDate !== undefined) input.dueDate = dueDate;
+    if (dueDate !== undefined) input.dueDate = dueDate || null;
     if (stateId !== undefined) input.stateId = stateId;
     if (assigneeId !== undefined) input.assigneeId = assigneeId;
+    if (body.cycleId !== undefined) input.cycleId = body.cycleId;
+    if (body.projectId !== undefined) input.projectId = body.projectId || null;
 
     if (Object.keys(input).length === 0) {
       return NextResponse.json(

@@ -1,25 +1,44 @@
 {
+  "cycleBuckets": {},
   "positions": {
-    "Flo:proj-3": {
-      "startMonth": 6,
-      "duration": 3,
-      "order": 3
+    "David:proj-31": {
+      "startMonth": 1.0328515111695138,
+      "duration": 4
     },
-    "Flo:proj-11": {
-      "startMonth": 0,
-      "duration": 4,
-      "order": 1
+    "Cara:proj-23": {
+      "startMonth": 0.0328515111695138,
+      "duration": 3
     },
-    "Flo:proj-13": {
-      "startMonth": 4,
-      "duration": 4,
-      "order": 3
+    "John:proj-12": {
+      "startMonth": 0.0328515111695138,
+      "duration": 3
     }
-  }
-}"Flo:proj-6": {
-      "startMonth": 4,
-      "duration": 3,
-      "order": 0
+  },
+  "additions": {
+    "Sam": [
+      {
+        "name": "User research",
+        "startMonth": 0,
+        "duration": 4
+      }
+    ],
+    "John": [
+      {
+        "name": "End to End Test",
+        "startMonth": 2,
+        "duration": 1
+      }
+    ]
+  },
+  "futureProjects": [
+    {
+      "name": "Student Offboarding",
+      "description": ""
+    },
+    {
+      "name": "shadCN Migration",
+      "description": ""
     }
-  }
+  ],
+  "deletions": []
 }

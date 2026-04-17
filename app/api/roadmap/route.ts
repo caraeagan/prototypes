@@ -20,6 +20,8 @@ export type RoadmapOverrides = {
   renames?: Record<string, string>; // "personName:oldName" -> newName
   dependencies?: { from: string; to: string }[]; // projectId pairs
   cycleBuckets?: Record<string, CycleBuckets>; // cycleId -> buckets
+  descriptions?: Record<string, string>; // "personName:projectId" -> description text
+  futureProjects?: { name: string; description: string; linearProjectId?: string; linearProjectUrl?: string }[];
 };
 
 async function readOverrides(): Promise<RoadmapOverrides> {
@@ -117,6 +119,36 @@ export async function POST(request: NextRequest) {
         const { cycleId, buckets } = payload;
         if (!overrides.cycleBuckets) overrides.cycleBuckets = {};
         overrides.cycleBuckets[cycleId] = buckets;
+        break;
+      }
+      case "addFutureProject": {
+        const { project } = payload;
+        if (!overrides.futureProjects) overrides.futureProjects = [];
+        overrides.futureProjects.push(project);
+        break;
+      }
+      case "removeFutureProject": {
+        const { index } = payload;
+        if (overrides.futureProjects) {
+          overrides.futureProjects.splice(index, 1);
+        }
+        break;
+      }
+      case "updateFutureProject": {
+        const { index, project } = payload;
+        if (overrides.futureProjects && overrides.futureProjects[index]) {
+          overrides.futureProjects[index] = { ...overrides.futureProjects[index], ...project };
+        }
+        break;
+      }
+      case "saveDescription": {
+        const { key, description } = payload;
+        if (!overrides.descriptions) overrides.descriptions = {};
+        if (description) {
+          overrides.descriptions[key] = description;
+        } else {
+          delete overrides.descriptions[key];
+        }
         break;
       }
       default:

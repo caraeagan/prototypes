@@ -635,6 +635,8 @@ function LinearDetailPanel({
 
 type LinearProjectIssue = {
   id: string;
+  identifier?: string;
+  url?: string;
   title: string;
   priority: number;
   priorityLabel: string;
@@ -656,6 +658,9 @@ function LinearProjectDetailPanel({
   people,
   onChangeOwner,
   onUpdateDates,
+  onAddProjectToPerson,
+  onRemoveProjectFromPerson,
+  onMoveToFuture,
 }: {
   project: Project;
   personName: string;
@@ -668,6 +673,9 @@ function LinearProjectDetailPanel({
   people: Person[];
   onChangeOwner: (projectId: string, fromPerson: string, toPerson: string) => void;
   onUpdateDates: (projectId: string, personName: string, startMonth: number, duration: number) => void;
+  onAddProjectToPerson?: (personName: string, proj: { name: string; startMonth: number; duration: number; linearProjectName: string | null }) => void;
+  onRemoveProjectFromPerson?: (personName: string, projectId: string) => void;
+  onMoveToFuture?: (personName: string, project: Project) => void;
 }) {
   const [issues, setIssues] = useState<LinearProjectIssue[]>([]);
   const [loading, setLoading] = useState(true);
@@ -675,13 +683,27 @@ function LinearProjectDetailPanel({
   const [isEditing, setIsEditing] = useState(false);
   const [editStartDate, setEditStartDate] = useState(monthIndexToDate(project.startMonth));
   const [editEndDate, setEditEndDate] = useState(monthIndexToDate(project.startMonth + project.duration));
-  const [editOwner, setEditOwner] = useState(personName);
+  // Compute initial owners — all people who have a project with the same name
+  const [editOwners, setEditOwners] = useState<Set<string>>(() => {
+    const owners = new Set<string>();
+    for (const p of people) {
+      if (p.projects.some((proj) => proj.name === project.name)) owners.add(p.name);
+    }
+    return owners;
+  });
 
   // Inline issue editing state
   const [panelWfStates, setPanelWfStates] = useState<WorkflowState[]>([]);
   const [panelMembers, setPanelMembers] = useState<TeamMember[]>([]);
   const [panelEditField, setPanelEditField] = useState<{ issueId: string; field: "owner" | "status" | "dueDate"; x: number; y: number } | null>(null);
   const [panelSaving, setPanelSaving] = useState<string | null>(null);
+  const [linearProjectUrl, setLinearProjectUrl] = useState<string | null>(null);
+  const [linearProjectId, setLinearProjectId] = useState<string | null>(null);
+  const [linearTeamId, setLinearTeamId] = useState<string | null>(null);
+  const [description, setDescription] = useState("");
+  const [descSaving, setDescSaving] = useState(false);
+  const [newTaskTitle, setNewTaskTitle] = useState("");
+  const [newTaskCreating, setNewTaskCreating] = useState(false);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -697,20 +719,24 @@ function LinearProjectDetailPanel({
     setError(null);
 
     // First find project ID, then fetch issues (avoids Linear complexity limits)
-    linearQuery<{ projects: { nodes: { id: string }[] } }>(
-      `query FindProject($name: String!) { projects(filter: { name: { eq: $name } }) { nodes { id } } }`,
+    linearQuery<{ projects: { nodes: { id: string; url: string; teams: { nodes: { id: string }[] } }[] } }>(
+      `query FindProject($name: String!) { projects(filter: { name: { eq: $name } }) { nodes { id url teams { nodes { id } } } } }`,
       { name: linearProjectName },
     )
       .then((data) => {
         if (cancelled) return;
-        const projectId = data.projects.nodes[0]?.id;
+        const projectNode = data.projects.nodes[0];
+        const projectId = projectNode?.id;
+        if (projectNode?.url) setLinearProjectUrl(projectNode.url);
+        if (projectId) setLinearProjectId(projectId);
+        if (projectNode?.teams?.nodes?.[0]?.id) setLinearTeamId(projectNode.teams.nodes[0].id);
         if (!projectId) { setIssues([]); return; }
         return linearQuery<{ project: { issues: { nodes: LinearProjectIssue[] } } }>(
           `query ProjectIssues($id: String!) {
             project(id: $id) {
               issues(first: 250) {
                 nodes {
-                  id title priority priorityLabel
+                  id identifier url title priority priorityLabel
                   state { name color type }
                   assignee { id displayName avatarUrl }
                   startedAt dueDate
@@ -732,6 +758,21 @@ function LinearProjectDetailPanel({
 
     return () => { cancelled = true; };
   }, [linearProjectName]);
+
+  // Load project description from overrides
+  useEffect(() => {
+    fetchOverrides().then((ov) => {
+      const key = `${personName}:${project.id}`;
+      const desc = ov.descriptions?.[key];
+      if (desc) setDescription(desc);
+    });
+  }, [personName, project.id]);
+
+  const saveDescription = () => {
+    setDescSaving(true);
+    saveOverride("saveDescription", { key: `${personName}:${project.id}`, description })
+      .finally(() => setDescSaving(false));
+  };
 
   // Fetch workflow states + team members once
   useEffect(() => {
@@ -785,9 +826,31 @@ function LinearProjectDetailPanel({
     if (editStartMonth !== project.startMonth || editDuration !== project.duration) {
       onUpdateDates(project.id, personName, editStartMonth, editDuration);
     }
-    if (editOwner !== personName) {
-      onChangeOwner(project.id, personName, editOwner);
+
+    // Handle owner changes — find current owners and diff with editOwners
+    const currentOwners = new Set(
+      people.filter((p) => p.projects.some((proj) => proj.name === project.name)).map((p) => p.name)
+    );
+    // Add project to new owners
+    for (const name of editOwners) {
+      if (!currentOwners.has(name)) {
+        // Add a copy of this project to the new owner
+        onAddProjectToPerson?.(name, {
+          name: project.name,
+          startMonth: editStartMonth,
+          duration: editDuration,
+          linearProjectName: project.linearProjectName ?? null,
+        });
+      }
     }
+    // Remove project from removed owners
+    for (const name of currentOwners) {
+      if (!editOwners.has(name)) {
+        const personProj = people.find((p) => p.name === name)?.projects.find((proj) => proj.name === project.name);
+        if (personProj) onRemoveProjectFromPerson?.(name, personProj.id);
+      }
+    }
+
     setIsEditing(false);
   };
 
@@ -835,7 +898,7 @@ function LinearProjectDetailPanel({
                 } else {
                   setEditStartDate(monthIndexToDate(project.startMonth));
                   setEditEndDate(monthIndexToDate(project.startMonth + project.duration));
-                  setEditOwner(personName);
+                  /* owner reset handled by setEditOwners or kept as-is */
                   setIsEditing(true);
                 }
               }}
@@ -847,29 +910,55 @@ function LinearProjectDetailPanel({
             </button>
           </div>
           <h2 className="detail-title">{project.name}</h2>
-          <div style={{ fontSize: 12, color: "#8b8b9e", marginBottom: 8 }}>
-            Linear: {linearProjectName}
-          </div>
+          {linearProjectUrl ? (
+            <a href={linearProjectUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: "#6366f1", marginBottom: 8, display: "block", textDecoration: "none" }}>
+              {linearProjectName} &#8599;
+            </a>
+          ) : (
+            <div style={{ fontSize: 12, color: "#8b8b9e", marginBottom: 8 }}>{linearProjectName}</div>
+          )}
           <div className="detail-info-rows">
             <div className="detail-info-row">
-              <span className="detail-info-label">Owner</span>
+              <span className="detail-info-label">Owners</span>
               <span className="detail-info-value">
                 {isEditing ? (
-                  <select
-                    className="detail-editable-input"
-                    value={editOwner}
-                    onChange={(e) => setEditOwner(e.target.value)}
-                    style={{ width: 160 }}
-                  >
+                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                     {people.map((p) => (
-                      <option key={p.name} value={p.name}>{p.name}</option>
+                      <label key={p.name} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, cursor: "pointer" }}>
+                        <input
+                          type="checkbox"
+                          checked={editOwners.has(p.name)}
+                          onChange={() => {
+                            setEditOwners((prev) => {
+                              const next = new Set(prev);
+                              if (next.has(p.name)) next.delete(p.name);
+                              else next.add(p.name);
+                              return next;
+                            });
+                          }}
+                          style={{ accentColor: p.color }}
+                        />
+                        <span style={{ width: 8, height: 8, borderRadius: "50%", backgroundColor: p.color }} />
+                        {p.name}
+                      </label>
                     ))}
-                  </select>
+                  </div>
                 ) : (
-                  <>
-                    <span className="detail-owner-dot" style={{ backgroundColor: personColor }} />
-                    {personName}
-                  </>
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                    {people
+                      .filter((p) => p.projects.some((proj) => proj.name === project.name))
+                      .map((p) => (
+                        <span key={p.name} style={{
+                          display: "inline-flex", alignItems: "center", gap: 4,
+                          fontSize: 12, fontWeight: 600, padding: "2px 8px", borderRadius: 999,
+                          backgroundColor: hexToRgba(p.color, 0.15), color: p.color,
+                        }}>
+                          <span style={{ width: 8, height: 8, borderRadius: "50%", backgroundColor: p.color }} />
+                          {p.name}
+                        </span>
+                      ))
+                    }
+                  </div>
                 )}
               </span>
             </div>
@@ -922,6 +1011,23 @@ function LinearProjectDetailPanel({
           </div>
         </div>
 
+        {/* Description */}
+        <div style={{ padding: "12px 16px", borderBottom: "1px solid #f1f5f9" }}>
+          <label style={{ fontSize: 11, fontWeight: 600, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 6 }}>Description</label>
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            onBlur={saveDescription}
+            placeholder="Add a description..."
+            style={{
+              fontFamily: "var(--font-sans)", fontSize: 13, width: "100%", minHeight: 60, padding: "8px 10px",
+              borderRadius: 6, border: "1px solid #e2e8f0", background: "#fafbfc", color: "#1e293b",
+              resize: "vertical", lineHeight: 1.5,
+            }}
+          />
+          {descSaving && <span style={{ fontSize: 10, color: "#94a3b8" }}>Saving...</span>}
+        </div>
+
         {loading && (
           <div className="linear-detail-loading">
             <div className="loading-spinner" />
@@ -970,9 +1076,16 @@ function LinearProjectDetailPanel({
                         <span style={{ width: 7, height: 7, borderRadius: "50%", flexShrink: 0, backgroundColor: issue.state.color }} />
 
                         {/* Title */}
-                        <span onClick={() => onIssueClick(issue.id)} style={{ flex: 1, fontWeight: 500, color: "#1e293b", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", cursor: "pointer" }} title={issue.title}>
-                          {issue.title}
-                        </span>
+                        {issue.url ? (
+                          <a href={issue.url} target="_blank" rel="noopener noreferrer" style={{ flex: 1, fontWeight: 500, color: "#1e293b", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", cursor: "pointer", textDecoration: "none" }} title={issue.title}>
+                            {issue.identifier && <span style={{ color: "#94a3b8", fontSize: 10, marginRight: 4 }}>{issue.identifier}</span>}
+                            {issue.title}
+                          </a>
+                        ) : (
+                          <span onClick={() => onIssueClick(issue.id)} style={{ flex: 1, fontWeight: 500, color: "#1e293b", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", cursor: "pointer" }} title={issue.title}>
+                            {issue.title}
+                          </span>
+                        )}
 
                         {/* Owner */}
                         <span
@@ -1013,6 +1126,100 @@ function LinearProjectDetailPanel({
             })}
           </div>
         )}
+
+        {/* Add task */}
+        {linearProjectId && linearTeamId && (
+          <div style={{ padding: "12px 16px", borderTop: "1px solid #f1f5f9" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <input
+                type="text"
+                placeholder="Add a task..."
+                value={newTaskTitle}
+                onChange={(e) => setNewTaskTitle(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && newTaskTitle.trim() && !newTaskCreating) {
+                    setNewTaskCreating(true);
+                    fetch("/api/linear/create", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ title: newTaskTitle.trim(), teamId: linearTeamId, projectId: linearProjectId }),
+                    })
+                      .then((res) => res.json())
+                      .then((json) => {
+                        if (json.success) {
+                          const i = json.issue;
+                          setIssues((prev) => [...prev, {
+                            id: i.id, identifier: i.identifier, url: i.url, title: i.title,
+                            priority: i.priority, priorityLabel: i.priorityLabel,
+                            state: i.state, assignee: i.assignee, startedAt: null, dueDate: i.dueDate,
+                          }]);
+                          setNewTaskTitle("");
+                        }
+                      })
+                      .catch((err) => console.error("Create failed:", err))
+                      .finally(() => setNewTaskCreating(false));
+                  }
+                }}
+                style={{
+                  flex: 1, fontFamily: "var(--font-sans)", fontSize: 12, padding: "6px 10px",
+                  border: "1px solid #e2e8f0", borderRadius: 6, outline: "none",
+                }}
+              />
+              <button
+                onClick={() => {
+                  if (!newTaskTitle.trim() || newTaskCreating) return;
+                  setNewTaskCreating(true);
+                  fetch("/api/linear/create", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ title: newTaskTitle.trim(), teamId: linearTeamId, projectId: linearProjectId }),
+                  })
+                    .then((res) => res.json())
+                    .then((json) => {
+                      if (json.success) {
+                        const i = json.issue;
+                        setIssues((prev) => [...prev, {
+                          id: i.id, identifier: i.identifier, url: i.url, title: i.title,
+                          priority: i.priority, priorityLabel: i.priorityLabel,
+                          state: i.state, assignee: i.assignee, startedAt: null, dueDate: i.dueDate,
+                        }]);
+                        setNewTaskTitle("");
+                      }
+                    })
+                    .catch((err) => console.error("Create failed:", err))
+                    .finally(() => setNewTaskCreating(false));
+                }}
+                disabled={!newTaskTitle.trim() || newTaskCreating}
+                style={{
+                  fontFamily: "var(--font-sans)", fontSize: 11, fontWeight: 600, padding: "6px 12px",
+                  border: "none", borderRadius: 6, cursor: newTaskTitle.trim() ? "pointer" : "default",
+                  background: newTaskTitle.trim() ? personColor : "#cbd5e1", color: "white",
+                }}
+              >
+                {newTaskCreating ? "..." : "Add"}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Move to Future Projects */}
+        <div className="detail-bottom-section">
+          <button
+            onClick={() => {
+              if (confirm(`Move "${project.name}" to Future Projects? This will remove it from the roadmap and all owners.`)) {
+                onMoveToFuture?.(personName, project);
+                onClose();
+              }
+            }}
+            style={{
+              fontFamily: "var(--font-sans)", fontSize: 12, fontWeight: 600,
+              padding: "8px 16px", cursor: "pointer", borderRadius: 6, width: "100%",
+              border: "1px solid #22c55e", background: "white", color: "#22c55e",
+            }}
+          >
+            Move to Future Projects
+          </button>
+        </div>
 
         {/* Delete button at the bottom */}
         <div className="detail-bottom-section">
@@ -1075,6 +1282,62 @@ function LinearProjectDetailPanel({
 
 // ── Detail panel (static roadmap projects) ────────────────────────────────
 
+function AddTaskToProject({ projectName, personColor, onTaskCreated }: {
+  projectName: string;
+  personColor: string;
+  onTaskCreated: (task: { id: string; title: string }) => void;
+}) {
+  const [title, setTitle] = useState("");
+  const [creating, setCreating] = useState(false);
+
+  const create = async () => {
+    if (!title.trim()) return;
+    setCreating(true);
+    try {
+      // Find the project in Linear
+      const projData = await linearQuery<{ projects: { nodes: { id: string; teams: { nodes: { id: string }[] } }[] } }>(
+        `query FindProject($name: String!) { projects(filter: { name: { eq: $name } }) { nodes { id teams { nodes { id } } } } }`,
+        { name: projectName },
+      );
+      let projectId = projData.projects.nodes[0]?.id;
+      let teamId = projData.projects.nodes[0]?.teams?.nodes?.[0]?.id;
+
+      // If project doesn't exist, get a default team
+      if (!teamId) {
+        const teamsData = await linearQuery<{ teams: { nodes: { id: string }[] } }>(
+          `query { teams(first: 1) { nodes { id } } }`,
+        );
+        teamId = teamsData.teams.nodes[0]?.id;
+      }
+      if (!teamId) return;
+
+      const res = await fetch("/api/linear/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: title.trim(), teamId, projectId: projectId ?? undefined }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        onTaskCreated({ id: json.issue.id, title: json.issue.title });
+        setTitle("");
+      }
+    } catch (err) { console.error("Create task failed:", err); }
+    finally { setCreating(false); }
+  };
+
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+      <input type="text" placeholder="Add a task..." value={title} onChange={(e) => setTitle(e.target.value)}
+        onKeyDown={(e) => { if (e.key === "Enter" && title.trim()) create(); }}
+        style={{ flex: 1, fontFamily: "var(--font-sans)", fontSize: 13, padding: "6px 10px", border: "1px solid #e2e8f0", borderRadius: 6, outline: "none" }}
+      />
+      <button onClick={create} disabled={!title.trim() || creating}
+        style={{ fontFamily: "var(--font-sans)", fontSize: 12, fontWeight: 600, padding: "6px 12px", border: "none", borderRadius: 6, cursor: title.trim() ? "pointer" : "default", background: title.trim() ? personColor : "#cbd5e1", color: "white" }}
+      >{creating ? "..." : "Add"}</button>
+    </div>
+  );
+}
+
 function DetailPanel({
   project,
   personName,
@@ -1084,6 +1347,9 @@ function DetailPanel({
   people,
   onChangeOwner,
   onUpdateDates,
+  onAddProjectToPerson,
+  onRemoveProjectFromPerson,
+  onMoveToFuture,
 }: {
   project: Project;
   personName: string;
@@ -1093,6 +1359,9 @@ function DetailPanel({
   people: Person[];
   onChangeOwner: (projectId: string, fromPerson: string, toPerson: string) => void;
   onUpdateDates: (projectId: string, personName: string, startMonth: number, duration: number) => void;
+  onAddProjectToPerson?: (personName: string, proj: { name: string; startMonth: number; duration: number; linearProjectName: string | null }) => void;
+  onRemoveProjectFromPerson?: (personName: string, projectId: string) => void;
+  onMoveToFuture?: (personName: string, project: Project) => void;
 }) {
   const doneCount = project.tasks.filter((t) => t.status === "done").length;
   const inProgressCount = project.tasks.filter(
@@ -1105,11 +1374,12 @@ function DetailPanel({
   const [isEditing, setIsEditing] = useState(false);
   const [editStartDate, setEditStartDate] = useState(monthIndexToDate(project.startMonth));
   const [editEndDate, setEditEndDate] = useState(monthIndexToDate(project.startMonth + project.duration));
-  const [editOwner, setEditOwner] = useState(personName);
+  const [editOwners, setEditOwners] = useState<Set<string>>(() =>
+    new Set(people.filter((p) => p.projects.some((proj) => proj.name === project.name)).map((p) => p.name))
+  );
   const [notes, setNotes] = useState("");
   const [savingNotes, setSavingNotes] = useState(false);
 
-  // Derived edit values
   const editStartMonth = dateToMonthIndex(editStartDate);
   const editEndMonth = dateToMonthIndex(editEndDate);
   const editDuration = Math.max(1, editEndMonth - editStartMonth);
@@ -1142,9 +1412,28 @@ function DetailPanel({
     if (newStart !== project.startMonth || newDuration !== project.duration) {
       onUpdateDates(project.id, personName, newStart, newDuration);
     }
-    if (editOwner !== personName) {
-      onChangeOwner(project.id, personName, editOwner);
+
+    // Handle multi-owner changes
+    const currentOwners = new Set(
+      people.filter((p) => p.projects.some((proj) => proj.name === project.name)).map((p) => p.name)
+    );
+    for (const name of editOwners) {
+      if (!currentOwners.has(name)) {
+        onAddProjectToPerson?.(name, {
+          name: project.name,
+          startMonth: newStart,
+          duration: newDuration,
+          linearProjectName: project.linearProjectName ?? null,
+        });
+      }
     }
+    for (const name of currentOwners) {
+      if (!editOwners.has(name)) {
+        const personProj = people.find((p) => p.name === name)?.projects.find((proj) => proj.name === project.name);
+        if (personProj) onRemoveProjectFromPerson?.(name, personProj.id);
+      }
+    }
+
     setIsEditing(false);
   };
 
@@ -1166,7 +1455,7 @@ function DetailPanel({
                 } else {
                   setEditStartDate(monthIndexToDate(project.startMonth));
                   setEditEndDate(monthIndexToDate(project.startMonth + project.duration));
-                  setEditOwner(personName);
+                  setEditOwners(new Set(people.filter((p) => p.projects.some((proj) => proj.name === project.name)).map((p) => p.name)));
                   setIsEditing(true);
                 }
               }}
@@ -1180,24 +1469,46 @@ function DetailPanel({
           <h2 className="detail-title">{project.name}</h2>
           <div className="detail-info-rows">
             <div className="detail-info-row">
-              <span className="detail-info-label">Owner</span>
+              <span className="detail-info-label">Owners</span>
               <span className="detail-info-value">
                 {isEditing ? (
-                  <select
-                    className="detail-editable-input"
-                    value={editOwner}
-                    onChange={(e) => setEditOwner(e.target.value)}
-                    style={{ width: 160 }}
-                  >
+                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                     {people.map((p) => (
-                      <option key={p.name} value={p.name}>{p.name}</option>
+                      <label key={p.name} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, cursor: "pointer" }}>
+                        <input
+                          type="checkbox"
+                          checked={editOwners.has(p.name)}
+                          onChange={() => {
+                            setEditOwners((prev) => {
+                              const next = new Set(prev);
+                              if (next.has(p.name)) next.delete(p.name);
+                              else next.add(p.name);
+                              return next;
+                            });
+                          }}
+                          style={{ accentColor: p.color }}
+                        />
+                        <span style={{ width: 8, height: 8, borderRadius: "50%", backgroundColor: p.color }} />
+                        {p.name}
+                      </label>
                     ))}
-                  </select>
+                  </div>
                 ) : (
-                  <>
-                    <span className="detail-owner-dot" style={{ backgroundColor: personColor }} />
-                    {personName}
-                  </>
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                    {people
+                      .filter((p) => p.projects.some((proj) => proj.name === project.name))
+                      .map((p) => (
+                        <span key={p.name} style={{
+                          display: "inline-flex", alignItems: "center", gap: 4,
+                          fontSize: 12, fontWeight: 600, padding: "2px 8px", borderRadius: 999,
+                          backgroundColor: hexToRgba(p.color, 0.15), color: p.color,
+                        }}>
+                          <span style={{ width: 8, height: 8, borderRadius: "50%", backgroundColor: p.color }} />
+                          {p.name}
+                        </span>
+                      ))
+                    }
+                  </div>
                 )}
               </span>
             </div>
@@ -1360,6 +1671,13 @@ function DetailPanel({
           </ul>
         </div>
 
+        {/* Add task — creates in Linear under matching project */}
+        <div style={{ padding: "12px 16px", borderTop: "1px solid #f1f5f9" }}>
+          <AddTaskToProject projectName={project.name} personColor={personColor} onTaskCreated={(task) => {
+            // Task is created in Linear, no local state update needed for static DetailPanel
+          }} />
+        </div>
+
         {/* Notes section */}
         <div className="detail-bottom-section">
           <h3 className="detail-tasks-title">Notes</h3>
@@ -1378,6 +1696,25 @@ function DetailPanel({
               {savingNotes ? "Saving..." : "Save Note"}
             </button>
           </div>
+        </div>
+
+        {/* Move to Future Projects */}
+        <div className="detail-bottom-section">
+          <button
+            onClick={() => {
+              if (confirm(`Move "${project.name}" to Future Projects? This will remove it from the roadmap and all owners.`)) {
+                onMoveToFuture?.(personName, project);
+                onClose();
+              }
+            }}
+            style={{
+              fontFamily: "var(--font-sans)", fontSize: 12, fontWeight: 600,
+              padding: "8px 16px", cursor: "pointer", borderRadius: 6, width: "100%",
+              border: "1px solid #22c55e", background: "white", color: "#22c55e",
+            }}
+          >
+            Move to Future Projects
+          </button>
         </div>
 
         {/* Delete button at the bottom */}
@@ -1408,24 +1745,29 @@ function ZoomControls({
   zoom: ZoomLevel;
   onZoom: (z: ZoomLevel) => void;
 }) {
-  const levels: { key: ZoomLevel; label: string }[] = [
-    { key: "month", label: "M" },
-    { key: "biweekly", label: "2W" },
-    { key: "week", label: "W" },
-  ];
+  const order: ZoomLevel[] = ["month", "biweekly", "week"];
+  const idx = order.indexOf(zoom);
 
   return (
     <div className="zoom-controls">
-      {levels.map((l) => (
-        <button
-          key={l.key}
-          className={`zoom-btn${zoom === l.key ? " zoom-btn-active" : ""}`}
-          onClick={() => onZoom(l.key)}
-          title={l.key === "month" ? "Month view" : l.key === "biweekly" ? "Bi-weekly view" : "Week view"}
-        >
-          {l.label}
-        </button>
-      ))}
+      <button
+        className="zoom-btn"
+        onClick={() => { if (idx > 0) onZoom(order[idx - 1]); }}
+        disabled={idx === 0}
+        title="Zoom out"
+        style={{ opacity: idx === 0 ? 0.3 : 1 }}
+      >
+        &minus;
+      </button>
+      <button
+        className="zoom-btn"
+        onClick={() => { if (idx < order.length - 1) onZoom(order[idx + 1]); }}
+        disabled={idx === order.length - 1}
+        title="Zoom in"
+        style={{ opacity: idx === order.length - 1 ? 0.3 : 1 }}
+      >
+        +
+      </button>
     </div>
   );
 }
@@ -1443,6 +1785,22 @@ function CycleSelect({
   onSelect: (id: string | null) => void;
   loading: boolean;
 }) {
+  // Find this/previous/next cycle
+  const weeklyCycles = useMemo(() => {
+    const now = new Date();
+    const sorted = [...cycles].sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime());
+    let thisIdx = sorted.findIndex((c) => now >= new Date(c.startsAt) && now <= new Date(c.endsAt));
+    if (thisIdx === -1) {
+      thisIdx = sorted.findIndex((c) => new Date(c.startsAt) > now);
+      if (thisIdx === -1) thisIdx = sorted.length - 1;
+    }
+    const result: { label: string; cycle: LinearCycle }[] = [];
+    if (thisIdx > 0) result.push({ label: "Previous cycle", cycle: sorted[thisIdx - 1] });
+    if (thisIdx >= 0 && thisIdx < sorted.length) result.push({ label: "This cycle", cycle: sorted[thisIdx] });
+    if (thisIdx + 1 < sorted.length) result.push({ label: "Next cycle", cycle: sorted[thisIdx + 1] });
+    return result;
+  }, [cycles]);
+
   return (
     <div className="cycle-select-wrapper">
       <select
@@ -1452,9 +1810,9 @@ function CycleSelect({
         disabled={loading}
       >
         <option value="all">All Cycles</option>
-        {cycles.map((c) => (
-          <option key={c.id} value={c.id}>
-            {formatCycleLabel(c)}
+        {weeklyCycles.map((w) => (
+          <option key={w.cycle.id} value={w.cycle.id}>
+            {w.label}
           </option>
         ))}
       </select>
@@ -1466,113 +1824,76 @@ function CycleSelect({
 // ── Add project form ──────────────────────────────────────────────────────
 
 function AddProjectForm({
+  people,
+  defaultOwner,
   onAdd,
   onCancel,
 }: {
-  onAdd: (name: string, startMonth: number, duration: number) => void;
+  people: Person[];
+  defaultOwner: string;
+  onAdd: (data: { name: string; owner: string; startDate: string; endDate: string; notes: string }) => void;
   onCancel: () => void;
 }) {
   const [name, setName] = useState("");
-  const [startMonth, setStartMonth] = useState(0);
-  const [duration, setDuration] = useState(2);
+  const [owner, setOwner] = useState(defaultOwner);
+  const today = new Date().toISOString().split("T")[0];
+  const threeMonths = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+  const [startDate, setStartDate] = useState(today);
+  const [endDate, setEndDate] = useState(threeMonths);
+  const [notes, setNotes] = useState("");
+
+  const inputStyle: React.CSSProperties = {
+    width: "100%", padding: "6px 10px", border: "1px solid #e0e0ea", borderRadius: 6,
+    fontSize: 13, fontFamily: "var(--font-sans)", marginTop: 2, color: "#1e293b",
+  };
+  const labelStyle: React.CSSProperties = { fontSize: 11, fontWeight: 600, color: "#64748b", textTransform: "uppercase" as const, letterSpacing: "0.04em" };
 
   return (
-    <div className="add-project-form" onClick={(e) => e.stopPropagation()}>
-      <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8 }}>Add Project</div>
-      <input
-        type="text"
-        placeholder="Project name"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        style={{
-          width: "100%",
-          padding: "6px 10px",
-          border: "1px solid #e0e0ea",
-          borderRadius: 6,
-          fontSize: 13,
-          fontFamily: "var(--font-sans)",
-          marginBottom: 8,
-        }}
-        autoFocus
-        onKeyDown={(e) => {
-          if (e.key === "Enter" && name.trim()) {
-            onAdd(name.trim(), startMonth, duration);
-          }
-          if (e.key === "Escape") onCancel();
-        }}
-      />
-      <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
-        <label style={{ fontSize: 12, flex: 1 }}>
-          Start month
-          <input
-            type="number"
-            min={0}
-            max={22}
-            value={startMonth}
-            onChange={(e) => setStartMonth(Number(e.target.value))}
-            style={{
-              width: "100%",
-              padding: "4px 8px",
-              border: "1px solid #e0e0ea",
-              borderRadius: 6,
-              fontSize: 13,
-              fontFamily: "var(--font-sans)",
-              marginTop: 2,
-            }}
-          />
+    <div className="add-project-form" onClick={(e) => e.stopPropagation()} style={{ minWidth: 340 }}>
+      <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 12, color: "#1e293b" }}>Add Project</div>
+
+      <label style={labelStyle}>
+        Project name
+        <input type="text" placeholder="e.g. New Feature" value={name} onChange={(e) => setName(e.target.value)} style={{ ...inputStyle, marginBottom: 10 }} autoFocus
+          onKeyDown={(e) => { if (e.key === "Escape") onCancel(); }}
+        />
+      </label>
+
+      <label style={labelStyle}>
+        Owner
+        <select value={owner} onChange={(e) => setOwner(e.target.value)} style={{ ...inputStyle, marginBottom: 10 }}>
+          {people.map((p) => <option key={p.name} value={p.name}>{p.name}</option>)}
+        </select>
+      </label>
+
+      <div style={{ display: "flex", gap: 10, marginBottom: 10 }}>
+        <label style={{ ...labelStyle, flex: 1 }}>
+          Start date
+          <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} style={inputStyle} />
         </label>
-        <label style={{ fontSize: 12, flex: 1 }}>
-          Duration
-          <input
-            type="number"
-            min={1}
-            max={23}
-            value={duration}
-            onChange={(e) => setDuration(Number(e.target.value))}
-            style={{
-              width: "100%",
-              padding: "4px 8px",
-              border: "1px solid #e0e0ea",
-              borderRadius: 6,
-              fontSize: 13,
-              fontFamily: "var(--font-sans)",
-              marginTop: 2,
-            }}
-          />
+        <label style={{ ...labelStyle, flex: 1 }}>
+          End date
+          <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} style={inputStyle} />
         </label>
       </div>
+
+      <label style={labelStyle}>
+        Notes
+        <textarea placeholder="Optional notes..." value={notes} onChange={(e) => setNotes(e.target.value)}
+          style={{ ...inputStyle, minHeight: 50, resize: "vertical", marginBottom: 12 }}
+        />
+      </label>
+
       <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
-        <button
-          onClick={onCancel}
-          style={{
-            padding: "4px 12px",
-            border: "1px solid #e0e0ea",
-            borderRadius: 6,
-            background: "#fff",
-            fontSize: 12,
-            cursor: "pointer",
-            fontFamily: "var(--font-sans)",
-          }}
-        >
+        <button onClick={onCancel} style={{ padding: "6px 16px", border: "1px solid #e0e0ea", borderRadius: 6, background: "#fff", fontSize: 12, cursor: "pointer", fontFamily: "var(--font-sans)" }}>
           Cancel
         </button>
         <button
-          onClick={() => {
-            if (name.trim()) onAdd(name.trim(), startMonth, duration);
-          }}
-          style={{
-            padding: "4px 12px",
-            border: "none",
-            borderRadius: 6,
-            background: "#6366f1",
-            color: "#fff",
-            fontSize: 12,
-            cursor: "pointer",
-            fontWeight: 600,
-            fontFamily: "var(--font-sans)",
-          }}
+          onClick={() => { if (name.trim() && startDate && endDate) onAdd({ name: name.trim(), owner, startDate, endDate, notes }); }}
+          disabled={!name.trim() || !startDate || !endDate}
+          style={{ padding: "6px 16px", border: "none", borderRadius: 6, background: name.trim() ? "#1e293b" : "#cbd5e1", color: "#fff", fontSize: 12, cursor: name.trim() ? "pointer" : "default", fontWeight: 600, fontFamily: "var(--font-sans)" }}
         >
-          Add
+          Add Project
         </button>
       </div>
     </div>
@@ -1676,6 +1997,7 @@ function FilterBar({
   filterPeople,
   onTogglePerson,
   onClearPeople,
+  onAddProject,
 }: {
   search: string;
   onSearch: (v: string) => void;
@@ -1690,8 +2012,8 @@ function FilterBar({
   onPrint: () => void;
   onUndo: () => void;
   canUndo: boolean;
-  viewMode: "projects" | "subtestEdits" | "cycles";
-  onViewMode: (m: "projects" | "subtestEdits" | "cycles") => void;
+  viewMode: "projects" | "subtestEdits" | "cycles" | "futureProjects";
+  onViewMode: (m: "projects" | "subtestEdits" | "cycles" | "futureProjects") => void;
   teams: Team[];
   people: Person[];
   filterTeams: Set<string>;
@@ -1700,6 +2022,7 @@ function FilterBar({
   filterPeople: Set<string>;
   onTogglePerson: (p: string) => void;
   onClearPeople: () => void;
+  onAddProject: () => void;
 }) {
   return (
     <div className="filter-bar">
@@ -1728,19 +2051,42 @@ function FilterBar({
               color: viewMode === "subtestEdits" ? "white" : "#64748b",
             }}
           >
-            Subtest Edits
+            Tasks
           </button>
           <button
             onClick={() => onViewMode("cycles")}
             style={{
               fontFamily: "var(--font-sans)", fontSize: 15, fontWeight: 700,
               padding: "8px 20px", cursor: "pointer", border: "none",
-              borderRadius: "0 8px 8px 0",
+              borderRadius: 0,
               background: viewMode === "cycles" ? "#1E88E5" : "#f1f5f9",
               color: viewMode === "cycles" ? "white" : "#64748b",
             }}
           >
             Cycles
+          </button>
+          <button
+            onClick={() => onViewMode("futureProjects")}
+            style={{
+              fontFamily: "var(--font-sans)", fontSize: 15, fontWeight: 700,
+              padding: "8px 20px", cursor: "pointer", border: "none",
+              borderRadius: "0 8px 8px 0",
+              background: viewMode === "futureProjects" ? "#22c55e" : "#f1f5f9",
+              color: viewMode === "futureProjects" ? "white" : "#64748b",
+            }}
+          >
+            Future Projects
+          </button>
+          <button
+            onClick={onAddProject}
+            style={{
+              fontFamily: "var(--font-sans)", fontSize: 15, fontWeight: 700,
+              padding: "8px 16px", cursor: "pointer", border: "none",
+              borderRadius: 8, marginLeft: 8,
+              background: "#22c55e", color: "white",
+            }}
+          >
+            + Add Project
           </button>
         </div>
       </div>
@@ -1824,6 +2170,7 @@ type DragState = {
   personName: string;
   originalPersonName: string;
   linearIssueId?: string; // set when dragging a Linear-sourced bar
+  linearProjectName?: string | null; // for syncing linked projects
   mode: "move" | "resize";
   reorderMode: boolean; // true when vertical drag detected
   mouseX: number;
@@ -1842,6 +2189,8 @@ type DragState = {
 
 type LinearBar = {
   issueId: string;
+  identifier?: string;
+  url?: string;
   title: string;
   cleanedTitle: string;
   assigneeName: string;
@@ -1888,8 +2237,9 @@ function normalizeAssigneeName(displayName: string): string | null {
     david: "David",
     eleanor: "Eleanor",
     erin: "Erin",
-    "stef": "Stef / Sam",
-    "sam": "Stef / Sam",
+    "stef": "Stef",
+    "sam": "Sam",
+    "samuel": "Sam",
     molly: "Molly",
     cara: "Cara",
     lucie: "Lucie",
@@ -1911,6 +2261,8 @@ function newProjId(): string {
 
 type CycleIssue = {
   id: string;
+  identifier?: string;
+  url?: string;
   title: string;
   state: { name: string; color: string };
   assignee: { displayName: string; avatarUrl: string | null } | null;
@@ -1930,30 +2282,66 @@ const PRIORITY_GROUPS: { key: number; label: string; color: string }[] = [
   { key: 0, label: "No Priority", color: "#cbd5e1" },
 ];
 
-function SubtestEditsList({
-  bars,
-  loading,
+type TaskIssue = {
+  id: string;
+  identifier?: string;
+  url?: string;
+  title: string;
+  priority: number;
+  priorityLabel: string;
+  state: { name: string; color: string; type?: string };
+  assignee: { id?: string; displayName: string; avatarUrl: string | null } | null;
+  dueDate: string | null;
+  projectName: string;
+};
+
+function TasksView({
   people,
   onIssueClick,
 }: {
-  bars: LinearBar[];
-  loading: boolean;
   people: Person[];
   onIssueClick: (issueId: string) => void;
 }) {
+  const [allIssues, setAllIssues] = useState<TaskIssue[]>([]);
+  const [loading, setLoading] = useState(true);
   const [filterOwner, setFilterOwner] = useState<string | null>(null);
+  const [filterProject, setFilterProject] = useState<string | null>(null);
   const [sortField, setSortField] = useState<"due" | "status" | "owner" | null>("due");
   const [editingField, setEditingField] = useState<{ issueId: string; field: "owner" | "status" | "dueDate"; x: number; y: number } | null>(null);
-  const [localBars, setLocalBars] = useState<LinearBar[]>(bars);
   const [saving, setSaving] = useState<string | null>(null);
-
-  // Workflow states + team members (fetched once on mount)
   const [workflowStates, setWorkflowStates] = useState<WorkflowState[]>([]);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
 
-  useEffect(() => { setLocalBars(bars); }, [bars]);
-
+  // Fetch all issues — first get project IDs, then fetch issues per project
   useEffect(() => {
+    setLoading(true);
+
+    // Step 1: get all project IDs and names
+    linearQuery<{ projects: { nodes: { id: string; name: string }[] } }>(
+      `query { projects(first: 50) { nodes { id name } } }`,
+    ).then(async (data) => {
+      const allIssues: TaskIssue[] = [];
+      // Step 2: fetch issues per project (avoids complexity limit)
+      for (const proj of data.projects.nodes) {
+        try {
+          const issueData = await linearQuery<{ project: { issues: { nodes: { id: string; identifier: string; url: string; title: string; priority: number; priorityLabel: string; state: { name: string; color: string; type: string }; assignee: { id: string; displayName: string; avatarUrl: string | null } | null; dueDate: string | null }[] } } }>(
+            `query ProjectIssues($id: String!) { project(id: $id) { issues(first: 250) { nodes { id identifier url title priority priorityLabel state { name color type } assignee { id displayName avatarUrl } dueDate } } } }`,
+            { id: proj.id },
+          );
+          for (const issue of issueData.project.issues.nodes) {
+            if (issue.state.type === "completed" || issue.state.type === "canceled") continue;
+            allIssues.push({ ...issue, projectName: proj.name });
+          }
+        } catch {
+          // Skip projects that fail
+        }
+      }
+      setAllIssues(allIssues);
+    })
+      .catch((err) => console.error("[TASKS] Failed:", err))
+      .finally(() => setLoading(false));
+
+    // Fetch teams for editing
     linearQuery<{ teams: { nodes: { id: string; states: { nodes: WorkflowState[] }; members: { nodes: TeamMember[] } }[] } }>(
       `query { teams(first: 10) { nodes { id states { nodes { id name color position } } members(first: 50) { nodes { id displayName avatarUrl } } } } }`,
     ).then((data) => {
@@ -1965,37 +2353,58 @@ function SubtestEditsList({
       }
       setWorkflowStates([...stateMap.values()].sort((a, b) => a.position - b.position));
       setTeamMembers([...memberMap.values()].sort((a, b) => a.displayName.localeCompare(b.displayName)));
-    }).catch((err) => console.error("[SUBTEST] Failed to load teams:", err));
+    }).catch(() => {});
   }, []);
 
-  const ownerNames = useMemo(() => [...new Set(localBars.map((b) => b.assigneeName))].sort(), [localBars]);
+  const ownerNames = useMemo(() => {
+    const names = new Set<string>();
+    for (const i of allIssues) {
+      if (i.assignee) names.add(normalizeAssigneeName(i.assignee.displayName) ?? i.assignee.displayName);
+    }
+    return [...names].sort();
+  }, [allIssues]);
+
+  const projectNames = useMemo(() => [...new Set(allIssues.map((i) => i.projectName))].sort(), [allIssues]);
 
   const filtered = useMemo(() => {
-    let list = localBars;
-    if (filterOwner) list = list.filter((b) => b.assigneeName === filterOwner);
+    let list = allIssues;
+    if (filterOwner) list = list.filter((i) => {
+      const name = i.assignee ? (normalizeAssigneeName(i.assignee.displayName) ?? i.assignee.displayName) : "Unassigned";
+      return name === filterOwner;
+    });
+    if (filterProject) list = list.filter((i) => i.projectName === filterProject);
     return list;
-  }, [localBars, filterOwner]);
+  }, [allIssues, filterOwner, filterProject]);
 
   // Group by priority
   const byPriority = useMemo(() => {
-    const groups: Record<number, LinearBar[]> = {};
-    for (const bar of filtered) {
-      if (!groups[bar.priority]) groups[bar.priority] = [];
-      groups[bar.priority].push(bar);
+    const groups: Record<number, TaskIssue[]> = {};
+    for (const issue of filtered) {
+      if (!groups[issue.priority]) groups[issue.priority] = [];
+      groups[issue.priority].push(issue);
     }
-    // Sort within each group
     for (const key in groups) {
       groups[key].sort((a, b) => {
-        if (sortField === "due") return a.endDate.getTime() - b.endDate.getTime();
+        const aName = a.assignee ? (normalizeAssigneeName(a.assignee.displayName) ?? a.assignee.displayName) : "";
+        const bName = b.assignee ? (normalizeAssigneeName(b.assignee.displayName) ?? b.assignee.displayName) : "";
+        if (sortField === "due") {
+          if (!a.dueDate && !b.dueDate) return 0;
+          if (!a.dueDate) return 1;
+          if (!b.dueDate) return -1;
+          return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+        }
         if (sortField === "status") return a.state.name.localeCompare(b.state.name);
-        if (sortField === "owner") return a.assigneeName.localeCompare(b.assigneeName);
-        return a.endDate.getTime() - b.endDate.getTime();
+        if (sortField === "owner") return aName.localeCompare(bName);
+        if (!a.dueDate && !b.dueDate) return 0;
+        if (!a.dueDate) return 1;
+        if (!b.dueDate) return -1;
+        return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
       });
     }
     return groups;
   }, [filtered, sortField]);
 
-  const fmtDate = (d: Date) => d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  const fmtDate = (d: string) => new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 
   const updateField = async (issueId: string, field: string, value: string) => {
     setSaving(issueId);
@@ -2008,17 +2417,13 @@ function SubtestEditsList({
       const json = await res.json();
       if (json.success) {
         const u = json.issue;
-        setLocalBars((prev) => prev.map((bar) => {
-          if (bar.issueId !== issueId) return bar;
-          const updated = { ...bar };
+        setAllIssues((prev) => prev.map((issue) => {
+          if (issue.id !== issueId) return issue;
+          const updated = { ...issue };
           if (u.state) updated.state = { name: u.state.name, color: u.state.color, type: u.state.type };
-          if (u.dueDate !== undefined) updated.endDate = u.dueDate ? new Date(u.dueDate) : bar.endDate;
-          if (u.assignee) {
-            updated.assigneeName = normalizeAssigneeName(u.assignee.displayName) ?? u.assignee.displayName;
-            updated.assigneeId = u.assignee.id;
-          }
-          // Remove if now completed/canceled
-          if (u.state?.type === "completed" || u.state?.type === "canceled") return null as unknown as LinearBar;
+          if (u.dueDate !== undefined) updated.dueDate = u.dueDate;
+          if (u.assignee !== undefined) updated.assignee = u.assignee;
+          if (u.state?.type === "completed" || u.state?.type === "canceled") return null as unknown as TaskIssue;
           return updated;
         }).filter(Boolean));
       }
@@ -2032,16 +2437,20 @@ function SubtestEditsList({
     border: "1px solid #e2e8f0", background: "white", color: "#1e293b",
   };
 
-  const COL = { title: "1 1 0", owner: "0 0 110px", due: "0 0 90px", status: "0 0 100px" };
+  const COL = { title: "1 1 0", owner: "0 0 130px", due: "0 0 100px", status: "0 0 110px" };
 
   return (
     <>
-    <div style={{ padding: "24px 32px", fontFamily: "var(--font-sans)", maxHeight: "calc(100vh - 120px)", overflow: "auto", maxWidth: 860, margin: "0 auto" }}>
+    <div style={{ padding: "24px 32px", fontFamily: "var(--font-sans)", maxHeight: "calc(100vh - 120px)", overflow: "auto", maxWidth: 1000, margin: "0 auto" }}>
       {/* Filters */}
-      <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 20 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20, flexWrap: "wrap" }}>
         <select value={filterOwner ?? ""} onChange={(e) => setFilterOwner(e.target.value || null)} style={selectStyle}>
           <option value="">All owners</option>
           {ownerNames.map((n) => <option key={n} value={n}>{n}</option>)}
+        </select>
+        <select value={filterProject ?? ""} onChange={(e) => setFilterProject(e.target.value || null)} style={selectStyle}>
+          <option value="">All projects</option>
+          {projectNames.map((n) => <option key={n} value={n}>{n}</option>)}
         </select>
         <span style={{ fontSize: 12, color: "#94a3b8" }}>
           {filtered.length} open task{filtered.length !== 1 ? "s" : ""}
@@ -2090,16 +2499,17 @@ function SubtestEditsList({
 
             {/* Task rows */}
             <div style={{ border: `1px solid ${hexToRgba(pg.color, 0.15)}`, borderTop: "none", borderRadius: "0 0 8px 8px", overflow: "visible" }}>
-              {items.map((bar, idx) => {
-                const ownerPerson = people.find((p) => p.name === bar.assigneeName);
-                const isSaving = saving === bar.issueId;
-                const isEditingOwner = editingField?.issueId === bar.issueId && editingField.field === "owner";
-                const isEditingStatus = editingField?.issueId === bar.issueId && editingField.field === "status";
-                const isEditingDue = editingField?.issueId === bar.issueId && editingField.field === "dueDate";
+              {items.map((issue, idx) => {
+                const ownerName = issue.assignee ? (normalizeAssigneeName(issue.assignee.displayName) ?? issue.assignee.displayName) : "Unassigned";
+                const ownerPerson = people.find((p) => p.name === ownerName);
+                const isSaving = saving === issue.id;
+                const isEditingOwner = editingField?.issueId === issue.id && editingField.field === "owner";
+                const isEditingStatus = editingField?.issueId === issue.id && editingField.field === "status";
+                const isEditingDue = editingField?.issueId === issue.id && editingField.field === "dueDate";
 
                 return (
                   <div
-                    key={bar.issueId}
+                    key={issue.id}
                     style={{
                       display: "flex", alignItems: "center", gap: 8,
                       padding: "6px 12px", fontSize: 12,
@@ -2110,21 +2520,22 @@ function SubtestEditsList({
                       zIndex: (isEditingOwner || isEditingStatus || isEditingDue) ? 60 : undefined,
                     }}
                   >
-                    <span style={{ width: 8, height: 8, borderRadius: "50%", flexShrink: 0, backgroundColor: bar.state.color }} />
+                    <span style={{ width: 8, height: 8, borderRadius: "50%", flexShrink: 0, backgroundColor: issue.state.color }} />
 
-                    {/* Title — click to open detail */}
+                    {/* Title */}
                     <span
-                      onClick={() => onIssueClick(bar.issueId)}
+                      onClick={() => onIssueClick(issue.id)}
                       style={{ flex: COL.title, fontWeight: 500, color: "#1e293b", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", cursor: "pointer" }}
-                      title={bar.title}
+                      title={`[${issue.projectName}] ${issue.title}`}
                     >
-                      {bar.cleanedTitle}
+                      {issue.identifier && <span style={{ color: "#94a3b8", fontSize: 10, marginRight: 4 }}>{issue.identifier}</span>}
+                      {issue.title}
                     </span>
 
                     {/* Owner */}
                     <span style={{ flex: COL.owner }}>
                       <span
-                        onClick={(e) => { e.stopPropagation(); const r = (e.target as HTMLElement).getBoundingClientRect(); setEditingField(isEditingOwner ? null : { issueId: bar.issueId, field: "owner", x: r.left, y: r.bottom + 4 }); }}
+                        onClick={(e) => { e.stopPropagation(); const r = (e.target as HTMLElement).getBoundingClientRect(); setEditingField(isEditingOwner ? null : { issueId: issue.id, field: "owner", x: r.left, y: r.bottom + 4 }); }}
                         style={{
                           fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 999, cursor: "pointer",
                           backgroundColor: ownerPerson ? hexToRgba(ownerPerson.color, 0.15) : "#f1f5f9",
@@ -2132,7 +2543,7 @@ function SubtestEditsList({
                           display: "inline-block", maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
                         }}
                       >
-                        {bar.assigneeName}
+                        {ownerName}
                       </span>
                     </span>
 
@@ -2140,22 +2551,26 @@ function SubtestEditsList({
                     <span style={{ flex: COL.due, textAlign: "right" }}>
                       {isEditingDue ? (
                         <span onClick={(e) => e.stopPropagation()} style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-                          <input
-                            type="date"
-                            autoFocus
-                            defaultValue={bar.endDate.toISOString().split("T")[0]}
-                            onChange={(e) => updateField(bar.issueId, "dueDate", e.target.value)}
-                            style={{ fontFamily: "var(--font-sans)", fontSize: 11, padding: "2px 4px", border: "1px solid #e2e8f0", borderRadius: 4, width: 110 }}
+                          <input type="date" autoFocus
+                            defaultValue={issue.dueDate ? issue.dueDate.split("T")[0] : ""}
+                            onChange={(e) => { if (e.target.value) updateField(issue.id, "dueDate", e.target.value); }}
+                            onBlur={() => setEditingField(null)}
+                            style={{ fontFamily: "var(--font-sans)", fontSize: 11, padding: "2px 4px", border: "1px solid #e2e8f0", borderRadius: 4, width: 105 }}
                           />
+                          {issue.dueDate && (
+                            <button onMouseDown={(e) => { e.preventDefault(); updateField(issue.id, "dueDate", ""); }}
+                              style={{ fontSize: 12, color: "#dc2626", background: "none", border: "none", cursor: "pointer", padding: "0 2px", lineHeight: 1 }}
+                            >&times;</button>
+                          )}
                         </span>
                       ) : (
                         <span
-                          onClick={(e) => { e.stopPropagation(); const r = (e.target as HTMLElement).getBoundingClientRect(); setEditingField({ issueId: bar.issueId, field: "dueDate", x: r.left, y: r.bottom + 4 }); }}
-                          style={{ fontSize: 11, color: "#475569", cursor: "pointer", padding: "2px 6px", borderRadius: 4, border: "1px solid transparent" }}
+                          onClick={(e) => { e.stopPropagation(); setEditingField({ issueId: issue.id, field: "dueDate", x: 0, y: 0 }); }}
+                          style={{ fontSize: 11, color: issue.dueDate ? "#475569" : "#cbd5e1", cursor: "pointer", padding: "2px 6px", borderRadius: 4, border: "1px solid transparent" }}
                           onMouseEnter={(e) => { (e.currentTarget as HTMLSpanElement).style.borderColor = "#e2e8f0"; }}
                           onMouseLeave={(e) => { (e.currentTarget as HTMLSpanElement).style.borderColor = "transparent"; }}
                         >
-                          {fmtDate(bar.endDate)}
+                          {issue.dueDate ? fmtDate(issue.dueDate) : "Add date"}
                         </span>
                       )}
                     </span>
@@ -2163,14 +2578,14 @@ function SubtestEditsList({
                     {/* Status */}
                     <span style={{ flex: COL.status }}>
                       <span
-                        onClick={(e) => { e.stopPropagation(); const r = (e.target as HTMLElement).getBoundingClientRect(); setEditingField(isEditingStatus ? null : { issueId: bar.issueId, field: "status", x: r.right, y: r.bottom + 4 }); }}
+                        onClick={(e) => { e.stopPropagation(); const r = (e.target as HTMLElement).getBoundingClientRect(); setEditingField(isEditingStatus ? null : { issueId: issue.id, field: "status", x: r.right, y: r.bottom + 4 }); }}
                         style={{
                           fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 999, cursor: "pointer",
-                          backgroundColor: hexToRgba(bar.state.color, 0.15), color: bar.state.color, whiteSpace: "nowrap",
+                          backgroundColor: hexToRgba(issue.state.color, 0.15), color: issue.state.color, whiteSpace: "nowrap",
                           display: "inline-block",
                         }}
                       >
-                        {bar.state.name}
+                        {issue.state.name}
                       </span>
                     </span>
                   </div>
@@ -2194,8 +2609,9 @@ function SubtestEditsList({
       }}>
         {teamMembers.length === 0 && <div style={{ padding: "8px 12px", fontSize: 12, color: "#94a3b8" }}>Loading...</div>}
         {teamMembers.map((m) => {
-          const bar = localBars.find((b) => b.issueId === editingField.issueId);
-          const isSelected = m.displayName === bar?.assigneeName || normalizeAssigneeName(m.displayName) === bar?.assigneeName;
+          const issue = allIssues.find((i) => i.id === editingField.issueId);
+          const issueName = issue?.assignee ? (normalizeAssigneeName(issue.assignee.displayName) ?? issue.assignee.displayName) : "";
+          const isSelected = m.displayName === issue?.assignee?.displayName || normalizeAssigneeName(m.displayName) === issueName;
           return (
             <div key={m.id} onClick={() => updateField(editingField.issueId, "assigneeId", m.id)}
               style={{ padding: "6px 12px", fontSize: 13, cursor: "pointer", borderRadius: 6, fontWeight: isSelected ? 700 : 400, background: isSelected ? "#f1f5f9" : "transparent" }}
@@ -2216,8 +2632,8 @@ function SubtestEditsList({
       }}>
         {workflowStates.length === 0 && <div style={{ padding: "8px 12px", fontSize: 12, color: "#94a3b8" }}>Loading...</div>}
         {workflowStates.map((ws) => {
-          const bar = localBars.find((b) => b.issueId === editingField.issueId);
-          const isSelected = ws.name === bar?.state.name;
+          const issue = allIssues.find((i) => i.id === editingField.issueId);
+          const isSelected = ws.name === issue?.state.name;
           return (
             <div key={ws.id} onClick={() => updateField(editingField.issueId, "stateId", ws.id)}
               style={{ padding: "6px 12px", fontSize: 13, cursor: "pointer", borderRadius: 6, display: "flex", alignItems: "center", gap: 8, fontWeight: isSelected ? 700 : 400, background: isSelected ? hexToRgba(ws.color, 0.1) : "transparent" }}
@@ -2235,6 +2651,181 @@ function SubtestEditsList({
   );
 }
 
+// ── Future Projects View ─────────────────────────────────────────────────
+
+type FutureProject = {
+  name: string;
+  description: string;
+  linearProjectId?: string;
+  linearProjectUrl?: string;
+};
+
+function FutureProjectsView({ people, onAssignToRoadmap }: { people: Person[]; onAssignToRoadmap: (proj: FutureProject, owner: string, startDate: string, endDate: string) => void }) {
+  const [projects, setProjects] = useState<FutureProject[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [adding, setAdding] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [creating, setCreating] = useState(false);
+  const [defaultTeamId, setDefaultTeamId] = useState<string | null>(null);
+  const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
+  const [assignOwner, setAssignOwner] = useState("");
+  const [assignStart, setAssignStart] = useState("");
+  const [assignEnd, setAssignEnd] = useState("");
+
+  useEffect(() => {
+    fetchOverrides().then((ov) => { setProjects(ov.futureProjects ?? []); setLoading(false); });
+    linearQuery<{ teams: { nodes: { id: string; name: string }[] } }>(
+      `query { teams(first: 10) { nodes { id name } } }`,
+    ).then((data) => {
+      const mm = data.teams.nodes.find((t) => t.name === "Marker Method");
+      setDefaultTeamId(mm?.id ?? data.teams.nodes[0]?.id ?? null);
+    }).catch(() => {});
+  }, []);
+
+  const addProject = async () => {
+    if (!newName.trim() || !defaultTeamId) return;
+    setCreating(true);
+    try {
+      const res = await fetch("/api/linear", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          query: `mutation CreateProject($input: ProjectCreateInput!) { projectCreate(input: $input) { success project { id name url } } }`,
+          variables: { input: { name: newName.trim(), teamIds: [defaultTeamId] } },
+        }),
+      });
+      const json = await res.json();
+      const created = json.data?.projectCreate;
+      // Link to Marker Method! LFG initiative
+      if (created?.project?.id) {
+        fetch("/api/linear", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            query: `mutation { initiativeToProjectCreate(input: { initiativeId: "b20d5d16-f6cf-4c73-840d-2fb9e3635851", projectId: "${created.project.id}" }) { success } }`,
+          }),
+        }).catch(() => {});
+      }
+      const newProject: FutureProject = { name: newName.trim(), description: "", linearProjectId: created?.project?.id, linearProjectUrl: created?.project?.url };
+      setProjects((prev) => [...prev, newProject]);
+      saveOverride("addFutureProject", { project: newProject });
+      setNewName("");
+      setAdding(false);
+    } catch (err) { console.error("Failed to create:", err); }
+    finally { setCreating(false); }
+  };
+
+  const removeProject = (idx: number) => {
+    setProjects((prev) => prev.filter((_, i) => i !== idx));
+    saveOverride("removeFutureProject", { index: idx });
+    if (selectedIdx === idx) setSelectedIdx(null);
+  };
+
+  const handleAssign = () => {
+    if (selectedIdx === null || !assignOwner || !assignStart || !assignEnd) return;
+    const proj = projects[selectedIdx];
+    onAssignToRoadmap(proj, assignOwner, assignStart, assignEnd);
+    removeProject(selectedIdx);
+    setSelectedIdx(null);
+  };
+
+  const selectedProj = selectedIdx !== null ? projects[selectedIdx] : null;
+
+  return (
+    <div style={{ padding: "24px 32px", fontFamily: "var(--font-sans)", maxHeight: "calc(100vh - 120px)", overflow: "auto", maxWidth: 700, margin: "0 auto" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+        <div>
+          <h2 style={{ fontSize: 18, fontWeight: 800, color: "#22c55e", margin: 0 }}>Future Projects</h2>
+          <p style={{ fontSize: 12, color: "#94a3b8", margin: 0 }}>Unassigned projects. Click to assign to roadmap.</p>
+        </div>
+        <button
+          onClick={() => setAdding(!adding)}
+          style={{ fontFamily: "var(--font-sans)", fontSize: 20, fontWeight: 700, width: 36, height: 36, borderRadius: "50%", border: "none", background: "#22c55e", color: "white", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+        >+</button>
+      </div>
+
+      {adding && (
+        <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+          <input type="text" placeholder="Project name" value={newName} onChange={(e) => setNewName(e.target.value)} autoFocus
+            onKeyDown={(e) => { if (e.key === "Enter" && newName.trim()) addProject(); if (e.key === "Escape") setAdding(false); }}
+            style={{ flex: 1, fontFamily: "var(--font-sans)", fontSize: 13, padding: "6px 10px", border: "1px solid #e2e8f0", borderRadius: 6, outline: "none" }}
+          />
+          <button onClick={addProject} disabled={!newName.trim() || creating}
+            style={{ fontFamily: "var(--font-sans)", fontSize: 12, fontWeight: 600, padding: "6px 14px", border: "none", borderRadius: 6, background: newName.trim() ? "#22c55e" : "#cbd5e1", color: "white", cursor: newName.trim() ? "pointer" : "default" }}
+          >{creating ? "..." : "Add"}</button>
+        </div>
+      )}
+
+      {loading && <div style={{ color: "#94a3b8", padding: "40px 0", textAlign: "center" }}>Loading...</div>}
+
+      {!loading && projects.length === 0 && !adding && (
+        <div style={{ color: "#94a3b8", padding: "40px 0", textAlign: "center", fontSize: 13 }}>No future projects. Press + to add one.</div>
+      )}
+
+      {!loading && projects.map((proj, idx) => (
+        <div key={idx}
+          onClick={() => { setSelectedIdx(idx); setAssignOwner(people[0]?.name ?? ""); setAssignStart(new Date().toISOString().split("T")[0]); setAssignEnd(new Date(Date.now() + 90*86400000).toISOString().split("T")[0]); }}
+          style={{
+            display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", marginBottom: 6,
+            background: selectedIdx === idx ? "#f0fdf4" : "white", borderRadius: 8,
+            border: selectedIdx === idx ? "1px solid #22c55e" : "1px solid #e2e8f0",
+            cursor: "pointer",
+          }}
+        >
+          <span style={{ fontSize: 14, fontWeight: 600, color: "#1e293b", flex: 1 }}>
+            {proj.name}
+          </span>
+          {proj.linearProjectUrl && (
+            <a href={proj.linearProjectUrl} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}
+              style={{ fontSize: 11, color: "#22c55e", textDecoration: "none" }}>Linear &#8599;</a>
+          )}
+          <span
+            onClick={(e) => { e.stopPropagation(); if (confirm(`Remove "${proj.name}"?`)) removeProject(idx); }}
+            style={{ fontSize: 14, color: "#cbd5e1", padding: "0 2px", lineHeight: 1 }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLSpanElement).style.color = "#dc2626"; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLSpanElement).style.color = "#cbd5e1"; }}
+          >&times;</span>
+        </div>
+      ))}
+
+      {/* Assign panel */}
+      {selectedProj && (
+        <div style={{ marginTop: 16, padding: 16, background: "white", borderRadius: 10, border: "1px solid #22c55e" }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: "#1e293b", marginBottom: 12 }}>
+            Assign &ldquo;{selectedProj.name}&rdquo; to Roadmap
+          </div>
+          <label style={{ fontSize: 11, fontWeight: 600, color: "#64748b", textTransform: "uppercase", display: "block", marginBottom: 4 }}>Owner</label>
+          <select value={assignOwner} onChange={(e) => setAssignOwner(e.target.value)}
+            style={{ fontFamily: "var(--font-sans)", fontSize: 13, padding: "6px 10px", borderRadius: 6, border: "1px solid #e2e8f0", width: "100%", marginBottom: 10 }}
+          >
+            {people.map((p) => <option key={p.name} value={p.name}>{p.name}</option>)}
+          </select>
+          <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
+            <label style={{ flex: 1, fontSize: 11, fontWeight: 600, color: "#64748b", textTransform: "uppercase" }}>
+              Start
+              <input type="date" value={assignStart} onChange={(e) => setAssignStart(e.target.value)}
+                style={{ fontFamily: "var(--font-sans)", fontSize: 13, padding: "6px 10px", borderRadius: 6, border: "1px solid #e2e8f0", width: "100%", marginTop: 2 }} />
+            </label>
+            <label style={{ flex: 1, fontSize: 11, fontWeight: 600, color: "#64748b", textTransform: "uppercase" }}>
+              End
+              <input type="date" value={assignEnd} onChange={(e) => setAssignEnd(e.target.value)}
+                style={{ fontFamily: "var(--font-sans)", fontSize: 13, padding: "6px 10px", borderRadius: 6, border: "1px solid #e2e8f0", width: "100%", marginTop: 2 }} />
+            </label>
+          </div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button onClick={handleAssign}
+              style={{ fontFamily: "var(--font-sans)", fontSize: 12, fontWeight: 600, padding: "8px 16px", border: "none", borderRadius: 6, background: "#22c55e", color: "white", cursor: "pointer" }}
+            >Assign to Roadmap</button>
+            <button onClick={() => setSelectedIdx(null)}
+              style={{ fontFamily: "var(--font-sans)", fontSize: 12, padding: "8px 16px", border: "1px solid #e2e8f0", borderRadius: 6, background: "white", cursor: "pointer" }}
+            >Cancel</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 const CYCLE_TEAMS = new Set(["Engineering", "Data Science", "Product"]);
 
 // ── Cycle Issue Detail Panel ────────────────────────────────────────────
@@ -2246,15 +2837,20 @@ function CycleIssueDetailPanel({
   issueId,
   onClose,
   onUpdated,
+  cycles,
+  onRemovedFromCycle,
 }: {
   issueId: string;
   onClose: () => void;
   onUpdated: (issueId: string, changes: { state?: { name: string; color: string }; dueDate?: string | null; assignee?: { displayName: string; avatarUrl: string | null } | null }) => void;
+  cycles: LinearCycle[];
+  onRemovedFromCycle?: (issueId: string) => void;
 }) {
   const [issue, setIssue] = useState<LinearIssue | null>(null);
   const [loading, setLoading] = useState(true);
   const [workflowStates, setWorkflowStates] = useState<WorkflowState[]>([]);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [linearProjects, setLinearProjects] = useState<{ id: string; name: string }[]>([]);
   const [saving, setSaving] = useState<string | null>(null);
 
   // Close on Escape
@@ -2273,11 +2869,11 @@ function CycleIssueDetailPanel({
       linearQuery<{ issue: LinearIssue & { team: { id: string } } }>(
         `query Issue($id: String!) {
           issue(id: $id) {
-            id title description priority priorityLabel identifier
+            id url title description priority priorityLabel identifier
             state { name color }
             assignee { id displayName avatarUrl }
             project { id name }
-            cycle { number startsAt endsAt }
+            cycle { id number startsAt endsAt }
             labels { nodes { name color } }
             startedAt dueDate createdAt updatedAt
             team { id }
@@ -2312,11 +2908,16 @@ function CycleIssueDetailPanel({
             ),
           ]).then(([statesData, membersData]) => {
             if (cancelled) return;
-            console.log("[DETAIL] Loaded", statesData.workflowStates.nodes.length, "states,", membersData.team.members.nodes.length, "members");
             setWorkflowStates(statesData.workflowStates.nodes.sort((a, b) => a.position - b.position));
             setTeamMembers(membersData.team.members.nodes.sort((a, b) => a.displayName.localeCompare(b.displayName)));
           }).catch((err) => { if (!cancelled) console.error("[DETAIL] Failed to load states/members:", err); });
         }
+        // Fetch all projects for the project dropdown
+        linearQuery<{ projects: { nodes: { id: string; name: string }[] } }>(
+          `query { projects(first: 50) { nodes { id name } } }`,
+        ).then((data) => {
+          if (!cancelled) setLinearProjects(data.projects.nodes.sort((a, b) => a.name.localeCompare(b.name)));
+        }).catch(() => {});
       })
       .catch((err) => { if (!cancelled) console.error("Detail fetch error:", err); })
       .finally(() => { if (!cancelled) setLoading(false); });
@@ -2386,6 +2987,15 @@ function CycleIssueDetailPanel({
                 <button className="detail-close" onClick={onClose}>&times;</button>
               </div>
               <h2 className="detail-title">{issue.title}</h2>
+              {issue.url && (
+                <a href={issue.url} target="_blank" rel="noopener noreferrer" style={{
+                  display: "inline-flex", alignItems: "center", gap: 4, marginTop: 8,
+                  fontSize: 12, fontWeight: 600, color: "#6366f1", textDecoration: "none",
+                  padding: "4px 10px", border: "1px solid #e0e0ea", borderRadius: 6, background: "white",
+                }}>
+                  View in Linear &#8599;
+                </a>
+              )}
             </div>
 
             {/* Editable fields */}
@@ -2458,19 +3068,63 @@ function CycleIssueDetailPanel({
                 )}
               </div>
 
-              {/* Project & Priority (read-only) */}
-              <div style={{ display: "flex", gap: 24 }}>
-                {issue.project && (
-                  <div>
-                    <span style={{ fontSize: 11, fontWeight: 600, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em" }}>Project</span>
-                    <div style={{ fontSize: 13, color: "#1e293b", marginTop: 4 }}>{issue.project.name}</div>
-                  </div>
+              {/* Cycle */}
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 600, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 6 }}>
+                  Cycle {saving === "cycleId" && <span style={{ fontWeight: 400, textTransform: "none" }}>(saving...)</span>}
+                </label>
+                <select
+                  value={(issue.cycle as { id?: string } | null)?.id ?? ""}
+                  onChange={(e) => {
+                    const val = e.target.value || null;
+                    updateIssue("cycleId", val as string);
+                    if (!val && onRemovedFromCycle) {
+                      onRemovedFromCycle(issue.id);
+                    }
+                  }}
+                  style={{
+                    fontFamily: "var(--font-sans)", fontSize: 13, padding: "6px 10px",
+                    borderRadius: 6, border: "1px solid #e2e8f0", background: "white", color: "#1e293b",
+                    width: "100%",
+                  }}
+                >
+                  <option value="">No cycle</option>
+                  {cycles.map((c) => (
+                    <option key={c.id} value={c.id}>Cycle {c.number}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Project */}
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 600, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 6 }}>
+                  Project {saving === "projectId" && <span style={{ fontWeight: 400, textTransform: "none" }}>(saving...)</span>}
+                </label>
+                {linearProjects.length > 0 ? (
+                  <select
+                    value={(issue.project as { id?: string } | null)?.id ?? ""}
+                    onChange={(e) => updateIssue("projectId", e.target.value)}
+                    style={{
+                      fontFamily: "var(--font-sans)", fontSize: 13, padding: "6px 10px",
+                      borderRadius: 6, border: "1px solid #e2e8f0", background: "white", color: "#1e293b",
+                      width: "100%",
+                    }}
+                  >
+                    <option value="">No project</option>
+                    {linearProjects.map((p) => (
+                      <option key={p.id} value={p.id}>{p.name}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <div style={{ fontSize: 13, color: "#1e293b" }}>{issue.project?.name ?? "None"}</div>
                 )}
-                <div>
-                  <span style={{ fontSize: 11, fontWeight: 600, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em" }}>Priority</span>
-                  <div style={{ fontSize: 13, color: priorityColor(issue.priority), marginTop: 4 }}>
-                    {priorityIcon(issue.priority)} {issue.priorityLabel}
-                  </div>
+              </div>
+
+              {/* Priority */}
+              <div>
+                <span style={{ fontSize: 11, fontWeight: 600, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em" }}>Priority</span>
+                <div style={{ fontSize: 13, color: priorityColor(issue.priority), marginTop: 4 }}>
+                  {priorityIcon(issue.priority)} {issue.priorityLabel}
                 </div>
               </div>
 
@@ -2544,12 +3198,20 @@ function CyclesView({ cycles, people }: { cycles: LinearCycle[]; people: Person[
   const sectionRefs = useRef<Record<PriorityBucket, HTMLDivElement | null>>({ priority: null, secondary: null, backlog: null });
 
   // Inline edit state
-  const [editingField, setEditingField] = useState<{ issueId: string; field: "owner" | "status" | "dueDate"; x: number; y: number } | null>(null);
+  const [editingField, setEditingField] = useState<{ issueId: string; field: "owner" | "status"; x: number; y: number } | null>(null);
+  const [editingDueId, setEditingDueId] = useState<string | null>(null);
   const [workflowStates, setWorkflowStates] = useState<WorkflowState[]>([]);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [saving, setSaving] = useState<string | null>(null);
   type SortField = "due" | "status" | null;
   const [sortField, setSortField] = useState<SortField>(null);
+
+  // Create task state
+  const [creatingForProject, setCreatingForProject] = useState<string | null>(null);
+  const [newTaskTitle, setNewTaskTitle] = useState("");
+  const [newTaskCreating, setNewTaskCreating] = useState(false);
+  const [projectIdMap, setProjectIdMap] = useState<Record<string, { id: string; teamId: string }>>({});
+  const [defaultTeamId, setDefaultTeamId] = useState<string | null>(null);
 
   // Find this week / last week / next week cycles
   const weeklyCycles = useMemo(() => {
@@ -2588,7 +3250,7 @@ function CyclesView({ cycles, people }: { cycles: LinearCycle[]; people: Person[
         cycle(id: $id) {
           issues(first: 200) {
             nodes {
-              id title priority priorityLabel dueDate
+              id identifier url title priority priorityLabel dueDate
               state { name color }
               assignee { displayName avatarUrl }
               project { name }
@@ -2631,8 +3293,20 @@ function CyclesView({ cycles, people }: { cycles: LinearCycle[]; people: Person[
         }
         setWorkflowStates([...stateMap.values()].sort((a, b) => a.position - b.position));
         setTeamMembers([...memberMap.values()].sort((a, b) => a.displayName.localeCompare(b.displayName)));
+        if (data.teams.nodes.length > 0) setDefaultTeamId(data.teams.nodes[0].id);
       })
       .catch((err) => console.error("[CYCLES] Failed to load teams:", err));
+
+    // Fetch project name -> id mapping
+    linearQuery<{ projects: { nodes: { id: string; name: string; teams: { nodes: { id: string }[] } }[] } }>(
+      `query { projects(first: 50) { nodes { id name teams { nodes { id } } } } }`,
+    ).then((data) => {
+      const map: Record<string, { id: string; teamId: string }> = {};
+      for (const p of data.projects.nodes) {
+        map[p.name] = { id: p.id, teamId: p.teams.nodes[0]?.id ?? "" };
+      }
+      setProjectIdMap(map);
+    }).catch(() => {});
   }, []);
 
   // Collect unique owner names for filter dropdown
@@ -2741,7 +3415,66 @@ function CyclesView({ cycles, people }: { cycles: LinearCycle[]; people: Person[
     } finally {
       setSaving(null);
       setEditingField(null);
+      setEditingDueId(null);
     }
+  };
+
+  const removeFromCycle = async (issueId: string) => {
+    setSaving(issueId);
+    try {
+      const res = await fetch("/api/linear/update", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ issueId, cycleId: null }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        setIssues((prev) => prev.filter((i) => i.id !== issueId));
+      }
+    } catch (err) {
+      console.error("Remove from cycle failed:", err);
+    } finally {
+      setSaving(null);
+    }
+  };
+
+  const createTask = async (projectName: string, title: string) => {
+    if (!title.trim()) return;
+    setNewTaskCreating(true);
+    try {
+      const proj = projectIdMap[projectName];
+      const teamId = proj?.teamId || defaultTeamId;
+      if (!teamId) { console.error("No teamId"); return; }
+      const res = await fetch("/api/linear/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: title.trim(),
+          teamId,
+          projectId: proj?.id ?? undefined,
+          cycleId: selectedCycleId,
+        }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        const i = json.issue;
+        setIssues((prev) => [...prev, {
+          id: i.id,
+          identifier: i.identifier,
+          url: i.url,
+          title: i.title,
+          state: i.state,
+          assignee: i.assignee,
+          project: i.project ?? { name: projectName },
+          dueDate: i.dueDate,
+          priority: i.priority,
+          priorityLabel: i.priorityLabel,
+        }]);
+        setCreatingForProject(null);
+        setNewTaskTitle("");
+      }
+    } catch (err) { console.error("Create failed:", err); }
+    finally { setNewTaskCreating(false); }
   };
 
   const selectStyle: React.CSSProperties = {
@@ -2751,11 +3484,11 @@ function CyclesView({ cycles, people }: { cycles: LinearCycle[]; people: Person[
   };
 
   // Column widths
-  const COL = { title: "1 1 0", owner: "0 0 110px", due: "0 0 90px", status: "0 0 100px" };
+  const COL = { title: "1 1 0", owner: "0 0 130px", due: "0 0 100px", status: "0 0 110px" };
 
   return (
     <>
-    <div style={{ padding: "24px 32px", fontFamily: "var(--font-sans)", maxHeight: "calc(100vh - 120px)", overflow: "auto", maxWidth: 860, margin: "0 auto" }}>
+    <div style={{ padding: "24px 32px", fontFamily: "var(--font-sans)", maxHeight: "calc(100vh - 120px)", overflow: "auto", maxWidth: 1000, margin: "0 auto" }}>
       {cycles.length === 0 && <div style={{ color: "#94a3b8", padding: "40px 0", textAlign: "center" }}>Loading cycles...</div>}
 
       {/* Filters row */}
@@ -2864,8 +3597,8 @@ function CyclesView({ cycles, people }: { cycles: LinearCycle[]; people: Person[
 
           const isEditingOwner = editingField?.issueId === issue.id && editingField.field === "owner";
           const isEditingStatus = editingField?.issueId === issue.id && editingField.field === "status";
-          const isEditingDue = editingField?.issueId === issue.id && editingField.field === "dueDate";
-          const hasActiveDropdown = isEditingOwner || isEditingStatus || isEditingDue;
+          const isEditingDue = editingDueId === issue.id;
+          const hasActiveDropdown = isEditingOwner || isEditingStatus;
 
           return (
             <div
@@ -2884,16 +3617,17 @@ function CyclesView({ cycles, people }: { cycles: LinearCycle[]; people: Person[
               {/* Status dot */}
               <span style={{ width: 8, height: 8, borderRadius: "50%", flexShrink: 0, backgroundColor: issue.state.color }} />
 
-              {/* Title — click to open detail panel */}
+              {/* Title — click opens in Linear */}
               <span
                 onClick={() => setSelectedIssueId(issue.id)}
                 style={{ flex: COL.title, fontWeight: 500, color: "#1e293b", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", cursor: "pointer" }}
                 title={issue.title}
               >
+                {issue.identifier && <span style={{ color: "#94a3b8", fontSize: 10, marginRight: 4 }}>{issue.identifier}</span>}
                 {issue.title}
               </span>
 
-              {/* Owner — clickable */}
+              {/* Owner — clickable dropdown */}
               <span style={{ flex: COL.owner }}>
                 <span
                   onClick={(e) => { e.stopPropagation(); const r = (e.target as HTMLElement).getBoundingClientRect(); setEditingField(isEditingOwner ? null : { issueId: issue.id, field: "owner", x: r.left, y: r.bottom + 4 }); }}
@@ -2908,21 +3642,22 @@ function CyclesView({ cycles, people }: { cycles: LinearCycle[]; people: Person[
                 </span>
               </span>
 
-              {/* Due date — clickable */}
-              <span style={{ flex: COL.due, position: "relative", textAlign: "right" }}>
+              {/* Due date — inline edit (not a dropdown) */}
+              <span style={{ flex: COL.due, textAlign: "right" }}>
                 {isEditingDue ? (
                   <span onClick={(e) => e.stopPropagation()} style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
                     <input
                       type="date"
                       autoFocus
                       defaultValue={issue.dueDate ? issue.dueDate.split("T")[0] : ""}
-                      onChange={(e) => updateIssueField(issue.id, "dueDate", e.target.value)}
-                      style={{ fontFamily: "var(--font-sans)", fontSize: 11, padding: "2px 4px", border: "1px solid #e2e8f0", borderRadius: 4, width: 110 }}
+                      onChange={(e) => { if (e.target.value) updateIssueField(issue.id, "dueDate", e.target.value); }}
+                      onBlur={() => setEditingDueId(null)}
+                      style={{ fontFamily: "var(--font-sans)", fontSize: 11, padding: "2px 4px", border: "1px solid #e2e8f0", borderRadius: 4, width: 105 }}
                     />
                     {issue.dueDate && (
                       <button
-                        onClick={() => updateIssueField(issue.id, "dueDate", "")}
-                        style={{ fontSize: 10, color: "#dc2626", background: "none", border: "none", cursor: "pointer", padding: 0 }}
+                        onMouseDown={(e) => { e.preventDefault(); updateIssueField(issue.id, "dueDate", ""); }}
+                        style={{ fontSize: 12, color: "#dc2626", background: "none", border: "none", cursor: "pointer", padding: "0 2px", lineHeight: 1 }}
                         title="Remove due date"
                       >
                         &times;
@@ -2931,7 +3666,7 @@ function CyclesView({ cycles, people }: { cycles: LinearCycle[]; people: Person[
                   </span>
                 ) : (
                   <span
-                    onClick={(e) => { e.stopPropagation(); const r = (e.target as HTMLElement).getBoundingClientRect(); setEditingField({ issueId: issue.id, field: "dueDate", x: r.left, y: r.bottom + 4 }); }}
+                    onClick={(e) => { e.stopPropagation(); setEditingDueId(issue.id); }}
                     style={{
                       fontSize: 11, color: issue.dueDate ? "#475569" : "#cbd5e1", cursor: "pointer",
                       padding: "2px 6px", borderRadius: 4, border: "1px solid transparent",
@@ -2944,7 +3679,7 @@ function CyclesView({ cycles, people }: { cycles: LinearCycle[]; people: Person[
                 )}
               </span>
 
-              {/* Status — clickable */}
+              {/* Status — clickable dropdown */}
               <span style={{ flex: COL.status }}>
                 <span
                   onClick={(e) => { e.stopPropagation(); const r = (e.target as HTMLElement).getBoundingClientRect(); setEditingField(isEditingStatus ? null : { issueId: issue.id, field: "status", x: r.right, y: r.bottom + 4 }); }}
@@ -2956,6 +3691,17 @@ function CyclesView({ cycles, people }: { cycles: LinearCycle[]; people: Person[
                 >
                   {issue.state.name}
                 </span>
+              </span>
+
+              {/* Remove from cycle */}
+              <span
+                onClick={(e) => { e.stopPropagation(); if (confirm("Remove this task from the current cycle?")) removeFromCycle(issue.id); }}
+                title="Remove from cycle"
+                style={{ flexShrink: 0, cursor: "pointer", fontSize: 12, color: "#cbd5e1", padding: "0 2px", lineHeight: 1 }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLSpanElement).style.color = "#dc2626"; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLSpanElement).style.color = "#cbd5e1"; }}
+              >
+                &times;
               </span>
             </div>
           );
@@ -3012,10 +3758,54 @@ function CyclesView({ cycles, people }: { cycles: LinearCycle[]; people: Person[
                       </span>
                       <span style={{ fontSize: 12, opacity: 0.5, flexShrink: 0 }}>&#x2630;</span>
                       <span style={{ flex: 1 }}>{projectName}</span>
+                      <span
+                        onClick={(e) => { e.stopPropagation(); e.preventDefault(); setCreatingForProject(creatingForProject === projectName ? null : projectName); setNewTaskTitle(""); }}
+                        onMouseDown={(e) => e.stopPropagation()}
+                        style={{ fontSize: 16, fontWeight: 700, cursor: "pointer", opacity: 0.7, padding: "0 4px", lineHeight: 1 }}
+                        title="Add task"
+                      >+</span>
                       <span style={{ fontSize: 11, fontWeight: 500, opacity: 0.8 }}>
                         {projectIssues.length}
                       </span>
                     </div>
+
+                    {/* Inline create task form */}
+                    {creatingForProject === projectName && (
+                      <div style={{
+                        display: "flex", alignItems: "center", gap: 6, padding: "6px 12px",
+                        background: hexToRgba(pColor, 0.06), borderBottom: `1px solid ${hexToRgba(pColor, 0.15)}`,
+                      }}>
+                        <input
+                          type="text"
+                          placeholder="New task title..."
+                          value={newTaskTitle}
+                          onChange={(e) => setNewTaskTitle(e.target.value)}
+                          autoFocus
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" && newTaskTitle.trim()) createTask(projectName, newTaskTitle);
+                            if (e.key === "Escape") { setCreatingForProject(null); setNewTaskTitle(""); }
+                          }}
+                          style={{ flex: 1, fontFamily: "var(--font-sans)", fontSize: 12, padding: "4px 8px", border: "1px solid #e2e8f0", borderRadius: 4, outline: "none" }}
+                        />
+                        <button
+                          onClick={() => createTask(projectName, newTaskTitle)}
+                          disabled={!newTaskTitle.trim() || newTaskCreating}
+                          style={{
+                            fontFamily: "var(--font-sans)", fontSize: 11, fontWeight: 600, padding: "4px 10px",
+                            border: "none", borderRadius: 4, cursor: newTaskTitle.trim() ? "pointer" : "default",
+                            background: newTaskTitle.trim() ? pColor : "#cbd5e1", color: "white",
+                          }}
+                        >
+                          {newTaskCreating ? "..." : "Create"}
+                        </button>
+                        <button
+                          onClick={() => { setCreatingForProject(null); setNewTaskTitle(""); }}
+                          style={{ fontFamily: "var(--font-sans)", fontSize: 11, padding: "4px 8px", border: "1px solid #e2e8f0", borderRadius: 4, background: "white", cursor: "pointer" }}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    )}
 
                     {/* Column headers — Due and Status are sortable */}
                     <div style={{
@@ -3159,6 +3949,11 @@ function CyclesView({ cycles, people }: { cycles: LinearCycle[]; people: Person[
       <CycleIssueDetailPanel
         issueId={selectedIssueId}
         onClose={() => setSelectedIssueId(null)}
+        cycles={cycles}
+        onRemovedFromCycle={(id) => {
+          setIssues((prev) => prev.filter((i) => i.id !== id));
+          setSelectedIssueId(null);
+        }}
         onUpdated={(id, changes) => {
           setIssues((prev) => prev.map((issue) => {
             if (issue.id !== id) return issue;
@@ -3177,7 +3972,7 @@ function CyclesView({ cycles, people }: { cycles: LinearCycle[]; people: Person[
 
 export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps) {
   const [search, setSearch] = useState("");
-  const [viewMode, setViewMode] = useState<"projects" | "subtestEdits" | "cycles">("projects");
+  const [viewMode, setViewMode] = useState<"projects" | "subtestEdits" | "cycles" | "futureProjects">("projects");
   const [filterTeams, setFilterTeams] = useState<Set<string>>(new Set());
   const [filterPeople, setFilterPeople] = useState<Set<string>>(new Set());
   const [selected, setSelected] = useState<{
@@ -3267,6 +4062,25 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
     check();
     window.addEventListener("resize", check);
     return () => window.removeEventListener("resize", check);
+  }, []);
+
+  // ── Mouse wheel zoom (Ctrl/Cmd + scroll) ───────────────────────────────
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const handler = (e: WheelEvent) => {
+      if (!e.ctrlKey && !e.metaKey) return;
+      e.preventDefault();
+      const order: ZoomLevel[] = ["month", "biweekly", "week"];
+      setZoom((prev) => {
+        const idx = order.indexOf(prev);
+        if (e.deltaY < 0 && idx < order.length - 1) return order[idx + 1]; // zoom in
+        if (e.deltaY > 0 && idx > 0) return order[idx - 1]; // zoom out
+        return prev;
+      });
+    };
+    el.addEventListener("wheel", handler, { passive: false });
+    return () => el.removeEventListener("wheel", handler);
   }, []);
 
   // ── Toast helpers ─────────────────────────────────────────────────────
@@ -3453,7 +4267,7 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
         project(id: $projectId) {
           issues(first: 250) {
             nodes {
-              id title priority priorityLabel
+              id identifier url title priority priorityLabel
               state { name color type }
               assignee { id displayName avatarUrl }
               labels { nodes { name color } }
@@ -3488,6 +4302,8 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
 
           bars.push({
             issueId: issue.id,
+            identifier: (issue as unknown as { identifier?: string }).identifier,
+            url: (issue as unknown as { url?: string }).url,
             title: issue.title,
             cleanedTitle: cleanTitle(issue.title),
             assigneeName: personName,
@@ -3852,6 +4668,7 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
         personName,
         originalPersonName: personName,
         linearIssueId,
+        linearProjectName: project.linearProjectName,
         mode,
         reorderMode: false,
         mouseX: e.clientX,
@@ -4064,19 +4881,28 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
       ds.currentStartMonth !== ds.originalStartMonth ||
       ds.currentDuration !== ds.originalDuration;
 
+    // Find the dragged project's name so we can sync siblings
+    let draggedProjectName: string | null = null;
+    for (const person of localPeople) {
+      const proj = person.projects.find((p) => p.id === ds.projectId);
+      if (proj) { draggedProjectName = proj.name; break; }
+    }
+
     // Apply changes to local state only if something changed
     if (changed) {
       setLocalPeople((prev) =>
         prev.map((person) => ({
           ...person,
           projects: person.projects.map((proj) => {
-            if (proj.id !== ds.projectId) return proj;
-            return {
-              ...proj,
-              startMonth: ds.currentStartMonth,
-              duration: ds.currentDuration,
-              order: proj.order ?? ds.originalLane,
-            };
+            // Move the dragged project
+            if (proj.id === ds.projectId) {
+              return { ...proj, startMonth: ds.currentStartMonth, duration: ds.currentDuration, order: proj.order ?? ds.originalLane };
+            }
+            // Also move sibling projects with the same name on OTHER people
+            if (draggedProjectName && proj.name === draggedProjectName && person.name !== ds.personName) {
+              return { ...proj, startMonth: ds.currentStartMonth, duration: ds.currentDuration };
+            }
+            return proj;
           }),
         })),
       );
@@ -4093,12 +4919,29 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
         newStart: ds.currentStartMonth,
         newDuration: ds.currentDuration,
       });
+      // Save the dragged project
       const key = `${ds.personName}:${ds.projectId}`;
       saveOverride("updatePosition", {
         key,
         startMonth: ds.currentStartMonth,
         duration: ds.currentDuration,
       }).catch((err) => console.error("Failed to save position override:", err));
+
+      // Also save sibling projects
+      if (draggedProjectName) {
+        for (const person of localPeople) {
+          if (person.name === ds.personName) continue;
+          for (const proj of person.projects) {
+            if (proj.name === draggedProjectName) {
+              saveOverride("updatePosition", {
+                key: `${person.name}:${proj.id}`,
+                startMonth: ds.currentStartMonth,
+                duration: ds.currentDuration,
+              }).catch(() => {});
+            }
+          }
+        }
+      }
     }
 
     // If this was a Linear-linked bar and dates changed, update in Linear
@@ -4180,19 +5023,87 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
 
   // ── Add project handler ────────────────────────────────────────────────
   const handleAddProject = useCallback(
-    (personName: string, name: string, startMonth: number, duration: number) => {
+    async (data: { name: string; owner: string; startDate: string; endDate: string; notes: string }) => {
+      const startMonth = dateToMonthIndex(data.startDate);
+      const endMonth = dateToMonthIndex(data.endDate);
+      const duration = Math.max(1, endMonth - startMonth);
+      const projectId = newProjId();
+
+      // Only create in Linear for Engineering, Product, Data Science teams
+      const LINEAR_TEAMS = new Set(["Engineering", "Product", "Data Science"]);
+      const ownerPerson = localPeople.find((p) => p.name === data.owner);
+      const shouldCreateInLinear = ownerPerson && LINEAR_TEAMS.has(ownerPerson.team);
+      let linearName: string | null = shouldCreateInLinear ? data.name : null;
+      try {
+        if (!shouldCreateInLinear) throw new Error("skip");
+        // Get default team ID
+        const teamsData = await linearQuery<{ teams: { nodes: { id: string; name: string; members: { nodes: { id: string; displayName: string }[] } }[] } }>(
+          `query { teams(first: 10) { nodes { id name members(first: 50) { nodes { id displayName } } } } }`,
+        );
+        const mmTeam = teamsData.teams.nodes.find((t) => t.name === "Marker Method");
+        const teamId = mmTeam?.id ?? teamsData.teams.nodes[0]?.id;
+        // Find the owner's Linear user ID
+        const allMembers = teamsData.teams.nodes.flatMap((t) => t.members.nodes);
+        const ownerMember = allMembers.find((m) => {
+          const normalized = normalizeAssigneeName(m.displayName);
+          return normalized === data.owner || m.displayName.toLowerCase() === data.owner.toLowerCase();
+        });
+        if (teamId) {
+          const input: Record<string, unknown> = {
+            name: data.name,
+            teamIds: [teamId],
+            startDate: data.startDate,
+            targetDate: data.endDate,
+          };
+          if (ownerMember) input.leadId = ownerMember.id;
+          const res = await fetch("/api/linear", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              query: `mutation CreateProject($input: ProjectCreateInput!) { projectCreate(input: $input) { success project { id name } } }`,
+              variables: { input },
+            }),
+          });
+          const json = await res.json();
+          if (json.data?.projectCreate?.success) {
+            linearName = json.data.projectCreate.project.name;
+            const newProjLinearId = json.data.projectCreate.project.id;
+            // Add random emoji
+            if (newProjLinearId) {
+              const emojis = [":rocket:", ":star:", ":zap:", ":fire:", ":sparkles:", ":rainbow:", ":tada:", ":gem:", ":trophy:", ":dart:", ":bulb:", ":hammer:", ":wrench:", ":seedling:", ":herb:", ":cactus:", ":mushroom:", ":shell:", ":snowflake:", ":ocean:"];
+              const emoji = emojis[Math.floor(Math.random() * emojis.length)];
+              fetch("/api/linear", { method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ query: `mutation { projectUpdate(id: "${newProjLinearId}", input: { icon: "${emoji}" }) { success } }` }),
+              }).catch(() => {});
+            }
+            // Link to Marker Method! LFG initiative
+            if (newProjLinearId) {
+              fetch("/api/linear", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  query: `mutation { initiativeToProjectCreate(input: { initiativeId: "b20d5d16-f6cf-4c73-840d-2fb9e3635851", projectId: "${newProjLinearId}" }) { success } }`,
+                }),
+              }).catch(() => {});
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Failed to create Linear project:", err);
+      }
+
       const newProject: Project = {
-        id: newProjId(),
-        name,
+        id: projectId,
+        name: data.name,
         startMonth,
         duration,
         tasks: [],
-        linearProjectName: null,
+        linearProjectName: linearName,
       };
 
       setLocalPeople((prev) =>
         prev.map((person) => {
-          if (person.name !== personName) return person;
+          if (person.name !== data.owner) return person;
           return {
             ...person,
             projects: [...person.projects, newProject],
@@ -4201,25 +5112,67 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
       );
 
       saveOverride("addProject", {
-        personName,
-        project: { name, startMonth, duration },
+        personName: data.owner,
+        project: { name: data.name, startMonth, duration },
       }).catch((err) => console.error("Failed to save addition:", err));
 
+      if (data.notes.trim()) {
+        saveOverride("saveDescription", {
+          key: `${data.owner}:${projectId}`,
+          description: data.notes.trim(),
+        }).catch(() => {});
+      }
+
       setAddingForPerson(null);
-      addToast("success", `Added "${name}"`);
+      addToast("success", `Added "${data.name}" (created in Linear)`);
     },
     [addToast],
   );
 
   // ── Delete project handler ─────────────────────────────────────────────
+  const handleMoveToFuture = useCallback(
+    (personName: string, proj: Project) => {
+      // Add to future projects
+      const futureProj = {
+        name: proj.name,
+        description: "",
+        linearProjectId: undefined,
+        linearProjectUrl: undefined,
+      };
+      saveOverride("addFutureProject", { project: futureProj });
+
+      // Remove from ALL owners who have this project (by name)
+      setLocalPeople((prev) =>
+        prev.map((person) => ({
+          ...person,
+          projects: person.projects.filter((p) => p.name !== proj.name),
+        })),
+      );
+      // Persist deletions
+      for (const person of localPeople) {
+        for (const p of person.projects) {
+          if (p.name === proj.name) {
+            saveOverride("deleteProject", { key: `${person.name}:${p.name}` });
+          }
+        }
+      }
+      addToast("success", `Moved "${proj.name}" to Future Projects`);
+    },
+    [addToast, localPeople],
+  );
+
   const handleDeleteProject = useCallback(
     (personName: string, projectId: string, projectName: string) => {
-      // Find the project before deleting for undo
       const person = localPeople.find((p) => p.name === personName);
       const deletedProject = person?.projects.find((p) => p.id === projectId);
       if (deletedProject) {
         pushUndo({ type: "delete", personName, project: deletedProject });
       }
+
+      // Check if any OTHER person still has this project (by name)
+      const otherOwners = localPeople.filter(
+        (p) => p.name !== personName && p.projects.some((proj) => proj.name === projectName)
+      );
 
       setLocalPeople((prev) =>
         prev.map((person) => {
@@ -4235,6 +5188,26 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
       saveOverride("deleteProject", { key }).catch((err) =>
         console.error("Failed to save deletion:", err),
       );
+
+      // If no other owners remain, delete the project from Linear too
+      if (otherOwners.length === 0) {
+        linearQuery<{ projects: { nodes: { id: string }[] } }>(
+          `query FindProject($name: String!) { projects(filter: { name: { eq: $name } }) { nodes { id } } }`,
+          { name: projectName },
+        ).then((data) => {
+          const linearProjectId = data.projects.nodes[0]?.id;
+          if (linearProjectId) {
+            fetch("/api/linear", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                query: `mutation DeleteProject($id: String!) { projectDelete(id: $id) { success } }`,
+                variables: { id: linearProjectId },
+              }),
+            }).catch(() => {});
+          }
+        }).catch(() => {});
+      }
 
       addToast("success", `Removed "${projectName}"`);
     },
@@ -4448,7 +5421,7 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
         viewMode={viewMode}
         onViewMode={(m) => {
           setViewMode(m);
-          if (m === "subtestEdits") setZoom("week");
+          // Tasks view is a list, no zoom change needed
         }}
         teams={teams}
         people={localPeople}
@@ -4458,12 +5431,29 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
         filterPeople={filterPeople}
         onTogglePerson={(p) => setFilterPeople((prev) => { const next = new Set(prev); if (next.has(p)) next.delete(p); else next.add(p); return next; })}
         onClearPeople={() => setFilterPeople(new Set())}
+        onAddProject={() => setAddingForPerson(localPeople[0]?.name ?? "")}
       />
 
       {viewMode === "cycles" ? (
         <CyclesView cycles={cycles} people={localPeople} />
       ) : viewMode === "subtestEdits" ? (
-        <SubtestEditsList bars={linearBars} loading={linearBarsLoading} people={localPeople} onIssueClick={setSelectedLinearIssueId} />
+        <TasksView people={localPeople} onIssueClick={setSelectedLinearIssueId} />
+      ) : viewMode === "futureProjects" ? (
+        <FutureProjectsView
+          people={localPeople}
+          onAssignToRoadmap={(proj, owner, startDate, endDate) => {
+            const startMonth = dateToMonthIndex(startDate);
+            const endMonth = dateToMonthIndex(endDate);
+            const duration = Math.max(1, endMonth - startMonth);
+            const newId = newProjId();
+            setLocalPeople((prev) => prev.map((p) => {
+              if (p.name !== owner) return p;
+              return { ...p, projects: [...p.projects, { id: newId, name: proj.name, startMonth, duration, tasks: [], linearProjectName: proj.name }] };
+            }));
+            saveOverride("addProject", { personName: owner, project: { name: proj.name, startMonth, duration } });
+            addToast("success", `Assigned "${proj.name}" to ${owner}`);
+          }}
+        />
       ) : (
       <div className="roadmap-container" ref={scrollRef}>
         {/* ── Sticky header (phases + month columns) ──────────────────── */}
@@ -4551,7 +5541,17 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
                     style={{
                       width: SIDEBAR_WIDTH,
                       height: entry.totalHeight,
-                      backgroundColor: rowBg,
+                      backgroundColor: (() => {
+                        // Blend person color with white at the row alpha to get an opaque color
+                        const alpha = entry.personIndex % 2 === 0 ? 0.10 : 0.16;
+                        const r = parseInt(entry.person.color.slice(1, 3), 16);
+                        const g = parseInt(entry.person.color.slice(3, 5), 16);
+                        const b = parseInt(entry.person.color.slice(5, 7), 16);
+                        const br = Math.round(r * alpha + 240 * (1 - alpha));
+                        const bg = Math.round(g * alpha + 240 * (1 - alpha));
+                        const bb = Math.round(b * alpha + 240 * (1 - alpha));
+                        return `rgb(${br},${bg},${bb})`;
+                      })(),
                     }}
                   >
                     <div
@@ -4830,9 +5830,9 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
           }}
         >
           <AddProjectForm
-            onAdd={(name, startMonth, duration) =>
-              handleAddProject(addingForPerson, name, startMonth, duration)
-            }
+            people={localPeople}
+            defaultOwner={addingForPerson}
+            onAdd={handleAddProject}
             onCancel={() => setAddingForPerson(null)}
           />
         </div>
@@ -4860,6 +5860,25 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
           people={localPeople}
           onChangeOwner={handleChangeOwner}
           onUpdateDates={handleUpdateDates}
+          onAddProjectToPerson={(pName, proj) => {
+            const newId = newProjId();
+            setLocalPeople((prev) => prev.map((p) => {
+              if (p.name !== pName) return p;
+              return { ...p, projects: [...p.projects, { id: newId, name: proj.name, startMonth: proj.startMonth, duration: proj.duration, tasks: [], linearProjectName: proj.linearProjectName }] };
+            }));
+            saveOverride("addProject", { personName: pName, project: { name: proj.name, startMonth: proj.startMonth, duration: proj.duration } });
+          }}
+          onRemoveProjectFromPerson={(pName, projId) => {
+            const proj = localPeople.find((p) => p.name === pName)?.projects.find((p) => p.id === projId);
+            if (proj) {
+              setLocalPeople((prev) => prev.map((p) => {
+                if (p.name !== pName) return p;
+                return { ...p, projects: p.projects.filter((pr) => pr.id !== projId) };
+              }));
+              saveOverride("deleteProject", { key: `${pName}:${proj.name}` });
+            }
+          }}
+          onMoveToFuture={handleMoveToFuture}
         />
       )}
 
@@ -4880,6 +5899,25 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
           people={localPeople}
           onChangeOwner={handleChangeOwner}
           onUpdateDates={handleUpdateDates}
+          onAddProjectToPerson={(pName, proj) => {
+            const newId = newProjId();
+            setLocalPeople((prev) => prev.map((p) => {
+              if (p.name !== pName) return p;
+              return { ...p, projects: [...p.projects, { id: newId, name: proj.name, startMonth: proj.startMonth, duration: proj.duration, tasks: [], linearProjectName: proj.linearProjectName }] };
+            }));
+            saveOverride("addProject", { personName: pName, project: { name: proj.name, startMonth: proj.startMonth, duration: proj.duration } });
+          }}
+          onRemoveProjectFromPerson={(pName, projId) => {
+            const proj = localPeople.find((p) => p.name === pName)?.projects.find((p) => p.id === projId);
+            if (proj) {
+              setLocalPeople((prev) => prev.map((p) => {
+                if (p.name !== pName) return p;
+                return { ...p, projects: p.projects.filter((pr) => pr.id !== projId) };
+              }));
+              saveOverride("deleteProject", { key: `${pName}:${proj.name}` });
+            }
+          }}
+          onMoveToFuture={handleMoveToFuture}
         />
       )}
 

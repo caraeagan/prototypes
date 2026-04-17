@@ -14,7 +14,11 @@
 
 body {
   font-family: var(--font-sans);
-  background-color: #f8f9fb;
+  background-color: #fff;
+  background-image:
+    linear-gradient(rgba(234, 179, 8, 0.12) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(234, 179, 8, 0.12) 1px, transparent 1px);
+  background-size: 96px 96px;
   color: #1a1a2e;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -173,8 +177,8 @@ body {
   position: sticky;
   left: 0;
   z-index: 12;
-  background: #fff;
-  border-right: 1px solid #e8e8ef;
+  background: #f1f2f6;
+  border-right: 1px solid #d1d5db;
   display: flex;
   align-items: flex-end;
   padding: 0 16px 8px;
@@ -191,9 +195,9 @@ body {
   flex-shrink: 0;
   position: sticky;
   left: 0;
-  z-index: 5;
-  background: #fff;
-  border-right: 1px solid #e8e8ef;
+  z-index: 10;
+  background: #f1f2f6;
+  border-right: 1px solid #d1d5db;
   display: flex;
   align-items: center;
   gap: 10px;
