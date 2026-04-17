@@ -2731,97 +2731,128 @@ function FutureProjectsView({ people, onAssignToRoadmap }: { people: Person[]; o
 
   const selectedProj = selectedIdx !== null ? projects[selectedIdx] : null;
 
+  const labelStyle: React.CSSProperties = { fontSize: 11, fontWeight: 600, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.04em", display: "block", marginBottom: 6 };
+  const inputStyle: React.CSSProperties = { fontFamily: "var(--font-sans)", fontSize: 14, padding: "8px 12px", borderRadius: 8, border: "1px solid #e2e8f0", width: "100%", outline: "none" };
+
   return (
-    <div style={{ padding: "24px 32px", fontFamily: "var(--font-sans)", maxHeight: "calc(100vh - 120px)", overflow: "auto", maxWidth: 700, margin: "0 auto" }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
-        <div>
-          <h2 style={{ fontSize: 18, fontWeight: 800, color: "#22c55e", margin: 0 }}>Future Projects</h2>
-          <p style={{ fontSize: 12, color: "#94a3b8", margin: 0 }}>Unassigned projects. Click to assign to roadmap.</p>
+    <div style={{ display: "flex", fontFamily: "var(--font-sans)", height: "calc(100vh - 120px)", overflow: "hidden" }}>
+      {/* Left — project list */}
+      <div style={{ flex: "0 0 360px", borderRight: "1px solid #e2e8f0", overflow: "auto", padding: "24px" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+          <h2 style={{ fontSize: 20, fontWeight: 800, color: "#22c55e", margin: 0 }}>Future Projects</h2>
+          <button
+            onClick={() => setAdding(!adding)}
+            style={{ fontFamily: "var(--font-sans)", fontSize: 20, fontWeight: 700, width: 36, height: 36, borderRadius: "50%", border: "none", background: "#22c55e", color: "white", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+          >+</button>
         </div>
-        <button
-          onClick={() => setAdding(!adding)}
-          style={{ fontFamily: "var(--font-sans)", fontSize: 20, fontWeight: 700, width: 36, height: 36, borderRadius: "50%", border: "none", background: "#22c55e", color: "white", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
-        >+</button>
+
+        {adding && (
+          <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+            <input type="text" placeholder="Project name" value={newName} onChange={(e) => setNewName(e.target.value)} autoFocus
+              onKeyDown={(e) => { if (e.key === "Enter" && newName.trim()) addProject(); if (e.key === "Escape") setAdding(false); }}
+              style={{ flex: 1, fontFamily: "var(--font-sans)", fontSize: 14, padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: 8, outline: "none" }}
+            />
+            <button onClick={addProject} disabled={!newName.trim() || creating}
+              style={{ fontFamily: "var(--font-sans)", fontSize: 13, fontWeight: 600, padding: "8px 16px", border: "none", borderRadius: 8, background: newName.trim() ? "#22c55e" : "#cbd5e1", color: "white", cursor: newName.trim() ? "pointer" : "default" }}
+            >{creating ? "..." : "Add"}</button>
+          </div>
+        )}
+
+        {loading && <div style={{ color: "#94a3b8", padding: "40px 0", textAlign: "center" }}>Loading...</div>}
+
+        {!loading && projects.length === 0 && !adding && (
+          <div style={{ color: "#94a3b8", padding: "40px 0", textAlign: "center", fontSize: 14 }}>No future projects yet.</div>
+        )}
+
+        {!loading && projects.map((proj, idx) => (
+          <div key={idx}
+            onClick={() => { setSelectedIdx(idx); setAssignOwner(people[0]?.name ?? ""); setAssignStart(new Date().toISOString().split("T")[0]); setAssignEnd(new Date(Date.now() + 90*86400000).toISOString().split("T")[0]); }}
+            style={{
+              display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", marginBottom: 8,
+              background: selectedIdx === idx ? "#f0fdf4" : "white", borderRadius: 10,
+              border: selectedIdx === idx ? "2px solid #22c55e" : "1px solid #e2e8f0",
+              cursor: "pointer", transition: "all 0.1s",
+            }}
+          >
+            <span style={{ fontSize: 16, fontWeight: 600, color: "#1e293b", flex: 1 }}>
+              {proj.name}
+            </span>
+            {proj.linearProjectUrl && (
+              <a href={proj.linearProjectUrl} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}
+                style={{ fontSize: 12, color: "#22c55e", textDecoration: "none", flexShrink: 0 }}>Linear &#8599;</a>
+            )}
+            <span
+              onClick={(e) => { e.stopPropagation(); if (confirm(`Remove "${proj.name}"?`)) removeProject(idx); }}
+              style={{ fontSize: 16, color: "#cbd5e1", padding: "0 4px", lineHeight: 1, flexShrink: 0 }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLSpanElement).style.color = "#dc2626"; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLSpanElement).style.color = "#cbd5e1"; }}
+            >&times;</span>
+          </div>
+        ))}
       </div>
 
-      {adding && (
-        <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
-          <input type="text" placeholder="Project name" value={newName} onChange={(e) => setNewName(e.target.value)} autoFocus
-            onKeyDown={(e) => { if (e.key === "Enter" && newName.trim()) addProject(); if (e.key === "Escape") setAdding(false); }}
-            style={{ flex: 1, fontFamily: "var(--font-sans)", fontSize: 13, padding: "6px 10px", border: "1px solid #e2e8f0", borderRadius: 6, outline: "none" }}
-          />
-          <button onClick={addProject} disabled={!newName.trim() || creating}
-            style={{ fontFamily: "var(--font-sans)", fontSize: 12, fontWeight: 600, padding: "6px 14px", border: "none", borderRadius: 6, background: newName.trim() ? "#22c55e" : "#cbd5e1", color: "white", cursor: newName.trim() ? "pointer" : "default" }}
-          >{creating ? "..." : "Add"}</button>
-        </div>
-      )}
-
-      {loading && <div style={{ color: "#94a3b8", padding: "40px 0", textAlign: "center" }}>Loading...</div>}
-
-      {!loading && projects.length === 0 && !adding && (
-        <div style={{ color: "#94a3b8", padding: "40px 0", textAlign: "center", fontSize: 13 }}>No future projects. Press + to add one.</div>
-      )}
-
-      {!loading && projects.map((proj, idx) => (
-        <div key={idx}
-          onClick={() => { setSelectedIdx(idx); setAssignOwner(people[0]?.name ?? ""); setAssignStart(new Date().toISOString().split("T")[0]); setAssignEnd(new Date(Date.now() + 90*86400000).toISOString().split("T")[0]); }}
-          style={{
-            display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", marginBottom: 6,
-            background: selectedIdx === idx ? "#f0fdf4" : "white", borderRadius: 8,
-            border: selectedIdx === idx ? "1px solid #22c55e" : "1px solid #e2e8f0",
-            cursor: "pointer",
-          }}
-        >
-          <span style={{ fontSize: 14, fontWeight: 600, color: "#1e293b", flex: 1 }}>
-            {proj.name}
-          </span>
-          {proj.linearProjectUrl && (
-            <a href={proj.linearProjectUrl} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}
-              style={{ fontSize: 11, color: "#22c55e", textDecoration: "none" }}>Linear &#8599;</a>
-          )}
-          <span
-            onClick={(e) => { e.stopPropagation(); if (confirm(`Remove "${proj.name}"?`)) removeProject(idx); }}
-            style={{ fontSize: 14, color: "#cbd5e1", padding: "0 2px", lineHeight: 1 }}
-            onMouseEnter={(e) => { (e.currentTarget as HTMLSpanElement).style.color = "#dc2626"; }}
-            onMouseLeave={(e) => { (e.currentTarget as HTMLSpanElement).style.color = "#cbd5e1"; }}
-          >&times;</span>
-        </div>
-      ))}
-
-      {/* Assign panel */}
-      {selectedProj && (
-        <div style={{ marginTop: 16, padding: 16, background: "white", borderRadius: 10, border: "1px solid #22c55e" }}>
-          <div style={{ fontSize: 14, fontWeight: 700, color: "#1e293b", marginBottom: 12 }}>
-            Assign &ldquo;{selectedProj.name}&rdquo; to Roadmap
+      {/* Right — detail/assign panel */}
+      <div style={{ flex: 1, overflow: "auto", padding: "24px 32px" }}>
+        {!selectedProj && (
+          <div style={{ color: "#94a3b8", textAlign: "center", paddingTop: 80, fontSize: 15 }}>
+            Select a project to assign it to the roadmap
           </div>
-          <label style={{ fontSize: 11, fontWeight: 600, color: "#64748b", textTransform: "uppercase", display: "block", marginBottom: 4 }}>Owner</label>
-          <select value={assignOwner} onChange={(e) => setAssignOwner(e.target.value)}
-            style={{ fontFamily: "var(--font-sans)", fontSize: 13, padding: "6px 10px", borderRadius: 6, border: "1px solid #e2e8f0", width: "100%", marginBottom: 10 }}
-          >
-            {people.map((p) => <option key={p.name} value={p.name}>{p.name}</option>)}
-          </select>
-          <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
-            <label style={{ flex: 1, fontSize: 11, fontWeight: 600, color: "#64748b", textTransform: "uppercase" }}>
-              Start
-              <input type="date" value={assignStart} onChange={(e) => setAssignStart(e.target.value)}
-                style={{ fontFamily: "var(--font-sans)", fontSize: 13, padding: "6px 10px", borderRadius: 6, border: "1px solid #e2e8f0", width: "100%", marginTop: 2 }} />
-            </label>
-            <label style={{ flex: 1, fontSize: 11, fontWeight: 600, color: "#64748b", textTransform: "uppercase" }}>
-              End
-              <input type="date" value={assignEnd} onChange={(e) => setAssignEnd(e.target.value)}
-                style={{ fontFamily: "var(--font-sans)", fontSize: 13, padding: "6px 10px", borderRadius: 6, border: "1px solid #e2e8f0", width: "100%", marginTop: 2 }} />
-            </label>
+        )}
+
+        {selectedProj && (
+          <div>
+            <h2 style={{ fontSize: 24, fontWeight: 800, color: "#1e293b", margin: "0 0 6px" }}>{selectedProj.name}</h2>
+            {selectedProj.linearProjectUrl && (
+              <a href={selectedProj.linearProjectUrl} target="_blank" rel="noopener noreferrer"
+                style={{ fontSize: 13, color: "#22c55e", textDecoration: "none", display: "inline-block", marginBottom: 24 }}>
+                View in Linear &#8599;
+              </a>
+            )}
+            {!selectedProj.linearProjectUrl && <div style={{ marginBottom: 24 }} />}
+
+            <div style={{ background: "white", borderRadius: 12, border: "1px solid #e2e8f0", padding: 24 }}>
+              <div style={{ marginBottom: 20 }}>
+                <label style={labelStyle}>Owner</label>
+                <select value={assignOwner} onChange={(e) => setAssignOwner(e.target.value)} style={inputStyle}>
+                  {people.map((p) => <option key={p.name} value={p.name}>{p.name}</option>)}
+                </select>
+              </div>
+
+              <div style={{ display: "flex", gap: 16, marginBottom: 24 }}>
+                <div style={{ flex: 1 }}>
+                  <label style={labelStyle}>Start Date</label>
+                  <input type="date" value={assignStart} onChange={(e) => setAssignStart(e.target.value)} style={inputStyle} />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label style={labelStyle}>End Date</label>
+                  <input type="date" value={assignEnd} onChange={(e) => setAssignEnd(e.target.value)} style={inputStyle} />
+                </div>
+              </div>
+
+              <div style={{ display: "flex", gap: 10 }}>
+                <button onClick={handleAssign}
+                  style={{ fontFamily: "var(--font-sans)", fontSize: 14, fontWeight: 700, padding: "10px 24px", border: "none", borderRadius: 8, background: "#22c55e", color: "white", cursor: "pointer" }}
+                >
+                  Add to Roadmap
+                </button>
+                <button onClick={() => setSelectedIdx(null)}
+                  style={{ fontFamily: "var(--font-sans)", fontSize: 14, padding: "10px 24px", border: "1px solid #e2e8f0", borderRadius: 8, background: "white", cursor: "pointer", color: "#64748b" }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+
+            {/* Remove */}
+            <button
+              onClick={() => { if (confirm(`Remove "${selectedProj.name}" from future projects?`)) removeProject(selectedIdx!); }}
+              style={{ fontFamily: "var(--font-sans)", fontSize: 12, color: "#dc2626", background: "none", border: "none", cursor: "pointer", marginTop: 24, padding: 0 }}
+            >
+              Remove from Future Projects
+            </button>
           </div>
-          <div style={{ display: "flex", gap: 8 }}>
-            <button onClick={handleAssign}
-              style={{ fontFamily: "var(--font-sans)", fontSize: 12, fontWeight: 600, padding: "8px 16px", border: "none", borderRadius: 6, background: "#22c55e", color: "white", cursor: "pointer" }}
-            >Assign to Roadmap</button>
-            <button onClick={() => setSelectedIdx(null)}
-              style={{ fontFamily: "var(--font-sans)", fontSize: 12, padding: "8px 16px", border: "1px solid #e2e8f0", borderRadius: 6, background: "white", cursor: "pointer" }}
-            >Cancel</button>
-          </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
@@ -2832,6 +2863,95 @@ const CYCLE_TEAMS = new Set(["Engineering", "Data Science", "Product"]);
 
 type WorkflowState = { id: string; name: string; color: string; position: number };
 type TeamMember = { id: string; displayName: string; avatarUrl: string | null };
+
+function SearchableProjectSelect({ projects, currentProjectId, currentProjectName, onSelect }: {
+  projects: { id: string; name: string }[];
+  currentProjectId: string | null;
+  currentProjectName: string | null;
+  onSelect: (id: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    requestAnimationFrame(() => document.addEventListener("mousedown", handler));
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  const filtered = search
+    ? projects.filter((p) => p.name.toLowerCase().includes(search.toLowerCase()))
+    : projects;
+
+  return (
+    <div ref={ref} style={{ position: "relative" }}>
+      <button
+        onClick={() => { setOpen(!open); setSearch(""); }}
+        style={{
+          fontFamily: "var(--font-sans)", fontSize: 13, padding: "6px 10px",
+          borderRadius: 6, border: "1px solid #e2e8f0", background: "white", color: "#1e293b",
+          width: "100%", textAlign: "left", cursor: "pointer",
+          display: "flex", justifyContent: "space-between", alignItems: "center",
+        }}
+      >
+        <span>{currentProjectName ?? "No project"}</span>
+        <span style={{ fontSize: 10, opacity: 0.5 }}>{open ? "\u25B2" : "\u25BC"}</span>
+      </button>
+      {open && (
+        <div style={{
+          position: "absolute", top: "100%", left: 0, right: 0, marginTop: 4, zIndex: 200,
+          background: "white", border: "1px solid #e2e8f0", borderRadius: 8,
+          boxShadow: "0 8px 24px rgba(0,0,0,0.12)", overflow: "hidden",
+        }}>
+          <input
+            type="text"
+            placeholder="Search projects..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            autoFocus
+            style={{
+              fontFamily: "var(--font-sans)", fontSize: 13, padding: "8px 10px",
+              border: "none", borderBottom: "1px solid #e2e8f0", width: "100%", outline: "none",
+            }}
+          />
+          <div style={{ maxHeight: 200, overflowY: "auto" }}>
+            <div
+              onClick={() => { onSelect(""); setOpen(false); }}
+              style={{
+                padding: "6px 10px", fontSize: 13, cursor: "pointer",
+                fontWeight: !currentProjectId ? 700 : 400,
+                background: !currentProjectId ? "#f1f5f9" : "transparent",
+              }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.background = "#f8fafc"; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = !currentProjectId ? "#f1f5f9" : "transparent"; }}
+            >
+              No project
+            </div>
+            {filtered.map((p) => (
+              <div
+                key={p.id}
+                onClick={() => { onSelect(p.id); setOpen(false); }}
+                style={{
+                  padding: "6px 10px", fontSize: 13, cursor: "pointer",
+                  fontWeight: p.id === currentProjectId ? 700 : 400,
+                  background: p.id === currentProjectId ? "#f1f5f9" : "transparent",
+                }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.background = "#f8fafc"; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = p.id === currentProjectId ? "#f1f5f9" : "transparent"; }}
+              >
+                {p.name}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 function CycleIssueDetailPanel({
   issueId,
@@ -2944,6 +3064,13 @@ function CycleIssueDetailPanel({
           if (updated.state) changes.state = updated.state;
           if (updated.dueDate !== undefined) changes.dueDate = updated.dueDate;
           if (updated.assignee !== undefined) changes.assignee = updated.assignee;
+          // Handle project change locally
+          if (field === "projectId" && value) {
+            const proj = linearProjects.find((p) => p.id === value);
+            if (proj) changes.project = { id: proj.id, name: proj.name };
+          } else if (field === "projectId" && !value) {
+            changes.project = null;
+          }
           return { ...prev, ...changes };
         });
         // Notify parent to update the list
@@ -3100,24 +3227,12 @@ function CycleIssueDetailPanel({
                 <label style={{ fontSize: 11, fontWeight: 600, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 6 }}>
                   Project {saving === "projectId" && <span style={{ fontWeight: 400, textTransform: "none" }}>(saving...)</span>}
                 </label>
-                {linearProjects.length > 0 ? (
-                  <select
-                    value={(issue.project as { id?: string } | null)?.id ?? ""}
-                    onChange={(e) => updateIssue("projectId", e.target.value)}
-                    style={{
-                      fontFamily: "var(--font-sans)", fontSize: 13, padding: "6px 10px",
-                      borderRadius: 6, border: "1px solid #e2e8f0", background: "white", color: "#1e293b",
-                      width: "100%",
-                    }}
-                  >
-                    <option value="">No project</option>
-                    {linearProjects.map((p) => (
-                      <option key={p.id} value={p.id}>{p.name}</option>
-                    ))}
-                  </select>
-                ) : (
-                  <div style={{ fontSize: 13, color: "#1e293b" }}>{issue.project?.name ?? "None"}</div>
-                )}
+                <SearchableProjectSelect
+                  projects={linearProjects}
+                  currentProjectId={(issue.project as { id?: string } | null)?.id ?? null}
+                  currentProjectName={issue.project?.name ?? null}
+                  onSelect={(id) => updateIssue("projectId", id)}
+                />
               </div>
 
               {/* Priority */}
@@ -3831,7 +3946,7 @@ function CyclesView({ cycles, people }: { cycles: LinearCycle[]; people: Person[
                     </div>
 
                     {/* Task rows */}
-                    <div style={{ border: `1px solid ${hexToRgba(pColor, 0.2)}`, borderTop: "none", borderRadius: "0 0 8px 8px", overflow: "visible", position: "relative" }}>
+                    <div style={{ borderLeft: `1px solid ${hexToRgba(pColor, 0.2)}`, borderRight: `1px solid ${hexToRgba(pColor, 0.2)}`, borderBottom: `1px solid ${hexToRgba(pColor, 0.2)}`, borderTop: "none", borderRadius: "0 0 8px 8px", overflow: "visible", position: "relative" }}>
                       {(() => {
                         let sorted = projectIssues;
                         if (sortField === "due") {

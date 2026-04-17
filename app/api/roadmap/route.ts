@@ -24,6 +24,9 @@ export type RoadmapOverrides = {
   futureProjects?: { name: string; description: string; linearProjectId?: string; linearProjectUrl?: string }[];
 };
 
+// Simple mutex to prevent concurrent read-modify-write races
+let writeLock: Promise<void> = Promise.resolve();
+
 async function readOverrides(): Promise<RoadmapOverrides> {
   try {
     const data = await readFile(OVERRIDES_PATH, "utf-8");
@@ -56,6 +59,12 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  // Serialize all writes through a lock to prevent race conditions
+  let resolve: () => void;
+  const prevLock = writeLock;
+  writeLock = new Promise<void>((r) => { resolve = r; });
+  await prevLock;
+
   try {
     const body = await request.json();
     const { action, ...payload } = body;
@@ -159,8 +168,10 @@ export async function POST(request: NextRequest) {
     }
 
     await writeOverrides(overrides);
+    resolve!();
     return NextResponse.json({ success: true, overrides });
   } catch (error) {
+    resolve!();
     const message =
       error instanceof Error ? error.message : "Unknown error";
     console.error("Failed to save override:", message);

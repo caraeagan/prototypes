@@ -94,10 +94,10 @@ function tid(): string {
   return `task-${_taskCounter}`;
 }
 
-let _projectCounter = 0;
+let _projectCounter = 100;
 function pid(): string {
   _projectCounter += 1;
-  return `proj-${_projectCounter}`;
+  return `proj-added-${_projectCounter}`;
 }
 
 function makeTasks(names: string[], statuses: TaskStatus[]): Task[] {
@@ -119,55 +119,33 @@ export const PEOPLE: Person[] = [
     team: "Engineering",
     projects: [
       {
-        id: pid(),
-        name: "Post Subtest Score Page",
-        linearProjectName: "Post Subtest Score Page",
-        startMonth: 2,
+        id: "p002",
+        name: "iPad Optimization for Examiners",
+        linearProjectName: "iPad Polish",
+        startMonth: 3,
+        duration: 3,
+        order: 1,
+        tasks: [],
+      },
+      {
+        id: "p003",
+        name: "Form Updates",
+        linearProjectName: "Form Updates",
+        startMonth: 1,
+        duration: 5,
+        order: 0,
+        tasks: [],
+      },
+      {
+        id: "p004",
+        name: "File Loading",
+        linearProjectName: "File Loading",
+        startMonth: 1,
         duration: 2,
         tasks: [],
       },
       {
-        id: pid(),
-        name: "Psych Training",
-        linearProjectName: "Psych Training",
-        startMonth: 4,
-        duration: 3,
-        tasks: [],
-      },
-      {
-        id: pid(),
-        name: "iPad Optimization for Examiners",
-        linearProjectName: "iPad Polish",
-        startMonth: 7,
-        duration: 3,
-        tasks: [],
-      },
-      {
-        id: pid(),
-        name: "Form Updates",
-        linearProjectName: "Form Updates",
-        startMonth: 2,
-        duration: 4,
-        tasks: [],
-      },
-      {
-        id: pid(),
-        name: "File Loading",
-        linearProjectName: "File Loading",
-        startMonth: 0,
-        duration: 4,
-        tasks: [],
-      },
-      {
-        id: pid(),
-        name: "CAP",
-        linearProjectName: null,
-        startMonth: 4,
-        duration: 3,
-        tasks: [],
-      },
-      {
-        id: pid(),
+        id: "p005",
         name: "Examiner Onboarding",
         linearProjectName: "Examiner Onboarding",
         startMonth: 0,
@@ -182,7 +160,7 @@ export const PEOPLE: Person[] = [
     team: "Engineering",
     projects: [
       {
-        id: pid(),
+        id: "p006",
         name: "Sizing",
         linearProjectName: null,
         startMonth: 0,
@@ -197,7 +175,7 @@ export const PEOPLE: Person[] = [
     team: "Engineering",
     projects: [
       {
-        id: pid(),
+        id: "p007",
         name: "Internal App Bugs & Improvements",
         linearProjectName: null,
         startMonth: 0,
@@ -212,7 +190,7 @@ export const PEOPLE: Person[] = [
     team: "Engineering",
     projects: [
       {
-        id: pid(),
+        id: "p008",
         name: "PP3 Development",
         linearProjectName: "PP3 Development",
         startMonth: 1,
@@ -220,7 +198,7 @@ export const PEOPLE: Person[] = [
         tasks: [],
       },
       {
-        id: pid(),
+        id: "p009",
         name: "Migration and Foundations",
         linearProjectName: "Migration and Foundations",
         startMonth: 0,
@@ -228,7 +206,7 @@ export const PEOPLE: Person[] = [
         tasks: [],
       },
       {
-        id: pid(),
+        id: "p010",
         name: "Score Review",
         linearProjectName: "Score Review",
         startMonth: 0,
@@ -243,7 +221,7 @@ export const PEOPLE: Person[] = [
     team: "Engineering",
     projects: [
       {
-        id: pid(),
+        id: "p011",
         name: "Animated Instructions",
         linearProjectName: "Animated Instructions",
         startMonth: 0,
@@ -251,7 +229,7 @@ export const PEOPLE: Person[] = [
         tasks: [],
       },
       {
-        id: pid(),
+        id: "p012",
         name: "Examiner Instructions",
         linearProjectName: "Examiner Instructions",
         startMonth: 0,
@@ -259,7 +237,7 @@ export const PEOPLE: Person[] = [
         tasks: [],
       },
       {
-        id: pid(),
+        id: "p013",
         name: "Corrective Feedback",
         linearProjectName: "Corrective Feedback",
         startMonth: 0,
@@ -267,7 +245,7 @@ export const PEOPLE: Person[] = [
         tasks: [],
       },
       {
-        id: pid(),
+        id: "p014",
         name: "Internal App - In Person",
         linearProjectName: null,
         startMonth: 0,
@@ -275,7 +253,7 @@ export const PEOPLE: Person[] = [
         tasks: [],
       },
       {
-        id: pid(),
+        id: "p015",
         name: "Examiner Redesign - Middle Bar and Side Bar",
         linearProjectName: null,
         startMonth: 2,
@@ -290,7 +268,7 @@ export const PEOPLE: Person[] = [
     team: "Engineering",
     projects: [
       {
-        id: pid(),
+        id: "p016",
         name: "Migration and Foundations",
         linearProjectName: "Migration and Foundations",
         startMonth: 0,
@@ -298,7 +276,7 @@ export const PEOPLE: Person[] = [
         tasks: [],
       },
       {
-        id: pid(),
+        id: "p017",
         name: "Internal App Improvements",
         linearProjectName: null,
         startMonth: 1,
@@ -315,7 +293,7 @@ export const PEOPLE: Person[] = [
     team: "Product",
     projects: [
       {
-        id: pid(),
+        id: "p018",
         name: "Corrective Feedback",
         linearProjectName: "Corrective Feedback",
         startMonth: 0,
@@ -323,7 +301,7 @@ export const PEOPLE: Person[] = [
         tasks: [],
       },
       {
-        id: pid(),
+        id: "p019",
         name: "End to End Experience",
         linearProjectName: "End to End Experience",
         startMonth: 0,
@@ -331,7 +309,7 @@ export const PEOPLE: Person[] = [
         tasks: [],
       },
       {
-        id: pid(),
+        id: "p020",
         name: "Math Content Style",
         linearProjectName: "Math Content Style",
         startMonth: 2,
@@ -339,7 +317,7 @@ export const PEOPLE: Person[] = [
         tasks: [],
       },
       {
-        id: pid(),
+        id: "p021",
         name: "Score Review",
         linearProjectName: "Score Review",
         startMonth: 0,
@@ -356,7 +334,7 @@ export const PEOPLE: Person[] = [
     team: "Design",
     projects: [
       {
-        id: pid(),
+        id: "p022",
         name: "PP1 Instructions",
         linearProjectName: null,
         startMonth: 0,
@@ -364,7 +342,7 @@ export const PEOPLE: Person[] = [
         tasks: [],
       },
       {
-        id: pid(),
+        id: "p023",
         name: "PP2 Instructions",
         linearProjectName: null,
         startMonth: 2,
@@ -379,7 +357,7 @@ export const PEOPLE: Person[] = [
     team: "Design",
     projects: [
       {
-        id: pid(),
+        id: "p024",
         name: "PP3 Bilingual Instructions",
         linearProjectName: null,
         startMonth: 0,
@@ -387,7 +365,7 @@ export const PEOPLE: Person[] = [
         tasks: [],
       },
       {
-        id: pid(),
+        id: "p025",
         name: "PP1 Bilingual Instructions",
         linearProjectName: null,
         startMonth: 2,
@@ -395,7 +373,7 @@ export const PEOPLE: Person[] = [
         tasks: [],
       },
       {
-        id: pid(),
+        id: "p026",
         name: "PP2 Bilingual Instructions",
         linearProjectName: null,
         startMonth: 3,
@@ -412,7 +390,7 @@ export const PEOPLE: Person[] = [
     team: "Psychometrics",
     projects: [
       {
-        id: pid(),
+        id: "p027",
         name: "Norm Plan",
         linearProjectName: null,
         startMonth: 0,
@@ -420,7 +398,7 @@ export const PEOPLE: Person[] = [
         tasks: [],
       },
       {
-        id: pid(),
+        id: "p028",
         name: "PP3 data analysis",
         linearProjectName: null,
         startMonth: 0,
@@ -435,7 +413,7 @@ export const PEOPLE: Person[] = [
     team: "Psychometrics",
     projects: [
       {
-        id: pid(),
+        id: "p029",
         name: "CAP (Referral Packet Analysis)",
         linearProjectName: null,
         startMonth: 3,
@@ -452,7 +430,7 @@ export const PEOPLE: Person[] = [
     team: "Operations & GTM",
     projects: [
       {
-        id: pid(),
+        id: "p030",
         name: "Examiner revamp",
         linearProjectName: null,
         startMonth: 0,
@@ -460,7 +438,7 @@ export const PEOPLE: Person[] = [
         tasks: [],
       },
       {
-        id: pid(),
+        id: "p031",
         name: "Async training website",
         linearProjectName: null,
         startMonth: 0,
@@ -468,7 +446,7 @@ export const PEOPLE: Person[] = [
         tasks: [],
       },
       {
-        id: pid(),
+        id: "p032",
         name: "Hiring examiners",
         linearProjectName: null,
         startMonth: 0,
@@ -476,7 +454,7 @@ export const PEOPLE: Person[] = [
         tasks: [],
       },
       {
-        id: pid(),
+        id: "p033",
         name: "Reporting",
         linearProjectName: null,
         startMonth: 2,
@@ -484,7 +462,7 @@ export const PEOPLE: Person[] = [
         tasks: [],
       },
       {
-        id: pid(),
+        id: "p034",
         name: "Financial model",
         linearProjectName: null,
         startMonth: 3,
@@ -492,7 +470,7 @@ export const PEOPLE: Person[] = [
         tasks: [],
       },
       {
-        id: pid(),
+        id: "p035",
         name: "Examiner booklets",
         linearProjectName: null,
         startMonth: 4,
@@ -507,7 +485,7 @@ export const PEOPLE: Person[] = [
     team: "Operations & GTM",
     projects: [
       {
-        id: pid(),
+        id: "p036",
         name: "Recruitment & Hard to reach dem challenge",
         linearProjectName: null,
         startMonth: 0,
@@ -515,7 +493,7 @@ export const PEOPLE: Person[] = [
         tasks: [],
       },
       {
-        id: pid(),
+        id: "p037",
         name: "Human Rater",
         linearProjectName: "Human Rater",
         startMonth: 2,
@@ -523,7 +501,7 @@ export const PEOPLE: Person[] = [
         tasks: [],
       },
       {
-        id: pid(),
+        id: "p038",
         name: "In person sessions",
         linearProjectName: null,
         startMonth: 0,
@@ -531,7 +509,7 @@ export const PEOPLE: Person[] = [
         tasks: [],
       },
       {
-        id: pid(),
+        id: "p039",
         name: "Examiner training program",
         linearProjectName: null,
         startMonth: 1,
@@ -539,7 +517,7 @@ export const PEOPLE: Person[] = [
         tasks: [],
       },
       {
-        id: pid(),
+        id: "p040",
         name: "Hiring examiners",
         linearProjectName: null,
         startMonth: 0,
@@ -547,7 +525,7 @@ export const PEOPLE: Person[] = [
         tasks: [],
       },
       {
-        id: pid(),
+        id: "p041",
         name: "Participant & examiner support",
         linearProjectName: null,
         startMonth: 2,
@@ -562,7 +540,7 @@ export const PEOPLE: Person[] = [
     team: "Operations & GTM",
     projects: [
       {
-        id: pid(),
+        id: "p042",
         name: "User research",
         linearProjectName: null,
         startMonth: 0,
@@ -570,7 +548,7 @@ export const PEOPLE: Person[] = [
         tasks: [],
       },
       {
-        id: pid(),
+        id: "p043",
         name: "Hiring examiners",
         linearProjectName: null,
         startMonth: 1,
@@ -591,7 +569,7 @@ export const PEOPLE: Person[] = [
     team: "Operations & GTM",
     projects: [
       {
-        id: pid(),
+        id: "p044",
         name: "Content updates & Data analysis with Erica",
         linearProjectName: null,
         startMonth: 0,
@@ -599,7 +577,7 @@ export const PEOPLE: Person[] = [
         tasks: [],
       },
       {
-        id: pid(),
+        id: "p045",
         name: "Examiner training",
         linearProjectName: null,
         startMonth: 1,
@@ -607,7 +585,7 @@ export const PEOPLE: Person[] = [
         tasks: [],
       },
       {
-        id: pid(),
+        id: "p046",
         name: "Participant & examiner support",
         linearProjectName: null,
         startMonth: 3,
@@ -624,15 +602,7 @@ export const PEOPLE: Person[] = [
     team: "Data Science",
     projects: [
       {
-        id: pid(),
-        name: "Subtest Adaptive Algorithm",
-        linearProjectName: null,
-        startMonth: 2,
-        duration: 3,
-        tasks: [],
-      },
-      {
-        id: pid(),
+        id: "p047",
         name: "Internal App",
         linearProjectName: "Internal App",
         startMonth: 0,
@@ -640,15 +610,7 @@ export const PEOPLE: Person[] = [
         tasks: [],
       },
       {
-        id: pid(),
-        name: "Data analysis",
-        linearProjectName: null,
-        startMonth: 0,
-        duration: 1,
-        tasks: [],
-      },
-      {
-        id: pid(),
+        id: "p048",
         name: "Norming Stats",
         linearProjectName: "Norming Stats",
         startMonth: 4,
@@ -656,7 +618,7 @@ export const PEOPLE: Person[] = [
         tasks: [],
       },
       {
-        id: pid(),
+        id: "p049",
         name: "Human Rater",
         linearProjectName: "Human Rater",
         startMonth: 2,
@@ -664,15 +626,7 @@ export const PEOPLE: Person[] = [
         tasks: [],
       },
       {
-        id: pid(),
-        name: "AI scoring",
-        linearProjectName: null,
-        startMonth: 2,
-        duration: 4,
-        tasks: [],
-      },
-      {
-        id: pid(),
+        id: "p050",
         name: "Data",
         linearProjectName: "Data",
         startMonth: 0,
