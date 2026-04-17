@@ -109,6 +109,12 @@
     {
       "name": "shadCN Migration",
       "description": ""
+    },
+    {
+      "name": "HIPPA",
+      "description": "",
+      "linearProjectId": "16924b14-1033-428b-88b6-b1720ca26495",
+      "linearProjectUrl": "https://linear.app/markerlearning/project/hippa-5cdb6df4f077"
     }
   ],
   "deletions": [
