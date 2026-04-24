@@ -165,7 +165,64 @@ type RoadmapViewProps = {
   months: string[];
   phases: Phase[];
   teams: Team[];
+  initialOverrides?: RoadmapOverrides;
 };
+
+function mergeOverridesIntoPeople(
+  people: Person[],
+  ov: RoadmapOverrides,
+): Person[] {
+  let updated: Person[] = people.map((person) => ({
+    ...person,
+    projects: person.projects
+      .filter((proj) => {
+        const key = `${person.name}:${proj.name}`;
+        return !ov.deletions?.includes(key);
+      })
+      .map((proj): Project => {
+        const key = `${person.name}:${proj.name}`;
+        const keyById = `${person.name}:${proj.id}`;
+        const posOv = ov.positions?.[key] ?? ov.positions?.[keyById];
+        const renameOv = ov.renames?.[key];
+        return {
+          ...proj,
+          name: renameOv || proj.name,
+          startMonth: posOv?.startMonth ?? proj.startMonth,
+          duration: posOv?.duration ?? proj.duration,
+          order: posOv?.order ?? proj.order,
+        };
+      }),
+  }));
+
+  if (ov.additions) {
+    const deleted = new Set(ov.deletions ?? []);
+    for (const [personName, additions] of Object.entries(ov.additions)) {
+      updated = updated.map((person) => {
+        if (person.name !== personName) return person;
+        const newProjects: Project[] = additions
+          .filter((a) => !deleted.has(`${personName}:${a.name}`))
+          .map((a) => {
+            const stableId = `proj-added-${personName}-${a.name}`;
+            const nameKey = `${personName}:${a.name}`;
+            const idKey = `${personName}:${stableId}`;
+            const posOv = ov.positions?.[nameKey] ?? ov.positions?.[idKey];
+            return {
+              id: stableId,
+              name: a.name,
+              startMonth: posOv?.startMonth ?? a.startMonth,
+              duration: posOv?.duration ?? a.duration,
+              order: posOv?.order,
+              tasks: [],
+              linearProjectName: null,
+            };
+          });
+        return { ...person, projects: [...person.projects, ...newProjects] };
+      });
+    }
+  }
+
+  return updated;
+}
 
 // ── Status helpers ─────────────────────────────────────────────────────────
 
@@ -4212,7 +4269,7 @@ function CyclesView({ cycles, people }: { cycles: LinearCycle[]; people: Person[
   );
 }
 
-export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps) {
+export function RoadmapView({ people, months, phases, teams, initialOverrides }: RoadmapViewProps) {
   const [search, setSearch] = useState("");
   const [viewMode, setViewMode] = useState<"projects" | "subtestEdits" | "cycles" | "futureProjects">("projects");
   const [filterTeams, setFilterTeams] = useState<Set<string>>(new Set());
@@ -4232,13 +4289,30 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
   const [hoveredProject, setHoveredProject] = useState<string | null>(null);
   const [zoom, setZoom] = useState<ZoomLevel>("month");
   const [collapsedTeams, setCollapsedTeams] = useState<Set<string>>(new Set());
-  const [localPeople, setLocalPeople] = useState<Person[]>(people);
+  const [localPeople, setLocalPeople] = useState<Person[]>(() =>
+    initialOverrides ? mergeOverridesIntoPeople(people, initialOverrides) : people,
+  );
   const [dragState, setDragState] = useState<DragState | null>(null);
   const [syncStatus, setSyncStatus] = useState<{
     state: "loading" | "synced" | "error";
     message: string;
     at: number;
-  }>({ state: "loading", message: "Loading saved state…", at: Date.now() });
+  }>(() =>
+    initialOverrides
+      ? {
+          state: "synced",
+          message: `Loaded ${Object.keys(initialOverrides.positions ?? {}).length} positions`,
+          at: 0,
+        }
+      : { state: "loading", message: "Loading saved state…", at: 0 },
+  );
+
+  // Stamp `at` with a real timestamp only after hydration — Date.now() at
+  // render time would produce a different value on server vs client and break
+  // the `title={new Date(syncStatus.at).toLocaleTimeString()}` hydration match.
+  useEffect(() => {
+    setSyncStatus((s) => (s.at === 0 ? { ...s, at: Date.now() } : s));
+  }, []);
 
   // Undo stack
   type UndoAction = { type: "move"; projectId: string; personName: string; prevStart: number; prevDuration: number; newStart: number; newDuration: number }
@@ -4275,7 +4349,9 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
   const [renameValue, setRenameValue] = useState("");
 
   // Dependencies
-  const [dependencies, setDependencies] = useState<DependencyLink[]>([]);
+  const [dependencies, setDependencies] = useState<DependencyLink[]>(
+    () => initialOverrides?.dependencies ?? [],
+  );
   const [linkingState, setLinkingState] = useState<LinkingState | null>(null);
 
   // Mobile state
@@ -4440,56 +4516,7 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
   // ── Apply overrides to seed data (pure function of blob state) ────────
   const applyOverridesToSeed = useCallback(
     (ov: RoadmapOverrides) => {
-      let updated: Person[] = people.map((person) => ({
-        ...person,
-        projects: person.projects
-          .filter((proj) => {
-            const key = `${person.name}:${proj.name}`;
-            return !ov.deletions?.includes(key);
-          })
-          .map((proj): Project => {
-            const key = `${person.name}:${proj.name}`;
-            const keyById = `${person.name}:${proj.id}`;
-            const posOv = ov.positions?.[key] ?? ov.positions?.[keyById];
-            const renameOv = ov.renames?.[key];
-            return {
-              ...proj,
-              name: renameOv || proj.name,
-              startMonth: posOv?.startMonth ?? proj.startMonth,
-              duration: posOv?.duration ?? proj.duration,
-              order: posOv?.order ?? proj.order,
-            };
-          }),
-      }));
-
-      if (ov.additions) {
-        const deleted = new Set(ov.deletions ?? []);
-        for (const [personName, additions] of Object.entries(ov.additions)) {
-          updated = updated.map((person) => {
-            if (person.name !== personName) return person;
-            const newProjects: Project[] = additions
-              .filter((a) => !deleted.has(`${personName}:${a.name}`))
-              .map((a) => {
-                const stableId = `proj-added-${personName}-${a.name}`;
-                const nameKey = `${personName}:${a.name}`;
-                const idKey = `${personName}:${stableId}`;
-                const posOv = ov.positions?.[nameKey] ?? ov.positions?.[idKey];
-                return {
-                  id: stableId,
-                  name: a.name,
-                  startMonth: posOv?.startMonth ?? a.startMonth,
-                  duration: posOv?.duration ?? a.duration,
-                  order: posOv?.order,
-                  tasks: [],
-                  linearProjectName: null,
-                };
-              });
-            return { ...person, projects: [...person.projects, ...newProjects] };
-          });
-        }
-      }
-
-      setLocalPeople(updated);
+      setLocalPeople(mergeOverridesIntoPeople(people, ov));
       if (ov.dependencies) setDependencies(ov.dependencies);
     },
     [people],
@@ -4522,12 +4549,14 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
     }
   }, [applyOverridesToSeed]);
 
-  // Initial load only. We trust the optimistic update after each save — the
-  // server response confirms the write, so refetching afterward is pointless
-  // and risks reading a stale edge-cached blob that reverts the UI.
+  // Initial load only, and only when SSR didn't already hydrate us with the
+  // latest blob state (via initialOverrides). We trust the optimistic update
+  // after each save — refetching afterward risks reading a stale edge-cached
+  // blob that reverts the UI.
   useEffect(() => {
+    if (initialOverrides) return;
     refreshFromBlob();
-  }, [refreshFromBlob]);
+  }, [refreshFromBlob, initialOverrides]);
 
   // ── Fetch cycles on mount ──────────────────────────────────────────────
   useEffect(() => {
