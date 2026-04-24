@@ -1,8 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { readFile, writeFile, mkdir } from "fs/promises";
 import { join } from "path";
+import { list, put } from "@vercel/blob";
+
+// Never cache this route — we need to always read the latest blob state.
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 const OVERRIDES_PATH = join(process.cwd(), "data", "overrides.json");
+const BLOB_PATHNAME = "roadmap/overrides.json";
+
+// Use Blob when a token is available (production + any local dev that pulled it).
+// Otherwise fall back to the local filesystem so dev without Vercel still works.
+const useBlob = Boolean(process.env.BLOB_READ_WRITE_TOKEN);
 
 export type CycleBuckets = {
   priority: string[];
@@ -27,7 +37,7 @@ export type RoadmapOverrides = {
 // Simple mutex to prevent concurrent read-modify-write races
 let writeLock: Promise<void> = Promise.resolve();
 
-async function readOverrides(): Promise<RoadmapOverrides> {
+async function readFromDisk(): Promise<RoadmapOverrides> {
   try {
     const data = await readFile(OVERRIDES_PATH, "utf-8");
     return JSON.parse(data);
@@ -36,7 +46,32 @@ async function readOverrides(): Promise<RoadmapOverrides> {
   }
 }
 
+async function readOverrides(): Promise<RoadmapOverrides> {
+  if (!useBlob) return readFromDisk();
+  try {
+    const { blobs } = await list({ prefix: BLOB_PATHNAME, limit: 1 });
+    const match = blobs.find((b) => b.pathname === BLOB_PATHNAME);
+    if (match) {
+      const res = await fetch(match.url, { cache: "no-store" });
+      if (res.ok) return (await res.json()) as RoadmapOverrides;
+    }
+  } catch (err) {
+    console.warn("Blob read failed, falling back to seed file:", err);
+  }
+  // First-run seed: use the committed overrides.json bundled with the deploy.
+  return readFromDisk();
+}
+
 async function writeOverrides(overrides: RoadmapOverrides): Promise<void> {
+  if (useBlob) {
+    await put(BLOB_PATHNAME, JSON.stringify(overrides, null, 2), {
+      access: "public",
+      addRandomSuffix: false,
+      allowOverwrite: true,
+      contentType: "application/json",
+    });
+    return;
+  }
   const dir = join(process.cwd(), "data");
   try {
     await mkdir(dir, { recursive: true });
@@ -49,7 +84,11 @@ async function writeOverrides(overrides: RoadmapOverrides): Promise<void> {
 export async function GET() {
   try {
     const overrides = await readOverrides();
-    return NextResponse.json(overrides);
+    return NextResponse.json(overrides, {
+      headers: {
+        "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+      },
+    });
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Unknown error";
@@ -89,10 +128,26 @@ export async function POST(request: NextRequest) {
       case "deleteProject": {
         const { key } = payload;
         if (!overrides.deletions) overrides.deletions = [];
-        if (!overrides.deletions.includes(key)) {
-          overrides.deletions.push(key);
+        // If this project has been renamed, the incoming key uses the current
+        // (renamed) name. Deletions are matched on the seed name at load time,
+        // so resolve back to the seed name here.
+        let resolvedKey = key;
+        if (overrides.renames) {
+          const colonIdx = key.indexOf(":");
+          const personName = colonIdx >= 0 ? key.slice(0, colonIdx) : "";
+          const currentName = colonIdx >= 0 ? key.slice(colonIdx + 1) : key;
+          const seedEntry = Object.entries(overrides.renames).find(
+            ([k, v]) => k.startsWith(`${personName}:`) && v === currentName,
+          );
+          if (seedEntry) resolvedKey = seedEntry[0];
+        }
+        if (!overrides.deletions.includes(resolvedKey)) {
+          overrides.deletions.push(resolvedKey);
         }
         // Also remove any position overrides for this key
+        if (overrides.positions && overrides.positions[resolvedKey]) {
+          delete overrides.positions[resolvedKey];
+        }
         if (overrides.positions && overrides.positions[key]) {
           delete overrides.positions[key];
         }
@@ -101,7 +156,20 @@ export async function POST(request: NextRequest) {
       case "renameProject": {
         const { key, newName } = payload;
         if (!overrides.renames) overrides.renames = {};
-        overrides.renames[key] = newName;
+        // If the oldName in this key is already the value of an existing rename,
+        // update that entry in place — otherwise chained renames accumulate and
+        // the load logic (which looks up by seed name) can't follow them.
+        const colonIdx = key.indexOf(":");
+        const personName = colonIdx >= 0 ? key.slice(0, colonIdx) : "";
+        const oldName = colonIdx >= 0 ? key.slice(colonIdx + 1) : key;
+        const existingKey = Object.keys(overrides.renames).find(
+          (k) => k.startsWith(`${personName}:`) && overrides.renames![k] === oldName,
+        );
+        if (existingKey) {
+          overrides.renames[existingKey] = newName;
+        } else {
+          overrides.renames[key] = newName;
+        }
         break;
       }
       case "addDependency": {

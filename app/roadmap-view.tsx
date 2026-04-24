@@ -10,9 +10,10 @@ import type { RoadmapOverrides } from "./api/roadmap/route";
 
 // ── Zoom types ────────────────────────────────────────────────────────────
 
-type ZoomLevel = "month" | "biweekly" | "week";
+type ZoomLevel = "quarter" | "month" | "biweekly" | "week";
 
 const ZOOM_COL_WIDTH: Record<ZoomLevel, number> = {
+  quarter: 300,
   month: 120,
   biweekly: 120,
   week: 200,
@@ -39,7 +40,21 @@ function generateColumns(zoom: ZoomLevel): { label: string; date: Date }[] {
   const cols: { label: string; date: Date }[] = [];
   const shortMonths = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-  if (zoom === "month") {
+  if (zoom === "quarter") {
+    // Full timeline in calendar quarters (Jan-Mar, Apr-Jun, Jul-Sep, Oct-Dec)
+    const d = new Date(TIMELINE_START);
+    // Align to start of the quarter containing TIMELINE_START
+    d.setMonth(Math.floor(d.getMonth() / 3) * 3);
+    d.setDate(1);
+    while (d < TIMELINE_END) {
+      const q = Math.floor(d.getMonth() / 3) + 1;
+      cols.push({
+        label: `Q${q} ${d.getFullYear()}`,
+        date: new Date(d),
+      });
+      d.setMonth(d.getMonth() + 3);
+    }
+  } else if (zoom === "month") {
     // Full timeline
     const d = new Date(TIMELINE_START);
     while (d < TIMELINE_END) {
@@ -100,7 +115,11 @@ function generateColumns(zoom: ZoomLevel): { label: string; date: Date }[] {
 
 /** Convert a month index (0 = Mar 2026) to a fractional column position for a given zoom level */
 function monthIndexToColPos(monthIndex: number, zoom: ZoomLevel, columns: { date: Date }[]): number {
-  const targetDate = new Date(2026, 2 + monthIndex, 1);
+  // Support fractional month indices: JS Date's month arg is truncated, so we split
+  // whole-months and fractional-days to place mid-month positions correctly.
+  const wholeMonths = Math.floor(monthIndex);
+  const fractionalDays = Math.round((monthIndex - wholeMonths) * 30.44);
+  const targetDate = new Date(2026, 2 + wholeMonths, 1 + fractionalDays);
   for (let i = 0; i < columns.length; i++) {
     const colStart = columns[i].date;
     const colEnd = i + 1 < columns.length ? columns[i + 1].date : TIMELINE_END;
@@ -274,20 +293,55 @@ async function linearUpdateDates(
 // ── Roadmap overrides API ────────────────────────────────────────────────
 
 async function fetchOverrides(): Promise<RoadmapOverrides> {
-  const res = await fetch("/api/roadmap");
+  // Cache-bust the URL and opt out of all caching layers — we always need the
+  // freshest state from the blob, not a stale CDN/browser snapshot.
+  const res = await fetch(`/api/roadmap?t=${Date.now()}`, {
+    cache: "no-store",
+    headers: { "Cache-Control": "no-cache" },
+  });
   if (!res.ok) return {};
   return res.json();
 }
+
+// Serial queue for overrides writes. Each save is a read-modify-write on a single
+// JSON blob; without serialization, concurrent saves race and lose updates.
+let _saveQueue: Promise<void> = Promise.resolve();
 
 async function saveOverride(
   action: string,
   payload: Record<string, unknown>,
 ): Promise<void> {
-  await fetch("/api/roadmap", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ action, ...payload }),
-  });
+  const run = async () => {
+    const res = await fetch("/api/roadmap", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action, ...payload }),
+    });
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      throw new Error(`${action} failed: ${res.status} ${text}`);
+    }
+  };
+  const next = _saveQueue.then(run, run); // run even if prior failed
+  _saveQueue = next.catch(() => {}); // swallow errors in the queue chain
+  return next
+    .then(() => {
+      // Signal success so the view can refetch and reflect the true saved state.
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("roadmap-saved"));
+      }
+    })
+    .catch((err) => {
+      // Surface the failure to the app (listener attaches in the main view).
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(
+          new CustomEvent("roadmap-save-failed", {
+            detail: { message: err instanceof Error ? err.message : String(err) },
+          }),
+        );
+      }
+      throw err;
+    });
 }
 
 // ── Priority helpers ──────────────────────────────────────────────────────
@@ -345,14 +399,18 @@ function formatMonthIndex(monthIndex: number): string {
 
 /** Convert a month index (0 = Mar 2026) to an ISO date string for input[type=date] */
 function monthIndexToDate(idx: number): string {
-  const d = new Date(2026, 2 + idx, 1); // March 2026 = month index 0
+  // Support fractional month indices (weeks dragged mid-month). JS Date's month
+  // arg is truncated, so split whole-months + fractional-days explicitly.
+  const wholeMonths = Math.floor(idx);
+  const fractionalDays = Math.round((idx - wholeMonths) * 30.44);
+  const d = new Date(2026, 2 + wholeMonths, 1 + fractionalDays);
   return d.toISOString().split("T")[0]; // "2026-03-01" format
 }
 
-/** Convert a date string from input[type=date] to a month index (Mar 2026 = 0) */
+/** Convert a date string from input[type=date] to a fractional month index (Mar 2026 = 0) */
 function dateToMonthIndex(dateStr: string): number {
   const d = new Date(dateStr + "T00:00:00");
-  return (d.getFullYear() - 2026) * 12 + d.getMonth() - 2; // March 2026 = 0
+  return (d.getFullYear() - 2026) * 12 + d.getMonth() - 2 + (d.getDate() - 1) / 30.44;
 }
 
 function formatCycleLabel(cycle: LinearCycle): string {
@@ -661,6 +719,7 @@ function LinearProjectDetailPanel({
   onAddProjectToPerson,
   onRemoveProjectFromPerson,
   onMoveToFuture,
+  onRename,
 }: {
   project: Project;
   personName: string;
@@ -676,6 +735,7 @@ function LinearProjectDetailPanel({
   onAddProjectToPerson?: (personName: string, proj: { name: string; startMonth: number; duration: number; linearProjectName: string | null }) => void;
   onRemoveProjectFromPerson?: (personName: string, projectId: string) => void;
   onMoveToFuture?: (personName: string, project: Project) => void;
+  onRename?: (personName: string, projectId: string, oldName: string, newName: string) => void;
 }) {
   const [issues, setIssues] = useState<LinearProjectIssue[]>([]);
   const [loading, setLoading] = useState(true);
@@ -683,6 +743,7 @@ function LinearProjectDetailPanel({
   const [isEditing, setIsEditing] = useState(false);
   const [editStartDate, setEditStartDate] = useState(monthIndexToDate(project.startMonth));
   const [editEndDate, setEditEndDate] = useState(monthIndexToDate(project.startMonth + project.duration));
+  const [editName, setEditName] = useState(project.name);
   // Compute initial owners — all people who have a project with the same name
   const [editOwners, setEditOwners] = useState<Set<string>>(() => {
     const owners = new Set<string>();
@@ -823,8 +884,20 @@ function LinearProjectDetailPanel({
   const endDateStr = formatMonthIndex(project.startMonth + project.duration);
 
   const handleSaveEdits = () => {
-    if (editStartMonth !== project.startMonth || editDuration !== project.duration) {
+    // Tolerance: date inputs only carry day-level precision, so a round-trip
+    // through them can drift slightly. Don't overwrite a fractional drag position
+    // with a whole-day re-parse unless the user actually changed the inputs.
+    const DATE_EPS = 0.05; // ≈ 1.5 days in fractional months
+    if (
+      Math.abs(editStartMonth - project.startMonth) > DATE_EPS ||
+      Math.abs(editDuration - project.duration) > DATE_EPS
+    ) {
       onUpdateDates(project.id, personName, editStartMonth, editDuration);
+    }
+
+    const trimmedName = editName.trim();
+    if (trimmedName && trimmedName !== project.name) {
+      onRename?.(personName, project.id, project.name, trimmedName);
     }
 
     // Handle owner changes — find current owners and diff with editOwners
@@ -836,7 +909,7 @@ function LinearProjectDetailPanel({
       if (!currentOwners.has(name)) {
         // Add a copy of this project to the new owner
         onAddProjectToPerson?.(name, {
-          name: project.name,
+          name: trimmedName || project.name,
           startMonth: editStartMonth,
           duration: editDuration,
           linearProjectName: project.linearProjectName ?? null,
@@ -898,6 +971,7 @@ function LinearProjectDetailPanel({
                 } else {
                   setEditStartDate(monthIndexToDate(project.startMonth));
                   setEditEndDate(monthIndexToDate(project.startMonth + project.duration));
+                  setEditName(project.name);
                   /* owner reset handled by setEditOwners or kept as-is */
                   setIsEditing(true);
                 }
@@ -909,7 +983,27 @@ function LinearProjectDetailPanel({
               &times;
             </button>
           </div>
-          <h2 className="detail-title">{project.name}</h2>
+          {isEditing ? (
+            <input
+              type="text"
+              value={editName}
+              onChange={(e) => setEditName(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") handleSaveEdits(); }}
+              autoFocus
+              className="detail-title"
+              style={{
+                background: "white",
+                border: "1px solid #cbd5e1",
+                borderRadius: 6,
+                padding: "4px 8px",
+                width: "100%",
+                fontFamily: "inherit",
+                outline: "none",
+              }}
+            />
+          ) : (
+            <h2 className="detail-title">{project.name}</h2>
+          )}
           {linearProjectUrl ? (
             <a href={linearProjectUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: "#6366f1", marginBottom: 8, display: "block", textDecoration: "none" }}>
               {linearProjectName} &#8599;
@@ -1350,6 +1444,7 @@ function DetailPanel({
   onAddProjectToPerson,
   onRemoveProjectFromPerson,
   onMoveToFuture,
+  onRename,
 }: {
   project: Project;
   personName: string;
@@ -1362,6 +1457,7 @@ function DetailPanel({
   onAddProjectToPerson?: (personName: string, proj: { name: string; startMonth: number; duration: number; linearProjectName: string | null }) => void;
   onRemoveProjectFromPerson?: (personName: string, projectId: string) => void;
   onMoveToFuture?: (personName: string, project: Project) => void;
+  onRename?: (personName: string, projectId: string, oldName: string, newName: string) => void;
 }) {
   const doneCount = project.tasks.filter((t) => t.status === "done").length;
   const inProgressCount = project.tasks.filter(
@@ -1374,6 +1470,7 @@ function DetailPanel({
   const [isEditing, setIsEditing] = useState(false);
   const [editStartDate, setEditStartDate] = useState(monthIndexToDate(project.startMonth));
   const [editEndDate, setEditEndDate] = useState(monthIndexToDate(project.startMonth + project.duration));
+  const [editName, setEditName] = useState(project.name);
   const [editOwners, setEditOwners] = useState<Set<string>>(() =>
     new Set(people.filter((p) => p.projects.some((proj) => proj.name === project.name)).map((p) => p.name))
   );
@@ -1409,8 +1506,17 @@ function DetailPanel({
   const handleSaveEdits = () => {
     const newStart = editStartMonth;
     const newDuration = editDuration;
-    if (newStart !== project.startMonth || newDuration !== project.duration) {
+    const DATE_EPS = 0.05; // ≈ 1.5 days — avoid overwriting fractional drags
+    if (
+      Math.abs(newStart - project.startMonth) > DATE_EPS ||
+      Math.abs(newDuration - project.duration) > DATE_EPS
+    ) {
       onUpdateDates(project.id, personName, newStart, newDuration);
+    }
+
+    const trimmedName = editName.trim();
+    if (trimmedName && trimmedName !== project.name) {
+      onRename?.(personName, project.id, project.name, trimmedName);
     }
 
     // Handle multi-owner changes
@@ -1420,7 +1526,7 @@ function DetailPanel({
     for (const name of editOwners) {
       if (!currentOwners.has(name)) {
         onAddProjectToPerson?.(name, {
-          name: project.name,
+          name: trimmedName || project.name,
           startMonth: newStart,
           duration: newDuration,
           linearProjectName: project.linearProjectName ?? null,
@@ -1455,6 +1561,7 @@ function DetailPanel({
                 } else {
                   setEditStartDate(monthIndexToDate(project.startMonth));
                   setEditEndDate(monthIndexToDate(project.startMonth + project.duration));
+                  setEditName(project.name);
                   setEditOwners(new Set(people.filter((p) => p.projects.some((proj) => proj.name === project.name)).map((p) => p.name)));
                   setIsEditing(true);
                 }
@@ -1466,7 +1573,27 @@ function DetailPanel({
               &times;
             </button>
           </div>
-          <h2 className="detail-title">{project.name}</h2>
+          {isEditing ? (
+            <input
+              type="text"
+              value={editName}
+              onChange={(e) => setEditName(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") handleSaveEdits(); }}
+              autoFocus
+              className="detail-title"
+              style={{
+                background: "white",
+                border: "1px solid #cbd5e1",
+                borderRadius: 6,
+                padding: "4px 8px",
+                width: "100%",
+                fontFamily: "inherit",
+                outline: "none",
+              }}
+            />
+          ) : (
+            <h2 className="detail-title">{project.name}</h2>
+          )}
           <div className="detail-info-rows">
             <div className="detail-info-row">
               <span className="detail-info-label">Owners</span>
@@ -1745,7 +1872,7 @@ function ZoomControls({
   zoom: ZoomLevel;
   onZoom: (z: ZoomLevel) => void;
 }) {
-  const order: ZoomLevel[] = ["month", "biweekly", "week"];
+  const order: ZoomLevel[] = ["quarter", "month", "biweekly", "week"];
   const idx = order.indexOf(zoom);
 
   return (
@@ -4107,6 +4234,11 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
   const [collapsedTeams, setCollapsedTeams] = useState<Set<string>>(new Set());
   const [localPeople, setLocalPeople] = useState<Person[]>(people);
   const [dragState, setDragState] = useState<DragState | null>(null);
+  const [syncStatus, setSyncStatus] = useState<{
+    state: "loading" | "synced" | "error";
+    message: string;
+    at: number;
+  }>({ state: "loading", message: "Loading saved state…", at: Date.now() });
 
   // Undo stack
   type UndoAction = { type: "move"; projectId: string; personName: string; prevStart: number; prevDuration: number; newStart: number; newDuration: number }
@@ -4153,6 +4285,8 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
   const scrollRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<DragState | null>(null);
   const didDragRef = useRef(false);
+  // Defers bar onClick so onDoubleClick (rename) can cancel it.
+  const clickTimeoutRef = useRef<number | null>(null);
   const [containerWidth, setContainerWidth] = useState(0);
 
   const columns = useMemo(() => generateColumns(zoom), [zoom]);
@@ -4186,7 +4320,7 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
     const handler = (e: WheelEvent) => {
       if (!e.ctrlKey && !e.metaKey) return;
       e.preventDefault();
-      const order: ZoomLevel[] = ["month", "biweekly", "week"];
+      const order: ZoomLevel[] = ["quarter", "month", "biweekly", "week"];
       setZoom((prev) => {
         const idx = order.indexOf(prev);
         if (e.deltaY < 0 && idx < order.length - 1) return order[idx + 1]; // zoom in
@@ -4210,6 +4344,16 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
   const dismissToast = useCallback((id: number) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
+
+  // Surface save failures from the module-level save queue as toasts.
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<{ message: string }>).detail;
+      addToast("error", `Save failed: ${detail?.message ?? "unknown error"}`);
+    };
+    window.addEventListener("roadmap-save-failed", handler);
+    return () => window.removeEventListener("roadmap-save-failed", handler);
+  }, [addToast]);
 
   // ── Undo handler ────────────────────────────────────────────────────
   const handleUndo = useCallback(() => {
@@ -4293,63 +4437,97 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
     return () => window.removeEventListener("keydown", handler);
   }, [handleUndo]);
 
-  // ── Load overrides on mount ───────────────────────────────────────────
-  useEffect(() => {
-    fetchOverrides().then((ov) => {
-      if (!ov) return;
-      setLocalPeople((prev) => {
-        let updated = prev.map((person) => ({
-          ...person,
-          projects: person.projects
-            .filter((proj) => {
-              const key = `${person.name}:${proj.name}`;
-              return !ov.deletions?.includes(key);
-            })
-            .map((proj): Project => {
-              const key = `${person.name}:${proj.name}`;
-              const keyById = `${person.name}:${proj.id}`;
-              const posOv = ov.positions?.[key] ?? ov.positions?.[keyById];
-              const renameOv = ov.renames?.[key];
-              return {
-                ...proj,
-                name: renameOv || proj.name,
-                startMonth: posOv?.startMonth ?? proj.startMonth,
-                duration: posOv?.duration ?? proj.duration,
-                order: posOv?.order ?? proj.order,
-              };
-            }),
-        }));
+  // ── Apply overrides to seed data (pure function of blob state) ────────
+  const applyOverridesToSeed = useCallback(
+    (ov: RoadmapOverrides) => {
+      let updated: Person[] = people.map((person) => ({
+        ...person,
+        projects: person.projects
+          .filter((proj) => {
+            const key = `${person.name}:${proj.name}`;
+            return !ov.deletions?.includes(key);
+          })
+          .map((proj): Project => {
+            const key = `${person.name}:${proj.name}`;
+            const keyById = `${person.name}:${proj.id}`;
+            const posOv = ov.positions?.[key] ?? ov.positions?.[keyById];
+            const renameOv = ov.renames?.[key];
+            return {
+              ...proj,
+              name: renameOv || proj.name,
+              startMonth: posOv?.startMonth ?? proj.startMonth,
+              duration: posOv?.duration ?? proj.duration,
+              order: posOv?.order ?? proj.order,
+            };
+          }),
+      }));
 
-        // Add custom projects
-        if (ov.additions) {
-          for (const [personName, additions] of Object.entries(ov.additions)) {
-            updated = updated.map((person) => {
-              if (person.name !== personName) return person;
-              const newProjects: Project[] = additions.map((a) => ({
-                id: newProjId(),
-                name: a.name,
-                startMonth: a.startMonth,
-                duration: a.duration,
-                tasks: [],
-                linearProjectName: null,
-              }));
-              return {
-                ...person,
-                projects: [...person.projects, ...newProjects],
-              };
-            });
-          }
+      if (ov.additions) {
+        const deleted = new Set(ov.deletions ?? []);
+        for (const [personName, additions] of Object.entries(ov.additions)) {
+          updated = updated.map((person) => {
+            if (person.name !== personName) return person;
+            const newProjects: Project[] = additions
+              .filter((a) => !deleted.has(`${personName}:${a.name}`))
+              .map((a) => {
+                const stableId = `proj-added-${personName}-${a.name}`;
+                const nameKey = `${personName}:${a.name}`;
+                const idKey = `${personName}:${stableId}`;
+                const posOv = ov.positions?.[nameKey] ?? ov.positions?.[idKey];
+                return {
+                  id: stableId,
+                  name: a.name,
+                  startMonth: posOv?.startMonth ?? a.startMonth,
+                  duration: posOv?.duration ?? a.duration,
+                  order: posOv?.order,
+                  tasks: [],
+                  linearProjectName: null,
+                };
+              });
+            return { ...person, projects: [...person.projects, ...newProjects] };
+          });
         }
-
-        return updated;
-      });
-
-      // Load dependencies
-      if (ov.dependencies) {
-        setDependencies(ov.dependencies);
       }
-    });
-  }, []);
+
+      setLocalPeople(updated);
+      if (ov.dependencies) setDependencies(ov.dependencies);
+    },
+    [people],
+  );
+
+  const refreshFromBlob = useCallback(async () => {
+    try {
+      const ov = await fetchOverrides();
+      if (!ov) {
+        setSyncStatus({ state: "error", message: "Empty response", at: Date.now() });
+        return;
+      }
+      applyOverridesToSeed(ov);
+      const posCount = Object.keys(ov.positions ?? {}).length;
+      const addCount = Object.values(ov.additions ?? {}).reduce(
+        (n, a) => n + a.length,
+        0,
+      );
+      setSyncStatus({
+        state: "synced",
+        message: `Loaded ${posCount} positions, ${addCount} additions`,
+        at: Date.now(),
+      });
+    } catch (err) {
+      setSyncStatus({
+        state: "error",
+        message: err instanceof Error ? err.message : "Unknown",
+        at: Date.now(),
+      });
+    }
+  }, [applyOverridesToSeed]);
+
+  // Initial load only. We trust the optimistic update after each save — the
+  // server response confirms the write, so refetching afterward is pointless
+  // and risks reading a stale edge-cached blob that reverts the UI.
+  useEffect(() => {
+    refreshFromBlob();
+  }, [refreshFromBlob]);
 
   // ── Fetch cycles on mount ──────────────────────────────────────────────
   useEffect(() => {
@@ -4817,36 +4995,50 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
       // Always re-render during drag for smooth visual feedback
       let changed = true;
 
-      // Horizontal: snap to column boundaries
-      // Convert pixel delta to column delta, round to nearest column, then to month delta
+      // Horizontal: drag freely, then snap target date to nearest Monday.
+      // Gives week-level placement at any zoom (mid-month starts, etc.).
       const colDelta = dx / colWidth;
-      const snappedColDelta = Math.round(colDelta);
-      // Convert snapped column delta to month delta using column dates
       const originalColPos = monthIndexToColPos(ds.originalStartMonth, zoom, columns);
-      const targetColPos = originalColPos + snappedColDelta;
+      const targetColPos = originalColPos + colDelta;
 
-      // Convert column position back to month index
-      const colPosToMonthIndex = (cp: number): number => {
+      const colPosToDate = (cp: number): Date => {
         const colIdx = Math.max(0, Math.min(columns.length - 1, Math.floor(cp)));
         const frac = cp - colIdx;
         const colStart = columns[colIdx]?.date ?? TIMELINE_START;
         const colEnd = colIdx + 1 < columns.length ? columns[colIdx + 1].date : TIMELINE_END;
-        const dateMs = colStart.getTime() + frac * (colEnd.getTime() - colStart.getTime());
-        const d = new Date(dateMs);
-        return (d.getFullYear() - 2026) * 12 + d.getMonth() - 2 + d.getDate() / 30.44;
+        return new Date(colStart.getTime() + frac * (colEnd.getTime() - colStart.getTime()));
       };
+      const MS_PER_DAY = 86400000;
+      const snapToMonday = (d: Date): Date => {
+        // JS: Sun=0, Mon=1, …, Sat=6. Distance to previous Mon, then pick nearer.
+        const dayOfWeek = d.getDay();
+        const daysSinceMon = (dayOfWeek + 6) % 7; // 0..6 where 0 = Mon
+        const prevMon = new Date(d.getTime() - daysSinceMon * MS_PER_DAY);
+        prevMon.setHours(0, 0, 0, 0);
+        const nextMon = new Date(prevMon.getTime() + 7 * MS_PER_DAY);
+        return Math.abs(d.getTime() - prevMon.getTime()) <=
+          Math.abs(d.getTime() - nextMon.getTime())
+          ? prevMon
+          : nextMon;
+      };
+      const dateToFracMonth = (d: Date): number =>
+        (d.getFullYear() - 2026) * 12 + d.getMonth() - 2 + (d.getDate() - 1) / 30.44;
 
       if (ds.mode === "move") {
-        const newStart = Math.max(0, colPosToMonthIndex(targetColPos));
+        const snappedStart = snapToMonday(colPosToDate(targetColPos));
+        const newStart = Math.max(0, dateToFracMonth(snappedStart));
         if (Math.abs(newStart - ds.currentStartMonth) > 0.01) {
           ds.currentStartMonth = newStart;
           changed = true;
         }
       } else {
         const originalEndColPos = monthIndexToColPos(ds.originalStartMonth + ds.originalDuration, zoom, columns);
-        const targetEndColPos = originalEndColPos + snappedColDelta;
-        const newEnd = colPosToMonthIndex(targetEndColPos);
-        const newDuration = Math.max(colPosToMonthIndex(originalColPos + 1) - ds.originalStartMonth, newEnd - ds.originalStartMonth);
+        const targetEndColPos = originalEndColPos + colDelta;
+        const snappedEnd = snapToMonday(colPosToDate(targetEndColPos));
+        const newEnd = dateToFracMonth(snappedEnd);
+        // Minimum duration: one week
+        const minDuration = 7 / 30.44;
+        const newDuration = Math.max(minDuration, newEnd - ds.originalStartMonth);
         if (Math.abs(newDuration - ds.currentDuration) > 0.01) {
           ds.currentDuration = newDuration;
           changed = true;
@@ -5490,6 +5682,38 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
 
   return (
     <div className="roadmap-root">
+      {/* Sync status indicator */}
+      <div
+        style={{
+          position: "fixed",
+          bottom: 8,
+          right: 12,
+          zIndex: 200,
+          fontFamily: "var(--font-sans)",
+          fontSize: 11,
+          padding: "4px 10px",
+          borderRadius: 999,
+          background:
+            syncStatus.state === "error"
+              ? "#fee2e2"
+              : syncStatus.state === "synced"
+                ? "#dcfce7"
+                : "#f1f5f9",
+          color:
+            syncStatus.state === "error"
+              ? "#991b1b"
+              : syncStatus.state === "synced"
+                ? "#166534"
+                : "#64748b",
+          border: "1px solid rgba(0,0,0,0.05)",
+        }}
+        title={new Date(syncStatus.at).toLocaleTimeString()}
+      >
+        {syncStatus.state === "loading" && "⏳ "}
+        {syncStatus.state === "synced" && "✓ "}
+        {syncStatus.state === "error" && "⚠ "}
+        {syncStatus.message}
+      </div>
       {/* Mobile person filter */}
       {isMobile && (
         <div style={{
@@ -5801,7 +6025,13 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
                               opacity: isCrossPersonDrag ? 0.25 : undefined,
                             }}
                             onClick={() => {
-                              if (!didDragRef.current) {
+                              if (didDragRef.current) return;
+                              // Defer so dblclick (rename) can cancel.
+                              if (clickTimeoutRef.current) {
+                                window.clearTimeout(clickTimeoutRef.current);
+                              }
+                              clickTimeoutRef.current = window.setTimeout(() => {
+                                clickTimeoutRef.current = null;
                                 if (project.linearProjectName) {
                                   setSelectedLinearProject({
                                     project,
@@ -5816,13 +6046,17 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
                                     personColor: entry.person.color,
                                   });
                                 }
-                              }
+                              }, 220);
                             }}
                             onMouseEnter={() => setHoveredProject(project.id)}
                             onMouseLeave={() => setHoveredProject(null)}
                             onMouseDown={(e) => handleBarMouseDown(e, project, entry.person.name, "move", undefined, lane)}
                             onDoubleClick={(e) => {
                               e.stopPropagation();
+                              if (clickTimeoutRef.current) {
+                                window.clearTimeout(clickTimeoutRef.current);
+                                clickTimeoutRef.current = null;
+                              }
                               setRenamingProjectId(project.id);
                               setRenameValue(project.name);
                             }}
@@ -5967,7 +6201,11 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
       {/* Detail panel - static project (no Linear connection) */}
       {selected && (
         <DetailPanel
-          project={selected.project}
+          project={
+            localPeople
+              .find((p) => p.name === selected.personName)
+              ?.projects.find((p) => p.id === selected.project.id) ?? selected.project
+          }
           personName={selected.personName}
           personColor={selected.personColor}
           onClose={() => setSelected(null)}
@@ -5994,13 +6232,19 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
             }
           }}
           onMoveToFuture={handleMoveToFuture}
+          onRename={handleRenameProject}
         />
       )}
 
       {/* Detail panel - Linear project issues */}
       {selectedLinearProject && (
         <LinearProjectDetailPanel
-          project={selectedLinearProject.project}
+          project={
+            localPeople
+              .find((p) => p.name === selectedLinearProject.personName)
+              ?.projects.find((p) => p.id === selectedLinearProject.project.id) ??
+            selectedLinearProject.project
+          }
           personName={selectedLinearProject.personName}
           personColor={selectedLinearProject.personColor}
           linearProjectName={selectedLinearProject.linearProjectName}
@@ -6033,6 +6277,7 @@ export function RoadmapView({ people, months, phases, teams }: RoadmapViewProps)
             }
           }}
           onMoveToFuture={handleMoveToFuture}
+          onRename={handleRenameProject}
         />
       )}
 
