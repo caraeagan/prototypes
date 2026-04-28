@@ -2406,10 +2406,7 @@ function normalizeAssigneeName(displayName: string): string | null {
   const map: Record<string, string> = {
     oleksii: "Oleksii",
     "oleksii.zhaboiedov": "Oleksii",
-    flo: "Flo",
-    florian: "Flo",
-    maciej: "Maciej",
-    "maciej.walusiak": "Maciej",
+    hlib: "Hlib",
     liuda: "Luida",
     lillian: "Luida",
     john: "John",
@@ -3041,7 +3038,7 @@ function FutureProjectsView({ people, onAssignToRoadmap }: { people: Person[]; o
   );
 }
 
-const CYCLE_TEAMS = new Set(["Engineering", "Data Science", "Product"]);
+const CYCLE_TEAMS = new Set(["Engineering", "Product"]);
 
 // ── Cycle Issue Detail Panel ────────────────────────────────────────────
 
@@ -5365,8 +5362,8 @@ export function RoadmapView({ people, months, phases, teams, initialOverrides }:
       const duration = Math.max(1, endMonth - startMonth);
       const projectId = newProjId();
 
-      // Only create in Linear for Engineering, Product, Data Science teams
-      const LINEAR_TEAMS = new Set(["Engineering", "Product", "Data Science"]);
+      // Only create in Linear for Engineering, Product teams
+      const LINEAR_TEAMS = new Set(["Engineering", "Product"]);
       const ownerPerson = localPeople.find((p) => p.name === data.owner);
       const shouldCreateInLinear = ownerPerson && LINEAR_TEAMS.has(ownerPerson.team);
       let linearName: string | null = shouldCreateInLinear ? data.name : null;

@@ -78,8 +78,7 @@ export const PHASES: Phase[] = [
 // ── Teams ──────────────────────────────────────────────────────────────────
 
 export const TEAMS: Team[] = [
-  { name: "Engineering", color: "#2563EB", members: ["Oleksii", "Flo", "Maciej", "John", "Luida", "AK"] },
-  { name: "Data Science", color: "#0E7490", members: ["Lucie"] },
+  { name: "Engineering", color: "#2563EB", members: ["Oleksii", "John", "Luida", "AK", "Hlib", "Lucie"] },
   { name: "Design", color: "#A16207", members: ["Maria", "Carlos"] },
   { name: "Psychometrics", color: "#D97706", members: ["Erica", "David"] },
   { name: "Operations & GTM", color: "#1D4ED8", members: ["Eleanor", "Erin", "Stef", "Sam", "Molly"] },
@@ -150,36 +149,6 @@ export const PEOPLE: Person[] = [
         linearProjectName: "Examiner Onboarding",
         startMonth: 0,
         duration: 2,
-        tasks: [],
-      },
-    ],
-  },
-  {
-    name: "Flo",
-    color: "#43A047",
-    team: "Engineering",
-    projects: [
-      {
-        id: "p006",
-        name: "Sizing",
-        linearProjectName: null,
-        startMonth: 0,
-        duration: 3,
-        tasks: [],
-      },
-    ],
-  },
-  {
-    name: "Maciej",
-    color: "#00ACC1",
-    team: "Engineering",
-    projects: [
-      {
-        id: "p007",
-        name: "Internal App Bugs & Improvements",
-        linearProjectName: null,
-        startMonth: 0,
-        duration: 4,
         tasks: [],
       },
     ],
@@ -284,6 +253,12 @@ export const PEOPLE: Person[] = [
         tasks: [],
       },
     ],
+  },
+  {
+    name: "Hlib",
+    color: "#43A047",
+    team: "Engineering",
+    projects: [],
   },
 
   // ── Product ──────────────────────────────────────────────────────────────
@@ -599,7 +574,7 @@ export const PEOPLE: Person[] = [
   {
     name: "Lucie",
     color: "#00838F",
-    team: "Data Science",
+    team: "Engineering",
     projects: [
       {
         id: "p047",
