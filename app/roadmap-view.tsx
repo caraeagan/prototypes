@@ -2113,9 +2113,9 @@ function MultiSelect({ label, options, selected, onToggle, onClear }: {
         onClick={() => setOpen(!open)}
         style={{
           fontFamily: "var(--font-sans)", fontSize: 13, fontWeight: 600,
-          padding: "6px 12px", cursor: "pointer", borderRadius: 6,
-          border: "1px solid #e2e8f0", background: count > 0 ? "#eef2ff" : "#fff", color: "#1e293b",
-          display: "flex", alignItems: "center", gap: 6,
+          height: 32, padding: "0 12px", cursor: "pointer", borderRadius: 8,
+          border: "1px solid #e0e0ea", background: count > 0 ? "#eef2ff" : "#f8f9fb", color: "#1e293b",
+          display: "flex", alignItems: "center", gap: 6, whiteSpace: "nowrap",
         }}
       >
         {count > 0 ? `${label} (${count})` : `All ${label}`}
@@ -2211,62 +2211,41 @@ function FilterBar({
   return (
     <div className="filter-bar">
       <div className="filter-bar-left">
-        <h1 style={{ fontFamily: "var(--font-sans)", fontSize: 22, fontWeight: 800, color: "#f59e0b", margin: "0 0 6px 0", letterSpacing: "-0.01em" }}>Marker Method Roadmap</h1>
-        <div style={{ display: "flex", alignItems: "center", gap: 0, marginBottom: 4 }}>
-          <button
-            onClick={() => onViewMode("projects")}
-            style={{
-              fontFamily: "var(--font-sans)", fontSize: 15, fontWeight: 700,
-              padding: "8px 20px", cursor: "pointer", border: "none",
-              borderRadius: "8px 0 0 8px",
-              background: viewMode === "projects" ? "#1e293b" : "#f1f5f9",
-              color: viewMode === "projects" ? "white" : "#64748b",
-            }}
-          >
-            Projects
-          </button>
-          <button
-            onClick={() => onViewMode("subtestEdits")}
-            style={{
-              fontFamily: "var(--font-sans)", fontSize: 15, fontWeight: 700,
-              padding: "8px 20px", cursor: "pointer", border: "none",
-              borderRadius: 0,
-              background: viewMode === "subtestEdits" ? "#f59e0b" : "#f1f5f9",
-              color: viewMode === "subtestEdits" ? "white" : "#64748b",
-            }}
-          >
-            Tasks
-          </button>
-          <button
-            onClick={() => onViewMode("cycles")}
-            style={{
-              fontFamily: "var(--font-sans)", fontSize: 15, fontWeight: 700,
-              padding: "8px 20px", cursor: "pointer", border: "none",
-              borderRadius: 0,
-              background: viewMode === "cycles" ? "#1E88E5" : "#f1f5f9",
-              color: viewMode === "cycles" ? "white" : "#64748b",
-            }}
-          >
-            Cycles
-          </button>
-          <button
-            onClick={() => onViewMode("futureProjects")}
-            style={{
-              fontFamily: "var(--font-sans)", fontSize: 15, fontWeight: 700,
-              padding: "8px 20px", cursor: "pointer", border: "none",
-              borderRadius: "0 8px 8px 0",
-              background: viewMode === "futureProjects" ? "#22c55e" : "#f1f5f9",
-              color: viewMode === "futureProjects" ? "white" : "#64748b",
-            }}
-          >
-            Future Projects
-          </button>
+        <h1 style={{ fontFamily: "var(--font-sans)", fontSize: 18, fontWeight: 800, color: "#f59e0b", margin: 0, letterSpacing: "-0.01em", whiteSpace: "nowrap" }}>Marker Method Roadmap</h1>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div style={{ display: "flex", alignItems: "center", background: "#f1f5f9", borderRadius: 8, padding: 2 }}>
+            {([
+              ["projects", "Projects"],
+              ["subtestEdits", "Tasks"],
+              ["cycles", "Cycles"],
+              ["futureProjects", "Future Projects"],
+            ] as const).map(([mode, label]) => {
+              const active = viewMode === mode;
+              return (
+                <button
+                  key={mode}
+                  onClick={() => onViewMode(mode)}
+                  style={{
+                    fontFamily: "var(--font-sans)", fontSize: 13, fontWeight: 600,
+                    height: 28, padding: "0 12px", cursor: "pointer", border: "none",
+                    borderRadius: 6, whiteSpace: "nowrap",
+                    background: active ? "#fff" : "transparent",
+                    color: active ? "#1e293b" : "#64748b",
+                    boxShadow: active ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
+                    transition: "background 0.15s, color 0.15s",
+                  }}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
           <button
             onClick={onAddProject}
             style={{
-              fontFamily: "var(--font-sans)", fontSize: 15, fontWeight: 700,
-              padding: "8px 16px", cursor: "pointer", border: "none",
-              borderRadius: 8, marginLeft: 8,
+              fontFamily: "var(--font-sans)", fontSize: 13, fontWeight: 600,
+              height: 32, padding: "0 14px", cursor: "pointer", border: "none",
+              borderRadius: 8, whiteSpace: "nowrap",
               background: "#22c55e", color: "white",
             }}
           >
@@ -2310,19 +2289,28 @@ function FilterBar({
         />
         <ZoomControls zoom={zoom} onZoom={onZoom} />
         <button
-          className="zoom-btn"
           onClick={onUndo}
           disabled={!canUndo}
           title="Undo (Cmd+Z)"
-          style={{ padding: "6px 12px", fontSize: 14, opacity: canUndo ? 1 : 0.3 }}
+          style={{
+            fontFamily: "var(--font-sans)", fontSize: 13, fontWeight: 600,
+            height: 32, padding: "0 12px", cursor: canUndo ? "pointer" : "not-allowed",
+            borderRadius: 8, border: "1px solid #e0e0ea",
+            background: "#f8f9fb", color: "#1e293b",
+            opacity: canUndo ? 1 : 0.4,
+          }}
         >
           Undo
         </button>
         <button
-          className="zoom-btn"
           onClick={onPrint}
           title="Print / Export"
-          style={{ padding: "6px 12px", fontSize: 14 }}
+          style={{
+            fontFamily: "var(--font-sans)", fontSize: 13, fontWeight: 600,
+            height: 32, padding: "0 12px", cursor: "pointer",
+            borderRadius: 8, border: "1px solid #e0e0ea",
+            background: "#f8f9fb", color: "#1e293b",
+          }}
         >
           Print
         </button>

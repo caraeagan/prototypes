@@ -37,19 +37,22 @@ body {
 
 .filter-bar {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: space-between;
-  padding: 16px 24px;
+  padding: 14px 24px;
   background: #fdf6e3;
   border-bottom: 2px solid #d4a843;
   flex-shrink: 0;
   z-index: 20;
+  gap: 16px;
 }
 
 .filter-bar-left {
   display: flex;
-  align-items: baseline;
-  gap: 12px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
 }
 
 .filter-title {
@@ -72,8 +75,9 @@ body {
 }
 
 .filter-search {
-  width: 260px;
-  padding: 8px 14px;
+  width: 200px;
+  height: 32px;
+  padding: 0 12px;
   border: 1px solid #e0e0ea;
   border-radius: 8px;
   font-size: 13px;
@@ -101,20 +105,23 @@ body {
   background: #f0f0f5;
   border-radius: 8px;
   padding: 2px;
+  height: 32px;
+  box-sizing: border-box;
 }
 
 .zoom-btn {
-  padding: 6px 12px;
+  padding: 0 10px;
   border: none;
   border-radius: 6px;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   font-family: var(--font-sans);
   color: #8b8b9e;
   background: transparent;
   cursor: pointer;
   transition: all 0.15s ease;
-  min-width: 36px;
+  min-width: 32px;
+  height: 28px;
   text-align: center;
 }
 
@@ -830,7 +837,8 @@ body.dragging * {
 
 .cycle-select {
   appearance: none;
-  padding: 8px 32px 8px 14px;
+  height: 32px;
+  padding: 0 30px 0 12px;
   border: 1px solid #e0e0ea;
   border-radius: 8px;
   font-size: 13px;
@@ -840,7 +848,7 @@ body.dragging * {
   cursor: pointer;
   outline: none;
   transition: border-color 0.15s, box-shadow 0.15s;
-  min-width: 200px;
+  min-width: 150px;
 }
 
 .cycle-select:focus {
