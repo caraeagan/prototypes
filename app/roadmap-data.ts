@@ -78,7 +78,7 @@ export const PHASES: Phase[] = [
 // ── Teams ──────────────────────────────────────────────────────────────────
 
 export const TEAMS: Team[] = [
-  { name: "Engineering", color: "#2563EB", members: ["Oleksii", "John", "Luida", "AK", "Hlib", "Lucie"] },
+  { name: "Engineering", color: "#2563EB", members: ["Oleksii", "John", "Luida", "AK", "Hlib", "Lucie", "Alex"] },
   { name: "Design", color: "#A16207", members: ["Maria", "Carlos"] },
   { name: "Psychometrics", color: "#D97706", members: ["Erica", "David"] },
   { name: "Operations & GTM", color: "#1D4ED8", members: ["Eleanor", "Erin", "Stef", "Sam", "Molly"] },
@@ -259,6 +259,21 @@ export const PEOPLE: Person[] = [
     color: "#43A047",
     team: "Engineering",
     projects: [],
+  },
+  {
+    name: "Alex",
+    color: "#5E35B1",
+    team: "Engineering",
+    projects: [
+      {
+        id: "p051",
+        name: "Offline Mode",
+        linearProjectName: "Offline Mode",
+        startMonth: 1,
+        duration: 4,
+        tasks: [],
+      },
+    ],
   },
 
   // ── Product ──────────────────────────────────────────────────────────────
