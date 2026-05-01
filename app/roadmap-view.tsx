@@ -3122,11 +3122,27 @@ function LinearSearchPopover({
     setLoading(true);
     const t = setTimeout(async () => {
       try {
-        const data = await linearQuery<{ issueSearch: { nodes: { id: string; identifier: string; url: string; title: string }[] } }>(
-          `query Search($q: String!) { issueSearch(query: $q, first: 8) { nodes { id identifier url title } } }`,
-          { q: query.trim() },
-        );
-        if (!cancelled) setResults(data.issueSearch.nodes);
+        const term = query.trim();
+        // If user typed/pasted an identifier, look it up directly via team+number
+        // (issueSearch / searchIssues searches text only — identifiers don't match).
+        const idMatch = term.match(/^([A-Za-z0-9]+)-(\d+)$/);
+        if (idMatch) {
+          const data = await linearQuery<{ issues: { nodes: { id: string; identifier: string; url: string; title: string }[] } }>(
+            `query Issue($team: String!, $num: Float!) {
+              issues(filter: { team: { key: { eq: $team } }, number: { eq: $num } }, first: 1) {
+                nodes { id identifier url title }
+              }
+            }`,
+            { team: idMatch[1].toUpperCase(), num: parseFloat(idMatch[2]) },
+          );
+          if (!cancelled) setResults(data.issues.nodes);
+        } else {
+          const data = await linearQuery<{ searchIssues: { nodes: { id: string; identifier: string; url: string; title: string }[] } }>(
+            `query S($q: String!) { searchIssues(term: $q, first: 8) { nodes { id identifier url title } } }`,
+            { q: term },
+          );
+          if (!cancelled) setResults(data.searchIssues.nodes);
+        }
       } catch {
         if (!cancelled) setResults([]);
       } finally {
