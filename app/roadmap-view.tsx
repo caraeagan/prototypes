@@ -5236,8 +5236,11 @@ export function RoadmapView({ people, months, phases, teams, initialOverrides }:
   // ── Fetch cycles on mount ──────────────────────────────────────────────
   useEffect(() => {
     setCyclesLoading(true);
+    // Filter to the Marker Method team only — pulling all teams' cycles makes
+    // "this week / next week" ambiguous when other teams (e.g. Psychometrics)
+    // have their own cycles overlapping the same date range.
     linearQuery<{ cycles: { nodes: LinearCycle[] } }>(
-      `query { cycles(first: 50, orderBy: createdAt) { nodes { id number startsAt endsAt } } }`,
+      `query { cycles(filter: { team: { key: { eq: "MAR2" } } }, first: 50, orderBy: createdAt) { nodes { id number startsAt endsAt } } }`,
     )
       .then((data) => {
         // Sort descending by number so newest is first
