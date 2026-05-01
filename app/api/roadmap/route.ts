@@ -43,6 +43,9 @@ export async function POST(request: NextRequest) {
       "removeFutureProject",
       "updateFutureProject",
       "saveDescription",
+      "saveWeeklyPlan",
+      "saveWeekNote",
+      "toggleWeekSignoff",
     ]);
     if (!knownActions.has(action)) {
       return NextResponse.json(
@@ -173,6 +176,52 @@ export async function POST(request: NextRequest) {
             overrides.descriptions[key] = description;
           } else {
             delete overrides.descriptions[key];
+          }
+          break;
+        }
+        case "toggleWeekSignoff": {
+          const { weekKey, personName, signed } = payload as {
+            weekKey: string;
+            personName: string;
+            signed: boolean;
+          };
+          if (!overrides.weekSignoffs) overrides.weekSignoffs = {};
+          if (!overrides.weekSignoffs[weekKey]) overrides.weekSignoffs[weekKey] = {};
+          if (signed) {
+            overrides.weekSignoffs[weekKey][personName] = { at: new Date().toISOString() };
+          } else {
+            delete overrides.weekSignoffs[weekKey][personName];
+            if (Object.keys(overrides.weekSignoffs[weekKey]).length === 0) {
+              delete overrides.weekSignoffs[weekKey];
+            }
+          }
+          break;
+        }
+        case "saveWeekNote": {
+          const { weekKey, note } = payload as { weekKey: string; note: string };
+          if (!overrides.weekNotes) overrides.weekNotes = {};
+          if (note && note.trim()) {
+            overrides.weekNotes[weekKey] = note;
+          } else {
+            delete overrides.weekNotes[weekKey];
+          }
+          break;
+        }
+        case "saveWeeklyPlan": {
+          const { weekKey, personName, bullets } = payload as {
+            weekKey: string;
+            personName: string;
+            bullets: { id: string; text: string }[];
+          };
+          if (!overrides.weeklyPlans) overrides.weeklyPlans = {};
+          if (!overrides.weeklyPlans[weekKey]) overrides.weeklyPlans[weekKey] = {};
+          if (!bullets || bullets.length === 0) {
+            delete overrides.weeklyPlans[weekKey][personName];
+            if (Object.keys(overrides.weeklyPlans[weekKey]).length === 0) {
+              delete overrides.weeklyPlans[weekKey];
+            }
+          } else {
+            overrides.weeklyPlans[weekKey][personName] = bullets;
           }
           break;
         }

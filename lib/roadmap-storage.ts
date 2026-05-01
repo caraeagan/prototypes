@@ -21,6 +21,22 @@ export type RoadmapOverrides = {
   cycleBuckets?: Record<string, CycleBuckets>;
   descriptions?: Record<string, string>;
   futureProjects?: { name: string; description: string; linearProjectId?: string; linearProjectUrl?: string }[];
+  // weekNotes[weekKey] = top-of-week intro/context for that planning week.
+  weekNotes?: Record<string, string>;
+  // weekSignoffs[weekKey][personName] = signoff record (presence = signed).
+  weekSignoffs?: Record<string, Record<string, { at: string }>>;
+  // weeklyPlans[weekKey][personName] = bullet list. weekKey is the ISO date (YYYY-MM-DD) of that week's Monday.
+  weeklyPlans?: Record<
+    string,
+    Record<
+      string,
+      {
+        id: string;
+        text: string;
+        linearIssue?: { id: string; identifier: string; url: string; title: string };
+      }[]
+    >
+  >;
 };
 
 function sleep(ms: number) {

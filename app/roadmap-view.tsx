@@ -2196,8 +2196,8 @@ function FilterBar({
   onPrint: () => void;
   onUndo: () => void;
   canUndo: boolean;
-  viewMode: "projects" | "subtestEdits" | "cycles" | "futureProjects";
-  onViewMode: (m: "projects" | "subtestEdits" | "cycles" | "futureProjects") => void;
+  viewMode: "projects" | "subtestEdits" | "cycles" | "futureProjects" | "weeklyPlanning";
+  onViewMode: (m: "projects" | "subtestEdits" | "cycles" | "futureProjects" | "weeklyPlanning") => void;
   teams: Team[];
   people: Person[];
   filterTeams: Set<string>;
@@ -2219,6 +2219,7 @@ function FilterBar({
               ["subtestEdits", "Tasks"],
               ["cycles", "Cycles"],
               ["futureProjects", "Future Projects"],
+              ["weeklyPlanning", "Weekly Planning"],
             ] as const).map(([mode, label]) => {
               const active = viewMode === mode;
               return (
@@ -3020,6 +3021,679 @@ function FutureProjectsView({ people, onAssignToRoadmap }: { people: Person[]; o
               Remove from Future Projects
             </button>
           </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Weekly Planning View ────────────────────────────────────────────────
+
+const WEEKLY_PLANNING_TEAMS = ["Engineering", "Product", "Psychometrics"];
+const WEEKLY_SIGNOFF_PEOPLE = ["John", "Alex", "Cara", "Lucie"];
+
+function getMondayOfWeek(date: Date): Date {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  const day = d.getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
+  const diff = day === 0 ? -6 : 1 - day; // shift to most recent Monday on or before
+  d.setDate(d.getDate() + diff);
+  return d;
+}
+
+function formatWeekKey(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function parseWeekKey(key: string): Date {
+  const [y, m, d] = key.split("-").map(Number);
+  return new Date(y, m - 1, d);
+}
+
+function formatWeekRange(monday: Date): string {
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+  const startMonth = monday.toLocaleString("en-US", { month: "short" });
+  const endMonth = sunday.toLocaleString("en-US", { month: "short" });
+  if (startMonth === endMonth) {
+    return `${startMonth} ${monday.getDate()}–${sunday.getDate()}, ${sunday.getFullYear()}`;
+  }
+  return `${startMonth} ${monday.getDate()} – ${endMonth} ${sunday.getDate()}, ${sunday.getFullYear()}`;
+}
+
+type LinearIssueLink = { id: string; identifier: string; url: string; title: string };
+type Bullet = { id: string; text: string; linearIssue?: LinearIssueLink };
+
+function newBulletId(): string {
+  return `b-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+const LINEAR_URL_REGEX = /https?:\/\/linear\.app\/[^/]+\/issue\/([A-Za-z0-9-]+)(?:\/[^\s]*)?/i;
+
+function extractLinearIdentifier(text: string): string | null {
+  const m = text.match(LINEAR_URL_REGEX);
+  return m ? m[1].toUpperCase() : null;
+}
+
+async function fetchLinearIssueByIdentifier(identifier: string): Promise<LinearIssueLink | null> {
+  const m = identifier.match(/^([A-Za-z0-9]+)-(\d+)$/);
+  if (!m) return null;
+  const teamKey = m[1].toUpperCase();
+  const num = parseFloat(m[2]);
+  try {
+    const data = await linearQuery<{ issues: { nodes: { id: string; identifier: string; url: string; title: string }[] } }>(
+      `query Issue($team: String!, $num: Float!) {
+        issues(filter: { team: { key: { eq: $team } }, number: { eq: $num } }, first: 1) {
+          nodes { id identifier url title }
+        }
+      }`,
+      { team: teamKey, num },
+    );
+    return data.issues.nodes[0] ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function LinearSearchPopover({
+  anchorRect,
+  initialQuery,
+  onSelect,
+  onClose,
+}: {
+  anchorRect: DOMRect;
+  initialQuery: string;
+  onSelect: (issue: LinearIssueLink) => void;
+  onClose: () => void;
+}) {
+  const [query, setQuery] = useState(initialQuery);
+  const [results, setResults] = useState<LinearIssueLink[]>([]);
+  const [loading, setLoading] = useState(false);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => { inputRef.current?.focus(); }, []);
+
+  useEffect(() => {
+    if (!query.trim()) { setResults([]); return; }
+    let cancelled = false;
+    setLoading(true);
+    const t = setTimeout(async () => {
+      try {
+        const data = await linearQuery<{ issueSearch: { nodes: { id: string; identifier: string; url: string; title: string }[] } }>(
+          `query Search($q: String!) { issueSearch(query: $q, first: 8) { nodes { id identifier url title } } }`,
+          { q: query.trim() },
+        );
+        if (!cancelled) setResults(data.issueSearch.nodes);
+      } catch {
+        if (!cancelled) setResults([]);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }, 200);
+    return () => { cancelled = true; clearTimeout(t); };
+  }, [query]);
+
+  useEffect(() => {
+    const onDocClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest("[data-linear-popover]")) onClose();
+    };
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("mousedown", onDocClick);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDocClick);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [onClose]);
+
+  return (
+    <div
+      data-linear-popover
+      style={{
+        position: "fixed",
+        top: anchorRect.bottom + 6,
+        left: Math.min(anchorRect.left, window.innerWidth - 380),
+        width: 360,
+        background: "white",
+        border: "1px solid #e2e8f0",
+        borderRadius: 10,
+        boxShadow: "0 12px 32px rgba(15,23,42,0.18)",
+        padding: 10,
+        zIndex: 1000,
+      }}
+    >
+      <input
+        ref={inputRef}
+        type="text"
+        value={query}
+        placeholder="Search Linear issues or paste URL..."
+        onChange={(e) => setQuery(e.target.value)}
+        onPaste={(e) => {
+          const pasted = e.clipboardData.getData("text");
+          const ident = extractLinearIdentifier(pasted);
+          if (ident) {
+            e.preventDefault();
+            setQuery(ident);
+          }
+        }}
+        style={{
+          fontFamily: "var(--font-sans)", fontSize: 13, width: "100%",
+          padding: "8px 10px", border: "1px solid #e2e8f0", borderRadius: 6,
+          outline: "none",
+        }}
+      />
+      <div style={{ marginTop: 8, maxHeight: 280, overflow: "auto" }}>
+        {loading && <div style={{ color: "#94a3b8", fontSize: 12, padding: "8px 4px" }}>Searching...</div>}
+        {!loading && query.trim() && results.length === 0 && (
+          <div style={{ color: "#94a3b8", fontSize: 12, padding: "8px 4px" }}>No results</div>
+        )}
+        {results.map((issue) => (
+          <button
+            key={issue.id}
+            onClick={() => onSelect(issue)}
+            style={{
+              display: "block", width: "100%", textAlign: "left",
+              padding: "8px 10px", borderRadius: 6, border: "none",
+              background: "transparent", cursor: "pointer",
+              fontFamily: "var(--font-sans)",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = "#f1f5f9")}
+            onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+          >
+            <div style={{ fontSize: 11, fontWeight: 700, color: "#6366f1", marginBottom: 2 }}>{issue.identifier}</div>
+            <div style={{ fontSize: 13, color: "#1e293b", lineHeight: 1.35 }}>{issue.title}</div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function PersonWeekSection({
+  person,
+  weekKey,
+  initialBullets,
+  onSavedStateChange,
+}: {
+  person: Person;
+  weekKey: string;
+  initialBullets: Bullet[];
+  onSavedStateChange: (state: "saving" | "saved" | "error") => void;
+}) {
+  const [bullets, setBullets] = useState<Bullet[]>(initialBullets);
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const latestRef = useRef<Bullet[]>(initialBullets);
+  const [linkPopoverFor, setLinkPopoverFor] = useState<{ bulletId: string; rect: DOMRect; query: string } | null>(null);
+
+  // Reset when the week or initial data changes
+  useEffect(() => {
+    setBullets(initialBullets);
+    latestRef.current = initialBullets;
+  }, [weekKey, person.name]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const scheduleSave = (next: Bullet[]) => {
+    latestRef.current = next;
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    onSavedStateChange("saving");
+    saveTimer.current = setTimeout(() => {
+      const toSave = latestRef.current
+        .map((b) => ({ id: b.id, text: b.text.trim(), linearIssue: b.linearIssue }))
+        .filter((b) => b.text.length > 0 || b.linearIssue);
+      saveOverride("saveWeeklyPlan", { weekKey, personName: person.name, bullets: toSave })
+        .then(() => onSavedStateChange("saved"))
+        .catch(() => onSavedStateChange("error"));
+    }, 500);
+  };
+
+  const attachIssue = (bulletId: string, issue: LinearIssueLink) => {
+    setBullets((prev) => {
+      const next = prev.map((b) => {
+        if (b.id !== bulletId) return b;
+        // If text contains the URL we just matched, strip it for cleanliness.
+        const stripped = b.text.replace(LINEAR_URL_REGEX, "").replace(/\s{2,}/g, " ").trim();
+        const newText = stripped.length > 0 ? stripped : (b.text.trim().length === 0 ? issue.title : b.text);
+        return { ...b, text: newText, linearIssue: issue };
+      });
+      scheduleSave(next);
+      return next;
+    });
+    setLinkPopoverFor(null);
+  };
+
+  const detachIssue = (bulletId: string) => {
+    setBullets((prev) => {
+      const next = prev.map((b) => (b.id === bulletId ? { ...b, linearIssue: undefined } : b));
+      scheduleSave(next);
+      return next;
+    });
+  };
+
+  const handleBlurMaybeAutoLink = async (bullet: Bullet) => {
+    if (bullet.linearIssue) return;
+    const ident = extractLinearIdentifier(bullet.text);
+    if (!ident) return;
+    const issue = await fetchLinearIssueByIdentifier(ident);
+    if (issue) attachIssue(bullet.id, issue);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (saveTimer.current) clearTimeout(saveTimer.current);
+    };
+  }, []);
+
+  const updateBullet = (id: string, text: string) => {
+    setBullets((prev) => {
+      const next = prev.map((b) => (b.id === id ? { ...b, text } : b));
+      scheduleSave(next);
+      return next;
+    });
+  };
+
+  const addBullet = (afterId?: string) => {
+    setBullets((prev) => {
+      const newB: Bullet = { id: newBulletId(), text: "" };
+      let next: Bullet[];
+      if (afterId) {
+        const idx = prev.findIndex((b) => b.id === afterId);
+        next = [...prev.slice(0, idx + 1), newB, ...prev.slice(idx + 1)];
+      } else {
+        next = [...prev, newB];
+      }
+      scheduleSave(next);
+      // Focus the new bullet on next tick
+      setTimeout(() => {
+        const el = document.querySelector<HTMLTextAreaElement>(`[data-bullet-id="${newB.id}"]`);
+        el?.focus();
+      }, 0);
+      return next;
+    });
+  };
+
+  const removeBullet = (id: string) => {
+    setBullets((prev) => {
+      const next = prev.filter((b) => b.id !== id);
+      scheduleSave(next);
+      return next;
+    });
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>, bullet: Bullet) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      addBullet(bullet.id);
+    } else if (e.key === "Backspace" && bullet.text === "") {
+      e.preventDefault();
+      const idx = bullets.findIndex((b) => b.id === bullet.id);
+      if (idx > 0) {
+        removeBullet(bullet.id);
+        setTimeout(() => {
+          const prev = bullets[idx - 1];
+          const el = document.querySelector<HTMLTextAreaElement>(`[data-bullet-id="${prev.id}"]`);
+          el?.focus();
+          el?.setSelectionRange(el.value.length, el.value.length);
+        }, 0);
+      } else if (bullets.length === 1) {
+        // Keep at least one empty bullet visible
+        removeBullet(bullet.id);
+      }
+    }
+  };
+
+  const autoGrow = (el: HTMLTextAreaElement) => {
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight}px`;
+  };
+
+  return (
+    <section style={{ marginBottom: 28 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+        <div
+          style={{
+            width: 10, height: 10, borderRadius: 999, background: person.color,
+          }}
+        />
+        <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "#0f172a" }}>{person.name}</h3>
+        <span style={{ fontSize: 12, color: "#94a3b8" }}>{person.team}</span>
+      </div>
+      <div style={{ paddingLeft: 20 }}>
+        {bullets.length === 0 ? (
+          <button
+            onClick={() => addBullet()}
+            style={{
+              fontFamily: "var(--font-sans)", fontSize: 13, color: "#94a3b8",
+              background: "transparent", border: "1px dashed #cbd5e1", borderRadius: 6,
+              padding: "6px 10px", cursor: "text",
+            }}
+          >
+            + Add a bullet
+          </button>
+        ) : (
+          <ul style={{ listStyle: "disc", margin: 0, padding: 0, paddingLeft: 18 }}>
+            {bullets.map((b) => (
+              <li key={b.id} style={{ marginBottom: 6, color: "#1e293b" }}>
+                <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
+                  <textarea
+                    data-bullet-id={b.id}
+                    value={b.text}
+                    onChange={(e) => { updateBullet(b.id, e.target.value); autoGrow(e.currentTarget); }}
+                    onKeyDown={(e) => handleKeyDown(e, b)}
+                    onFocus={(e) => autoGrow(e.currentTarget)}
+                    onBlur={() => handleBlurMaybeAutoLink(b)}
+                    ref={(el) => { if (el) autoGrow(el); }}
+                    rows={1}
+                    placeholder="Type and press Enter"
+                    style={{
+                      flex: 1,
+                      fontFamily: "var(--font-sans)", fontSize: 14, lineHeight: 1.5,
+                      border: "none", outline: "none", resize: "none",
+                      background: "transparent", color: "#1e293b", padding: "2px 0",
+                      overflow: "hidden",
+                    }}
+                  />
+                  {!b.linearIssue && (
+                    <button
+                      onClick={(e) => {
+                        const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                        setLinkPopoverFor({ bulletId: b.id, rect, query: "" });
+                      }}
+                      title="Link a Linear ticket"
+                      style={{
+                        flexShrink: 0, fontSize: 11, fontWeight: 600,
+                        padding: "3px 8px", border: "1px solid #e2e8f0", borderRadius: 6,
+                        background: "white", color: "#64748b", cursor: "pointer",
+                        marginTop: 2,
+                      }}
+                    >
+                      + Link
+                    </button>
+                  )}
+                </div>
+                {b.linearIssue && (
+                  <div style={{ marginTop: 4, marginLeft: 0, display: "flex", alignItems: "center", gap: 6 }}>
+                    <a
+                      href={b.linearIssue.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        display: "inline-flex", alignItems: "center", gap: 6,
+                        fontSize: 11, fontWeight: 600, color: "#4f46e5",
+                        textDecoration: "none",
+                        padding: "3px 8px", borderRadius: 6,
+                        background: "#eef2ff", border: "1px solid #e0e7ff",
+                      }}
+                    >
+                      <span>{b.linearIssue.identifier}</span>
+                      <span style={{ color: "#64748b", fontWeight: 400, maxWidth: 280, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{b.linearIssue.title}</span>
+                    </a>
+                    <button
+                      onClick={() => detachIssue(b.id)}
+                      title="Remove link"
+                      style={{
+                        fontSize: 11, color: "#94a3b8", background: "transparent",
+                        border: "none", cursor: "pointer", padding: "0 4px",
+                      }}
+                    >×</button>
+                  </div>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+        {bullets.length > 0 && (
+          <button
+            onClick={() => addBullet()}
+            style={{
+              fontFamily: "var(--font-sans)", fontSize: 12, color: "#94a3b8",
+              background: "transparent", border: "none", padding: "4px 0",
+              cursor: "pointer", marginTop: 4,
+            }}
+          >
+            + Add bullet
+          </button>
+        )}
+      </div>
+      {linkPopoverFor && (
+        <LinearSearchPopover
+          anchorRect={linkPopoverFor.rect}
+          initialQuery={linkPopoverFor.query}
+          onSelect={(issue) => attachIssue(linkPopoverFor.bulletId, issue)}
+          onClose={() => setLinkPopoverFor(null)}
+        />
+      )}
+    </section>
+  );
+}
+
+function WeeklyPlanningView({ people }: { people: Person[] }) {
+  const [weekKey, setWeekKey] = useState<string>(() => formatWeekKey(getMondayOfWeek(new Date())));
+  const [plans, setPlans] = useState<Record<string, Record<string, Bullet[]>>>({});
+  const [notes, setNotes] = useState<Record<string, string>>({});
+  const [signoffs, setSignoffs] = useState<Record<string, Record<string, { at: string }>>>({});
+  const [loading, setLoading] = useState(true);
+  const [saveState, setSaveState] = useState<"saving" | "saved" | "error" | "idle">("idle");
+  const [noteDraft, setNoteDraft] = useState<string>("");
+  const noteSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    fetchOverrides().then((ov) => {
+      setPlans(ov.weeklyPlans ?? {});
+      setNotes(ov.weekNotes ?? {});
+      setSignoffs(ov.weekSignoffs ?? {});
+      setLoading(false);
+    });
+  }, []);
+
+  // Refetch when another tab/component triggers a save
+  useEffect(() => {
+    const onSaved = () => {
+      fetchOverrides().then((ov) => {
+        setPlans(ov.weeklyPlans ?? {});
+        setNotes(ov.weekNotes ?? {});
+        setSignoffs(ov.weekSignoffs ?? {});
+      });
+    };
+    window.addEventListener("roadmap-saved", onSaved);
+    return () => window.removeEventListener("roadmap-saved", onSaved);
+  }, []);
+
+  useEffect(() => {
+    setNoteDraft(notes[weekKey] ?? "");
+  }, [weekKey, notes]);
+
+  const toggleSignoff = (personName: string) => {
+    const currentlySigned = !!signoffs[weekKey]?.[personName];
+    const next = !currentlySigned;
+    setSignoffs((prev) => {
+      const copy = { ...prev, [weekKey]: { ...(prev[weekKey] ?? {}) } };
+      if (next) {
+        copy[weekKey][personName] = { at: new Date().toISOString() };
+      } else {
+        delete copy[weekKey][personName];
+      }
+      return copy;
+    });
+    setSaveState("saving");
+    saveOverride("toggleWeekSignoff", { weekKey, personName, signed: next })
+      .then(() => setSaveState("saved"))
+      .catch(() => setSaveState("error"));
+  };
+
+  const onNoteChange = (value: string) => {
+    setNoteDraft(value);
+    if (noteSaveTimer.current) clearTimeout(noteSaveTimer.current);
+    setSaveState("saving");
+    noteSaveTimer.current = setTimeout(() => {
+      saveOverride("saveWeekNote", { weekKey, note: value })
+        .then(() => setSaveState("saved"))
+        .catch(() => setSaveState("error"));
+    }, 500);
+  };
+
+  const monday = parseWeekKey(weekKey);
+
+  const handleDateChange = (value: string) => {
+    if (!value) return;
+    const picked = new Date(value + "T00:00:00");
+    const mon = getMondayOfWeek(picked);
+    setWeekKey(formatWeekKey(mon));
+  };
+
+  const shiftWeek = (deltaDays: number) => {
+    const d = parseWeekKey(weekKey);
+    d.setDate(d.getDate() + deltaDays);
+    setWeekKey(formatWeekKey(getMondayOfWeek(d)));
+  };
+
+  const peopleByTeam = WEEKLY_PLANNING_TEAMS.map((teamName) => ({
+    team: teamName,
+    members: people.filter((p) => p.team === teamName),
+  })).filter((g) => g.members.length > 0);
+
+  const weekPlan = plans[weekKey] ?? {};
+
+  const saveStateLabel = saveState === "saving" ? "Saving…" : saveState === "saved" ? "Saved" : saveState === "error" ? "Save failed" : "";
+  const saveStateColor = saveState === "error" ? "#dc2626" : saveState === "saving" ? "#94a3b8" : "#22c55e";
+
+  return (
+    <div style={{ fontFamily: "var(--font-sans)", height: "calc(100vh - 80px)", overflow: "auto", background: "#fafafa" }}>
+      <div style={{ maxWidth: 820, margin: "0 auto", padding: "32px 32px 80px" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24, flexWrap: "wrap", gap: 12 }}>
+          <h1 style={{ margin: 0, fontSize: 24, fontWeight: 800, color: "#0f172a", letterSpacing: "-0.01em" }}>Weekly Planning</h1>
+          {saveStateLabel && (
+            <span style={{ fontSize: 12, color: saveStateColor, fontWeight: 500 }}>{saveStateLabel}</span>
+          )}
+        </div>
+
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 28, padding: "10px 12px", background: "#fff", borderRadius: 10, border: "1px solid #e2e8f0" }}>
+          <button
+            onClick={() => shiftWeek(-7)}
+            style={{ fontSize: 14, fontWeight: 600, padding: "6px 10px", border: "1px solid #e2e8f0", borderRadius: 6, background: "white", cursor: "pointer", color: "#475569" }}
+          >‹</button>
+          <input
+            type="date"
+            value={weekKey}
+            onChange={(e) => handleDateChange(e.target.value)}
+            style={{ fontFamily: "var(--font-sans)", fontSize: 14, padding: "6px 10px", border: "1px solid #e2e8f0", borderRadius: 6, outline: "none" }}
+          />
+          <button
+            onClick={() => shiftWeek(7)}
+            style={{ fontSize: 14, fontWeight: 600, padding: "6px 10px", border: "1px solid #e2e8f0", borderRadius: 6, background: "white", cursor: "pointer", color: "#475569" }}
+          >›</button>
+          <button
+            onClick={() => setWeekKey(formatWeekKey(getMondayOfWeek(new Date())))}
+            style={{ fontSize: 12, fontWeight: 600, padding: "6px 10px", border: "1px solid #e2e8f0", borderRadius: 6, background: "white", cursor: "pointer", color: "#475569", marginLeft: 4 }}
+          >This week</button>
+          <span style={{ marginLeft: "auto", fontSize: 14, color: "#475569", fontWeight: 600 }}>
+            Week of {formatWeekRange(monday)}
+          </span>
+        </div>
+
+        {!loading && (() => {
+          const weekSign = signoffs[weekKey] ?? {};
+          const signedCount = WEEKLY_SIGNOFF_PEOPLE.filter((n) => weekSign[n]).length;
+          const allSigned = signedCount === WEEKLY_SIGNOFF_PEOPLE.length;
+          return (
+            <div
+              style={{
+                marginBottom: 20, padding: "14px 16px",
+                background: allSigned ? "#ecfdf5" : "#fff",
+                border: `1px solid ${allSigned ? "#a7f3d0" : "#e2e8f0"}`,
+                borderRadius: 12,
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10, flexWrap: "wrap", gap: 8 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: "#0f172a" }}>
+                    Plan sign-off
+                  </span>
+                  <span style={{ fontSize: 12, color: allSigned ? "#059669" : "#64748b", fontWeight: 600 }}>
+                    {allSigned ? "✓ All approved" : `${signedCount} / ${WEEKLY_SIGNOFF_PEOPLE.length} approved`}
+                  </span>
+                </div>
+              </div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                {WEEKLY_SIGNOFF_PEOPLE.map((name) => {
+                  const signed = !!weekSign[name];
+                  const at = weekSign[name]?.at;
+                  return (
+                    <button
+                      key={name}
+                      onClick={() => toggleSignoff(name)}
+                      title={signed && at ? `Signed off ${new Date(at).toLocaleString()}` : "Click to sign off"}
+                      style={{
+                        display: "inline-flex", alignItems: "center", gap: 8,
+                        fontFamily: "var(--font-sans)", fontSize: 13, fontWeight: 600,
+                        padding: "6px 12px", borderRadius: 999,
+                        cursor: "pointer",
+                        background: signed ? "#22c55e" : "white",
+                        color: signed ? "white" : "#475569",
+                        border: `1px solid ${signed ? "#16a34a" : "#e2e8f0"}`,
+                      }}
+                    >
+                      <span
+                        style={{
+                          display: "inline-flex", alignItems: "center", justifyContent: "center",
+                          width: 16, height: 16, borderRadius: 4,
+                          background: signed ? "white" : "transparent",
+                          border: `1.5px solid ${signed ? "white" : "#cbd5e1"}`,
+                          color: signed ? "#16a34a" : "transparent",
+                          fontSize: 12, fontWeight: 800, lineHeight: 1,
+                        }}
+                      >
+                        {signed ? "✓" : ""}
+                      </span>
+                      {name}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })()}
+
+        {!loading && (
+          <div style={{ marginBottom: 28 }}>
+            <textarea
+              value={noteDraft}
+              onChange={(e) => onNoteChange(e.target.value)}
+              placeholder="Week intro / context (optional)…"
+              style={{
+                fontFamily: "var(--font-sans)", fontSize: 14, lineHeight: 1.5,
+                width: "100%", minHeight: 80, padding: "12px 14px",
+                border: "1px solid #e2e8f0", borderRadius: 10,
+                background: "#fff", color: "#1e293b", outline: "none",
+                resize: "vertical",
+              }}
+            />
+          </div>
+        )}
+
+        {loading ? (
+          <div style={{ color: "#94a3b8", padding: "40px 0", textAlign: "center" }}>Loading...</div>
+        ) : (
+          peopleByTeam.map((group) => (
+            <div key={group.team} style={{ marginBottom: 36 }}>
+              <h2 style={{ margin: "0 0 16px", fontSize: 13, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                {group.team}
+              </h2>
+              <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, padding: "20px 24px" }}>
+                {group.members.map((person) => (
+                  <PersonWeekSection
+                    key={`${weekKey}-${person.name}`}
+                    person={person}
+                    weekKey={weekKey}
+                    initialBullets={weekPlan[person.name] ?? []}
+                    onSavedStateChange={(s) => setSaveState(s)}
+                  />
+                ))}
+              </div>
+            </div>
+          ))
         )}
       </div>
     </div>
@@ -4256,7 +4930,7 @@ function CyclesView({ cycles, people }: { cycles: LinearCycle[]; people: Person[
 
 export function RoadmapView({ people, months, phases, teams, initialOverrides }: RoadmapViewProps) {
   const [search, setSearch] = useState("");
-  const [viewMode, setViewMode] = useState<"projects" | "subtestEdits" | "cycles" | "futureProjects">("projects");
+  const [viewMode, setViewMode] = useState<"projects" | "subtestEdits" | "cycles" | "futureProjects" | "weeklyPlanning">("projects");
   const [filterTeams, setFilterTeams] = useState<Set<string>>(new Set());
   const [filterPeople, setFilterPeople] = useState<Set<string>>(new Set());
   const [selected, setSelected] = useState<{
@@ -5791,6 +6465,8 @@ export function RoadmapView({ people, months, phases, teams, initialOverrides }:
         <CyclesView cycles={cycles} people={localPeople} />
       ) : viewMode === "subtestEdits" ? (
         <TasksView people={localPeople} onIssueClick={setSelectedLinearIssueId} />
+      ) : viewMode === "weeklyPlanning" ? (
+        <WeeklyPlanningView people={localPeople} />
       ) : viewMode === "futureProjects" ? (
         <FutureProjectsView
           people={localPeople}
