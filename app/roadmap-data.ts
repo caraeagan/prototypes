@@ -79,10 +79,10 @@ export const PHASES: Phase[] = [
 
 export const TEAMS: Team[] = [
   { name: "Engineering", color: "#2563EB", members: ["Oleksii", "John", "Luida", "AK", "Hlib", "Lucie", "Alex"] },
+  { name: "Product", color: "#EAB308", members: ["Cara"] },
   { name: "Design", color: "#A16207", members: ["Maria", "Carlos"] },
   { name: "Psychometrics", color: "#D97706", members: ["Erica", "David"] },
   { name: "Operations & GTM", color: "#1D4ED8", members: ["Eleanor", "Erin", "Stef", "Sam", "Molly"] },
-  { name: "Product", color: "#EAB308", members: ["Cara"] },
 ];
 
 // ── Helper to generate task IDs ────────────────────────────────────────────

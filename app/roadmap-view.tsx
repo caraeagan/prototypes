@@ -6839,6 +6839,29 @@ export function RoadmapView({ people, months, phases, teams, initialOverrides }:
                               }}
                             />
                           </div>
+                          {isHovered && !isRenaming && !isDragging && (
+                            <div
+                              className="project-bar-tooltip"
+                              style={{
+                                position: "absolute",
+                                left: x + w / 2,
+                                top: y - 8,
+                                transform: "translate(-50%, -100%)",
+                                background: "#1e293b",
+                                color: "#fff",
+                                fontSize: 12,
+                                fontWeight: 600,
+                                padding: "5px 9px",
+                                borderRadius: 6,
+                                whiteSpace: "nowrap",
+                                pointerEvents: "none",
+                                boxShadow: "0 4px 12px rgba(0, 0, 0, 0.18)",
+                                zIndex: 20,
+                              }}
+                            >
+                              {project.name}
+                            </div>
+                          )}
                         </div>
                       );
                     })
