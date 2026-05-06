@@ -37,6 +37,10 @@ export type RoadmapOverrides = {
       }[]
     >
   >;
+  // ticketOrders[weekKey][personName] = ordered Linear issue IDs for that
+  // person's bullet column in the given week. Unknown IDs fall back to API
+  // order (appended at the end).
+  ticketOrders?: Record<string, Record<string, string[]>>;
 };
 
 function sleep(ms: number) {

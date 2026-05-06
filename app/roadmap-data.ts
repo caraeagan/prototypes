@@ -252,6 +252,14 @@ export const PEOPLE: Person[] = [
         duration: 4,
         tasks: [],
       },
+      {
+        id: "p052",
+        name: "Liveblocks Decoupling",
+        linearProjectName: "Liveblocks Decoupling",
+        startMonth: 2,
+        duration: 3,
+        tasks: [],
+      },
     ],
   },
   {

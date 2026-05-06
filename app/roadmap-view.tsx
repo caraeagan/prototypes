@@ -2217,7 +2217,6 @@ function FilterBar({
             {([
               ["projects", "Projects"],
               ["subtestEdits", "Tasks"],
-              ["cycles", "Cycles"],
               ["futureProjects", "Future Projects"],
               ["weeklyPlanning", "Weekly Planning"],
             ] as const).map(([mode, label]) => {
@@ -2255,32 +2254,6 @@ function FilterBar({
         </div>
       </div>
       <div className="filter-bar-right">
-        <MultiSelect
-          label="Teams"
-          options={teams.map((t) => t.name)}
-          selected={filterTeams}
-          onToggle={onToggleTeam}
-          onClear={onClearTeams}
-        />
-        <MultiSelect
-          label="People"
-          options={(filterTeams.size > 0 ? people.filter((p) => {
-            for (const tn of filterTeams) {
-              const t = teams.find((t2) => t2.name === tn);
-              if (t?.members.includes(p.name)) return true;
-            }
-            return false;
-          }) : people).map((p) => p.name)}
-          selected={filterPeople}
-          onToggle={onTogglePerson}
-          onClear={onClearPeople}
-        />
-        <CycleSelect
-          cycles={cycles}
-          selectedCycleId={selectedCycleId}
-          onSelect={onCycleSelect}
-          loading={cyclesLoading}
-        />
         <input
           type="text"
           className="filter-search"
@@ -2288,7 +2261,6 @@ function FilterBar({
           value={search}
           onChange={(e) => onSearch(e.target.value)}
         />
-        <ZoomControls zoom={zoom} onZoom={onZoom} />
         <button
           onClick={onUndo}
           disabled={!canUndo}
@@ -2302,18 +2274,6 @@ function FilterBar({
           }}
         >
           Undo
-        </button>
-        <button
-          onClick={onPrint}
-          title="Print / Export"
-          style={{
-            fontFamily: "var(--font-sans)", fontSize: 13, fontWeight: 600,
-            height: 32, padding: "0 12px", cursor: "pointer",
-            borderRadius: 8, border: "1px solid #e0e0ea",
-            background: "#f8f9fb", color: "#1e293b",
-          }}
-        >
-          Print
         </button>
       </div>
     </div>
@@ -2397,7 +2357,6 @@ function normalizeAssigneeName(displayName: string): string | null {
     "oleksii.zhaboiedov": "Oleksii",
     hlib: "Hlib",
     liuda: "Luida",
-    lillian: "Luida",
     john: "John",
     luida: "Luida",
     ak: "AK",
@@ -3022,6 +2981,1557 @@ function FutureProjectsView({ people, onAssignToRoadmap }: { people: Person[]; o
             </button>
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+// ── Product Roadmap View ───────────────────────────────────────────────
+
+type PRGranularity = "year" | "month" | "week";
+type PRTeamFilter = "all" | "engProd" | "opsGtm";
+
+const PR_ENG_PROD_PEOPLE = new Set([
+  "Cara",
+  "Alex",
+  "Lucie",
+  "John",
+  "Luida",
+  "Oleksii",
+  "AK",
+  "Hlib",
+]);
+
+type StandaloneTicket = {
+  id: string;
+  identifier: string;
+  url: string;
+  title: string;
+  state: { name: string; color: string; type: string };
+  dueDate: string;
+  assigneeName: string;
+  projectId: string | null;
+  projectName: string | null;
+  priority: number;
+  cycleId: string | null;
+};
+
+const PR_SHORT_MO = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const PR_FULL_MO = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+function projectAbsoluteRange(p: { startMonth: number; duration: number }): { start: Date; end: Date } {
+  const startWhole = Math.floor(p.startMonth);
+  const startFrac = Math.round((p.startMonth - startWhole) * 30.44);
+  const start = new Date(2026, 2 + startWhole, 1 + startFrac);
+  const endIdx = p.startMonth + p.duration;
+  const endWhole = Math.floor(endIdx);
+  const endFrac = Math.round((endIdx - endWhole) * 30.44);
+  const endExclusive = new Date(2026, 2 + endWhole, 1 + endFrac);
+  const end = new Date(endExclusive);
+  end.setDate(end.getDate() - 1);
+  return { start, end };
+}
+
+function rangesOverlap(a: { start: Date; end: Date }, b: { start: Date; end: Date }): boolean {
+  return a.start <= b.end && a.end >= b.start;
+}
+
+function prStartOfMonth(year: number, month: number): Date {
+  return new Date(year, month, 1);
+}
+function prEndOfMonth(year: number, month: number): Date {
+  return new Date(year, month + 1, 0);
+}
+
+function prWeeksInMonth(year: number, month: number): { start: Date; end: Date; label: string }[] {
+  const weeks: { start: Date; end: Date; label: string }[] = [];
+  const firstOfMonth = prStartOfMonth(year, month);
+  const lastOfMonth = prEndOfMonth(year, month);
+  const cursor = new Date(firstOfMonth);
+  const dow = cursor.getDay();
+  cursor.setDate(cursor.getDate() + (dow === 0 ? -6 : 1 - dow));
+  while (cursor <= lastOfMonth) {
+    const sun = new Date(cursor);
+    sun.setDate(sun.getDate() + 6);
+    const sm = PR_SHORT_MO[cursor.getMonth()];
+    const em = PR_SHORT_MO[sun.getMonth()];
+    const label = sm === em
+      ? `${sm} ${cursor.getDate()}–${sun.getDate()}`
+      : `${sm} ${cursor.getDate()} – ${em} ${sun.getDate()}`;
+    weeks.push({ start: new Date(cursor), end: sun, label });
+    cursor.setDate(cursor.getDate() + 7);
+  }
+  return weeks;
+}
+
+function ghostDimensionsFor(p: { startDate: string | null; targetDate: string | null }): { startMonth: number; duration: number } | null {
+  let start: Date | null = p.startDate ? new Date(p.startDate + "T00:00:00") : null;
+  let end: Date | null = p.targetDate ? new Date(p.targetDate + "T00:00:00") : null;
+  if (!start && !end) {
+    start = new Date();
+    start.setHours(0, 0, 0, 0);
+    end = new Date(start);
+    end.setDate(end.getDate() + 28);
+  } else if (!start && end) {
+    start = new Date(end);
+    start.setDate(start.getDate() - 28);
+  } else if (start && !end) {
+    end = new Date(start);
+    end.setDate(end.getDate() + 28);
+  }
+  const toIso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const startMonth = dateToMonthIndex(toIso(start!));
+  const endMonth = dateToMonthIndex(toIso(end!));
+  return {
+    startMonth: Math.max(0, startMonth),
+    duration: Math.max(0.25, endMonth - startMonth),
+  };
+}
+
+function prFractionalColPos(date: Date, columns: { start: Date; end: Date }[]): number {
+  if (columns.length === 0) return 0;
+  if (date < columns[0].start) return 0;
+  for (let i = 0; i < columns.length; i++) {
+    const colStart = columns[i].start;
+    const colEnd = new Date(columns[i].end);
+    colEnd.setDate(colEnd.getDate() + 1);
+    if (date >= colStart && date < colEnd) {
+      const total = colEnd.getTime() - colStart.getTime();
+      return i + (total > 0 ? (date.getTime() - colStart.getTime()) / total : 0);
+    }
+  }
+  return columns.length;
+}
+
+const prNavBtnStyle: React.CSSProperties = {
+  fontFamily: "var(--font-sans)",
+  fontSize: 13,
+  fontWeight: 600,
+  width: 28,
+  height: 28,
+  padding: 0,
+  border: "1px solid #e2e8f0",
+  borderRadius: 6,
+  background: "white",
+  color: "#475569",
+  cursor: "pointer",
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+};
+
+type PRDragState = {
+  projectId: string;
+  personName: string;
+  mode: "move" | "resize";
+  startMouseX: number;
+  originalStartMonth: number;
+  originalDuration: number;
+  currentStartMonth: number;
+  currentDuration: number;
+};
+
+function FilterPopover({
+  people,
+  teamFilter,
+  setTeamFilter,
+  selectedPeople,
+  setSelectedPeople,
+  showDiscovered,
+  setShowDiscovered,
+  onClose,
+  anchorRef,
+}: {
+  people: Person[];
+  teamFilter: PRTeamFilter;
+  setTeamFilter: (t: PRTeamFilter) => void;
+  selectedPeople: Set<string>;
+  setSelectedPeople: (s: Set<string>) => void;
+  showDiscovered: boolean;
+  setShowDiscovered: (v: boolean) => void;
+  onClose: () => void;
+  anchorRef: React.RefObject<HTMLButtonElement | null>;
+}) {
+  const popoverRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const onDocClick = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (popoverRef.current?.contains(target)) return;
+      if (anchorRef.current?.contains(target)) return;
+      onClose();
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("mousedown", onDocClick);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDocClick);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [anchorRef, onClose]);
+
+  // Show only people within the active team filter for the person checklist.
+  const peopleForChecklist = useMemo(() => {
+    if (teamFilter === "engProd") {
+      return people.filter((p) => PR_ENG_PROD_PEOPLE.has(p.name));
+    }
+    if (teamFilter === "opsGtm") {
+      return people.filter((p) => !PR_ENG_PROD_PEOPLE.has(p.name));
+    }
+    return people;
+  }, [people, teamFilter]);
+
+  const togglePerson = (name: string) => {
+    const next = new Set(selectedPeople);
+    if (next.has(name)) next.delete(name);
+    else next.add(name);
+    setSelectedPeople(next);
+  };
+
+  const clearAll = () => {
+    setTeamFilter("all");
+    setSelectedPeople(new Set());
+    setShowDiscovered(false);
+  };
+
+  return (
+    <div
+      ref={popoverRef}
+      style={{
+        position: "absolute",
+        top: "calc(100% + 6px)",
+        right: 0,
+        width: 300,
+        background: "white",
+        border: "1px solid #e2e8f0",
+        borderRadius: 10,
+        boxShadow: "0 12px 32px rgba(15,23,42,0.18)",
+        zIndex: 1000,
+        padding: 12,
+        fontFamily: "var(--font-sans)",
+      }}
+    >
+      <div style={{ fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>
+        Team
+      </div>
+      <div style={{ display: "flex", background: "#f1f5f9", borderRadius: 8, padding: 2, marginBottom: 14 }}>
+        {([
+          ["all", "All"],
+          ["engProd", "Eng / Prod"],
+          ["opsGtm", "Ops / GTM"],
+        ] as const).map(([key, label]) => {
+          const active = teamFilter === key;
+          return (
+            <button
+              key={key}
+              onClick={() => {
+                setTeamFilter(key);
+                // Clearing person filter when switching teams keeps the
+                // checklist consistent — picks from the previous team would
+                // otherwise show as "missing" from the new view.
+                setSelectedPeople(new Set());
+              }}
+              style={{
+                flex: 1,
+                fontSize: 12,
+                fontWeight: 600,
+                height: 26,
+                border: "none",
+                borderRadius: 6,
+                cursor: "pointer",
+                background: active ? "white" : "transparent",
+                color: active ? "#1e293b" : "#64748b",
+                boxShadow: active ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
+              }}
+            >
+              {label}
+            </button>
+          );
+        })}
+      </div>
+
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+        <span style={{ fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+          People
+        </span>
+        {selectedPeople.size > 0 && (
+          <button
+            onClick={() => setSelectedPeople(new Set())}
+            style={{ fontSize: 11, color: "#6366f1", background: "none", border: "none", cursor: "pointer", padding: 0 }}
+          >
+            Clear
+          </button>
+        )}
+      </div>
+      <div style={{ maxHeight: 220, overflow: "auto", marginBottom: 14, border: "1px solid #e2e8f0", borderRadius: 8 }}>
+        {peopleForChecklist.length === 0 && (
+          <div style={{ padding: 10, fontSize: 12, color: "#94a3b8" }}>No people in this team.</div>
+        )}
+        {peopleForChecklist.map((p) => {
+          const checked = selectedPeople.has(p.name);
+          return (
+            <label
+              key={p.name}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "8px 10px",
+                cursor: "pointer",
+                fontSize: 13,
+                color: "#1e293b",
+                borderBottom: "1px solid #f1f5f9",
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={checked}
+                onChange={() => togglePerson(p.name)}
+                style={{ margin: 0, cursor: "pointer" }}
+              />
+              <span style={{ width: 8, height: 8, borderRadius: 999, background: p.color }} />
+              {p.name}
+            </label>
+          );
+        })}
+      </div>
+
+      <label
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          padding: "8px 10px",
+          cursor: "pointer",
+          fontSize: 13,
+          color: "#1e293b",
+          borderRadius: 8,
+          background: showDiscovered ? "#eef2ff" : "transparent",
+          border: `1px solid ${showDiscovered ? "#c7d2fe" : "transparent"}`,
+        }}
+      >
+        <input
+          type="checkbox"
+          checked={showDiscovered}
+          onChange={(e) => setShowDiscovered(e.target.checked)}
+          style={{ margin: 0, cursor: "pointer" }}
+        />
+        Show all Linear projects
+      </label>
+
+      <div style={{ display: "flex", gap: 6, marginTop: 12 }}>
+        <button
+          onClick={clearAll}
+          style={{
+            flex: 1,
+            fontSize: 12,
+            fontWeight: 600,
+            height: 30,
+            border: "1px solid #e2e8f0",
+            borderRadius: 6,
+            background: "white",
+            color: "#475569",
+            cursor: "pointer",
+          }}
+        >
+          Reset
+        </button>
+        <button
+          onClick={onClose}
+          style={{
+            flex: 1,
+            fontSize: 12,
+            fontWeight: 600,
+            height: 30,
+            border: "none",
+            borderRadius: 6,
+            background: "#0f172a",
+            color: "white",
+            cursor: "pointer",
+          }}
+        >
+          Done
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function ProductRoadmapView({
+  people,
+  phases,
+  cycles,
+  restrictPeople,
+  onProjectClick,
+  onIssueClick,
+  onMoveProject,
+}: {
+  people: Person[];
+  phases?: Phase[];
+  cycles?: LinearCycle[];
+  restrictPeople?: string[] | null;
+  onProjectClick: (project: Project, person: Person) => void;
+  onIssueClick: (issueId: string) => void;
+  onMoveProject?: (
+    personName: string,
+    projectId: string,
+    newStartMonth: number,
+    newDuration: number,
+    prevStartMonth: number,
+    prevDuration: number,
+  ) => void;
+}) {
+  const today = new Date();
+  const [granularity, setGranularity] = useState<PRGranularity>("year");
+  const [year, setYear] = useState(today.getFullYear());
+  const [month, setMonth] = useState(today.getMonth());
+  const [weekStartIso, setWeekStartIso] = useState(() => {
+    const d = new Date(today);
+    d.setHours(0, 0, 0, 0);
+    const dow = d.getDay();
+    d.setDate(d.getDate() + (dow === 0 ? -6 : 1 - dow));
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  });
+
+  const [tickets, setTickets] = useState<StandaloneTicket[]>([]);
+  const [ticketsLoading, setTicketsLoading] = useState(true);
+  const [showSubtestEdits, setShowSubtestEdits] = useState(false);
+  const [teamFilter, setTeamFilter] = useState<PRTeamFilter>("all");
+  const [selectedPeople, setSelectedPeople] = useState<Set<string>>(new Set());
+  const [filterOpen, setFilterOpen] = useState(false);
+  const filterBtnRef = useRef<HTMLButtonElement | null>(null);
+
+  // Saved per-cell ticket orderings. Key: "weekKey|personName" → ordered IDs.
+  const [ticketOrders, setTicketOrders] = useState<Record<string, Record<string, string[]>>>({});
+  useEffect(() => {
+    let cancelled = false;
+    fetchOverrides().then((ov) => {
+      if (!cancelled) setTicketOrders(ov.ticketOrders ?? {});
+    });
+    const onSaved = () => {
+      fetchOverrides().then((ov) => {
+        if (!cancelled) setTicketOrders(ov.ticketOrders ?? {});
+      });
+    };
+    window.addEventListener("roadmap-saved", onSaved);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("roadmap-saved", onSaved);
+    };
+  }, []);
+
+  type TicketDragState = {
+    weekKey: string;
+    personName: string;
+    ticketId: string;
+    fromIndex: number;
+    currentIndex: number;
+    items: string[]; // current ordered IDs (for preview)
+  };
+  const ticketDragRef = useRef<TicketDragState | null>(null);
+  const ticketDidDragRef = useRef(false);
+  const [, setTicketDragTick] = useState(0);
+  const bumpTicketDrag = () => setTicketDragTick((t) => t + 1);
+
+  useEffect(() => {
+    const onMove = (e: MouseEvent) => {
+      const ds = ticketDragRef.current;
+      if (!ds) return;
+      ticketDidDragRef.current = true;
+      const container = document.querySelector<HTMLElement>(
+        `[data-bullets-cell="${CSS.escape(ds.weekKey)}:${CSS.escape(ds.personName)}"]`,
+      );
+      if (!container) return;
+      const bullets = Array.from(
+        container.querySelectorAll<HTMLElement>("[data-bullet-row]"),
+      );
+      if (bullets.length === 0) return;
+      let next = bullets.length - 1;
+      for (let i = 0; i < bullets.length; i++) {
+        const rect = bullets[i].getBoundingClientRect();
+        if (e.clientY < rect.top + rect.height / 2) {
+          next = i;
+          break;
+        }
+      }
+      if (next !== ds.currentIndex) {
+        ds.currentIndex = next;
+        bumpTicketDrag();
+      }
+    };
+    const onUp = () => {
+      const ds = ticketDragRef.current;
+      if (!ds) return;
+      const moved = ds.fromIndex !== ds.currentIndex;
+      if (moved && ticketDidDragRef.current) {
+        const next = [...ds.items];
+        const [m] = next.splice(ds.fromIndex, 1);
+        next.splice(ds.currentIndex, 0, m);
+        // Optimistic local update
+        setTicketOrders((prev) => {
+          const copy = { ...prev };
+          if (!copy[ds.weekKey]) copy[ds.weekKey] = {};
+          else copy[ds.weekKey] = { ...copy[ds.weekKey] };
+          copy[ds.weekKey][ds.personName] = next;
+          return copy;
+        });
+        saveOverride("saveTicketOrder", {
+          weekKey: ds.weekKey,
+          personName: ds.personName,
+          order: next,
+        }).catch(() => {});
+      }
+      ticketDragRef.current = null;
+      // Defer clearing didDrag so the click handler can read it.
+      setTimeout(() => { ticketDidDragRef.current = false; }, 0);
+      bumpTicketDrag();
+    };
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+    return () => {
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+    };
+  }, []);
+
+  const startTicketDrag = (
+    e: React.MouseEvent,
+    weekKey: string,
+    personName: string,
+    ticketId: string,
+    items: string[],
+  ) => {
+    e.stopPropagation();
+    e.preventDefault();
+    ticketDidDragRef.current = false;
+    const fromIndex = items.indexOf(ticketId);
+    if (fromIndex < 0) return;
+    ticketDragRef.current = {
+      weekKey,
+      personName,
+      ticketId,
+      fromIndex,
+      currentIndex: fromIndex,
+      items,
+    };
+    bumpTicketDrag();
+  };
+
+  // Auto-discovered Linear projects (not in roadmap-data.ts). One ghost bar
+  // per (project, assignee with open work).
+  type DiscoveredProject = {
+    id: string;
+    name: string;
+    startDate: string | null;
+    targetDate: string | null;
+    assigneeNames: Set<string>;
+  };
+  const [discoveredProjects, setDiscoveredProjects] = useState<DiscoveredProject[]>([]);
+  const [showDiscovered, setShowDiscovered] = useState(false);
+
+  // One-time fetch of all Linear projects + open ticket assignees.
+  useEffect(() => {
+    let cancelled = false;
+    linearQuery<{
+      projects: {
+        nodes: {
+          id: string;
+          name: string;
+          startDate: string | null;
+          targetDate: string | null;
+          state: string;
+          issues: {
+            nodes: {
+              state: { type: string };
+              assignee: { displayName: string } | null;
+            }[];
+          };
+        }[];
+      };
+    }>(
+      `query AllProjectsAssignees {
+        projects(first: 100, includeArchived: true) {
+          nodes {
+            id name startDate targetDate state
+            issues(first: 100, includeArchived: true) {
+              nodes {
+                state { type }
+                assignee { displayName }
+              }
+            }
+          }
+        }
+      }`,
+    )
+      .then((data) => {
+        if (cancelled) return;
+        const out: DiscoveredProject[] = [];
+        for (const p of data.projects.nodes) {
+          if (p.state === "completed" || p.state === "canceled") continue;
+          const assignees = new Set<string>();
+          for (const issue of p.issues?.nodes ?? []) {
+            if (issue.state.type === "completed" || issue.state.type === "canceled") continue;
+            if (!issue.assignee) continue;
+            const norm = normalizeAssigneeName(issue.assignee.displayName);
+            if (norm) assignees.add(norm);
+          }
+          if (assignees.size === 0) continue;
+          out.push({
+            id: p.id,
+            name: p.name,
+            startDate: p.startDate,
+            targetDate: p.targetDate,
+            assigneeNames: assignees,
+          });
+        }
+        setDiscoveredProjects(out);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setDiscoveredProjects([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+
+  const dragRef = useRef<PRDragState | null>(null);
+  const didDragRef = useRef(false);
+  const [, setDragTick] = useState(0);
+  const forceRender = () => setDragTick((t) => t + 1);
+
+  const visiblePeople = useMemo(() => {
+    let base: Person[];
+    if (restrictPeople && restrictPeople.length > 0) {
+      const byName: Record<string, Person> = {};
+      for (const p of people) byName[p.name] = p;
+      base = restrictPeople
+        .map((n) => byName[n])
+        .filter((p): p is Person => !!p);
+    } else {
+      base = people;
+    }
+    if (teamFilter === "engProd") {
+      base = base.filter((p) => PR_ENG_PROD_PEOPLE.has(p.name));
+    } else if (teamFilter === "opsGtm") {
+      base = base.filter((p) => !PR_ENG_PROD_PEOPLE.has(p.name));
+    }
+    if (selectedPeople.size > 0) {
+      base = base.filter((p) => selectedPeople.has(p.name));
+    }
+    return base;
+  }, [people, restrictPeople, teamFilter, selectedPeople]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setTicketsLoading(true);
+    // Fetch every open issue with an assignee, across all projects, paginating
+    // until the workspace's open backlog is fully loaded.
+    type IssuesPage = {
+      issues: {
+        nodes: {
+          id: string;
+          identifier: string;
+          url: string;
+          title: string;
+          state: { name: string; color: string; type: string };
+          assignee: { id: string; displayName: string } | null;
+          project: { id: string; name: string } | null;
+          cycle: { id: string } | null;
+          dueDate: string | null;
+          startedAt: string | null;
+          createdAt: string;
+          priority: number;
+        }[];
+        pageInfo: { hasNextPage: boolean; endCursor: string | null };
+      };
+    };
+    (async () => {
+      const collected: StandaloneTicket[] = [];
+      let after: string | null = null;
+      let pages = 0;
+      try {
+        while (pages < 8) {
+          const data: IssuesPage = await linearQuery<IssuesPage>(
+            `query OpenAssignedIssues($after: String) {
+              issues(first: 250, after: $after, includeArchived: true) {
+                nodes {
+                  id identifier url title
+                  state { name color type }
+                  assignee { id displayName }
+                  project { id name }
+                  cycle { id }
+                  dueDate startedAt createdAt priority
+                }
+                pageInfo { hasNextPage endCursor }
+              }
+            }`,
+            { after: after as string | null },
+          );
+          for (const n of data.issues.nodes) {
+            if (!n.assignee) continue;
+            const personName = normalizeAssigneeName(n.assignee.displayName);
+            if (!personName) continue;
+            if (n.state.type === "completed" || n.state.type === "canceled") continue;
+            const fallbackDate = n.dueDate ?? n.startedAt ?? n.createdAt;
+            collected.push({
+              id: n.id,
+              identifier: n.identifier,
+              url: n.url,
+              title: n.title,
+              state: n.state,
+              dueDate: fallbackDate.split("T")[0],
+              assigneeName: personName,
+              projectId: n.project?.id ?? null,
+              projectName: n.project?.name ?? null,
+              priority: n.priority,
+              cycleId: n.cycle?.id ?? null,
+            });
+          }
+          if (!data.issues.pageInfo.hasNextPage || !data.issues.pageInfo.endCursor) break;
+          after = data.issues.pageInfo.endCursor;
+          pages += 1;
+        }
+        if (!cancelled) {
+          setTickets(collected);
+          setTicketsLoading(false);
+        }
+      } catch {
+        if (!cancelled) {
+          setTickets([]);
+          setTicketsLoading(false);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const columns = useMemo<{ start: Date; end: Date; label: string }[]>(() => {
+    if (granularity === "year") {
+      // Show 24 months starting from January of the selected year, so users
+      // can see into the following year(s) without paginating.
+      return Array.from({ length: 24 }, (_, i) => {
+        const m = i % 12;
+        const y = year + Math.floor(i / 12);
+        return {
+          start: prStartOfMonth(y, m),
+          end: prEndOfMonth(y, m),
+          label: i === 0 || m === 0 ? `${PR_SHORT_MO[m]} ${y}` : PR_SHORT_MO[m],
+        };
+      });
+    }
+    if (granularity === "month") {
+      return prWeeksInMonth(year, month);
+    }
+    const start = new Date(weekStartIso + "T00:00:00");
+    const end = new Date(start);
+    end.setDate(end.getDate() + 6);
+    const sm = PR_SHORT_MO[start.getMonth()];
+    const em = PR_SHORT_MO[end.getMonth()];
+    const label = sm === em
+      ? `${sm} ${start.getDate()}–${end.getDate()}, ${end.getFullYear()}`
+      : `${sm} ${start.getDate()} – ${em} ${end.getDate()}, ${end.getFullYear()}`;
+    return [{ start, end, label }];
+  }, [granularity, year, month, weekStartIso]);
+
+  const visibleRange = useMemo(() => {
+    if (columns.length === 0) return null;
+    return { start: columns[0].start, end: columns[columns.length - 1].end };
+  }, [columns]);
+
+  const navigatePrev = () => {
+    if (granularity === "year") setYear((y) => y - 1);
+    else if (granularity === "month") {
+      if (month === 0) {
+        setMonth(11);
+        setYear((y) => y - 1);
+      } else setMonth((m) => m - 1);
+    } else {
+      const d = new Date(weekStartIso + "T00:00:00");
+      d.setDate(d.getDate() - 7);
+      setWeekStartIso(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`);
+    }
+  };
+  const navigateNext = () => {
+    if (granularity === "year") setYear((y) => y + 1);
+    else if (granularity === "month") {
+      if (month === 11) {
+        setMonth(0);
+        setYear((y) => y + 1);
+      } else setMonth((m) => m + 1);
+    } else {
+      const d = new Date(weekStartIso + "T00:00:00");
+      d.setDate(d.getDate() + 7);
+      setWeekStartIso(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`);
+    }
+  };
+  const navigateToday = () => {
+    const t = new Date();
+    setYear(t.getFullYear());
+    setMonth(t.getMonth());
+    const d = new Date(t);
+    d.setHours(0, 0, 0, 0);
+    const dow = d.getDay();
+    d.setDate(d.getDate() + (dow === 0 ? -6 : 1 - dow));
+    setWeekStartIso(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`);
+  };
+
+  const title = useMemo(() => {
+    if (granularity === "year") return "";
+    if (granularity === "month") return `${PR_FULL_MO[month]} ${year}`;
+    return `Week of ${columns[0]?.label ?? ""}`;
+  }, [granularity, year, month, columns]);
+
+  const SIDEBAR = 160;
+  const MIN_COL_WIDTH = granularity === "week" ? 720 : granularity === "year" ? 100 : 220;
+  const ROW_PAD_Y = 12;
+  const ROW_BAR_HEIGHT = 30;
+  const ROW_BAR_GAP = 6;
+  const BULLET_LINE_HEIGHT = 22;
+
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const [containerWidth, setContainerWidth] = useState(0);
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const ro = new ResizeObserver((entries) => {
+      for (const e of entries) setContainerWidth(e.contentRect.width);
+    });
+    ro.observe(containerRef.current);
+    return () => ro.disconnect();
+  }, []);
+
+  const colWidth = useMemo(() => {
+    if (containerWidth <= 0 || columns.length === 0) return MIN_COL_WIDTH;
+    const avail = containerWidth - SIDEBAR;
+    return Math.max(MIN_COL_WIDTH, Math.floor(avail / columns.length));
+  }, [containerWidth, columns.length, MIN_COL_WIDTH]);
+
+  // Drag listeners. Pixel→fractional-month conversion uses days-per-column
+  // based on the active granularity (year=month per col, month/week=week per col).
+  useEffect(() => {
+    if (!onMoveProject) return;
+    const daysPerCol = granularity === "year" ? 30.44 : 7;
+    const monthsPerPx = (daysPerCol / colWidth) / 30.44;
+    const onMove = (e: MouseEvent) => {
+      const ds = dragRef.current;
+      if (!ds) return;
+      const dx = e.clientX - ds.startMouseX;
+      if (Math.abs(dx) > 3) didDragRef.current = true;
+      const dMonths = dx * monthsPerPx;
+      if (ds.mode === "move") {
+        ds.currentStartMonth = Math.max(0, ds.originalStartMonth + dMonths);
+      } else {
+        const minDur = 7 / 30.44;
+        ds.currentDuration = Math.max(minDur, ds.originalDuration + dMonths);
+      }
+      forceRender();
+    };
+    const onUp = () => {
+      const ds = dragRef.current;
+      if (!ds) return;
+      if (didDragRef.current) {
+        // Snap to whole weeks for cleaner placement
+        const snap = (m: number) => Math.round((m * 30.44) / 7) * 7 / 30.44;
+        const newStart = snap(ds.currentStartMonth);
+        const newDuration = Math.max(7 / 30.44, snap(ds.currentDuration));
+        if (
+          Math.abs(newStart - ds.originalStartMonth) > 0.005 ||
+          Math.abs(newDuration - ds.originalDuration) > 0.005
+        ) {
+          onMoveProject(
+            ds.personName,
+            ds.projectId,
+            newStart,
+            newDuration,
+            ds.originalStartMonth,
+            ds.originalDuration,
+          );
+        }
+      }
+      dragRef.current = null;
+      // Defer clearing didDrag so the click handler can read it.
+      setTimeout(() => { didDragRef.current = false; }, 0);
+      forceRender();
+    };
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+    return () => {
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+    };
+  }, [granularity, colWidth, onMoveProject]);
+
+  const startDrag = (e: React.MouseEvent, project: Project, person: Person, mode: "move" | "resize") => {
+    if (!onMoveProject) return;
+    e.stopPropagation();
+    e.preventDefault();
+    didDragRef.current = false;
+    dragRef.current = {
+      projectId: project.id,
+      personName: person.name,
+      mode,
+      startMouseX: e.clientX,
+      originalStartMonth: project.startMonth,
+      originalDuration: project.duration,
+      currentStartMonth: project.startMonth,
+      currentDuration: project.duration,
+    };
+    forceRender();
+  };
+
+  function ticketColumnIndex(dueDate: string): number {
+    const d = new Date(dueDate + "T00:00:00");
+    for (let i = 0; i < columns.length; i++) {
+      const colEnd = new Date(columns[i].end);
+      colEnd.setHours(23, 59, 59, 999);
+      if (d >= columns[i].start && d <= colEnd) return i;
+    }
+    return -1;
+  }
+
+  // For each visible column, the Linear cycle whose date range overlaps it.
+  // null when no cycle covers the column. Cycles are 7-day Mon-Sun windows
+  // for the Marker Method team.
+  const cycleByColumn = useMemo<(LinearCycle | null)[]>(() => {
+    if (!cycles || cycles.length === 0) return columns.map(() => null);
+    return columns.map((col) => {
+      const colStart = col.start;
+      const colEnd = new Date(col.end);
+      colEnd.setHours(23, 59, 59, 999);
+      // Pick the cycle whose window has the largest overlap with the column.
+      let best: LinearCycle | null = null;
+      let bestOverlap = 0;
+      for (const c of cycles) {
+        const cs = new Date(c.startsAt);
+        const ce = new Date(c.endsAt);
+        const overlapStart = Math.max(cs.getTime(), colStart.getTime());
+        const overlapEnd = Math.min(ce.getTime(), colEnd.getTime());
+        const overlap = overlapEnd - overlapStart;
+        if (overlap > bestOverlap) {
+          bestOverlap = overlap;
+          best = c;
+        }
+      }
+      return best;
+    });
+  }, [columns, cycles]);
+
+  // Where to drop expanded-project tickets when their date is missing or out
+  // of the visible window — pick the column containing today, else first.
+  const anchorColumnIndex = useMemo(() => {
+    const t = new Date();
+    t.setHours(0, 0, 0, 0);
+    for (let i = 0; i < columns.length; i++) {
+      const colEnd = new Date(columns[i].end);
+      colEnd.setHours(23, 59, 59, 999);
+      if (t >= columns[i].start && t <= colEnd) return i;
+    }
+    return 0;
+  }, [columns]);
+
+  const showBullets = granularity !== "year";
+
+  const activeFilterCount =
+    (teamFilter !== "all" ? 1 : 0) +
+    (selectedPeople.size > 0 ? 1 : 0) +
+    (showDiscovered ? 1 : 0);
+
+  const onColumnHeaderClick = (i: number) => {
+    if (granularity === "year") {
+      setMonth(i);
+      setGranularity("month");
+    } else if (granularity === "month") {
+      const w = columns[i];
+      setWeekStartIso(`${w.start.getFullYear()}-${String(w.start.getMonth() + 1).padStart(2, "0")}-${String(w.start.getDate()).padStart(2, "0")}`);
+      setGranularity("week");
+    }
+  };
+
+  const renderRow = (person: Person, idx: number) => {
+    if (!visibleRange) return null;
+
+    const ds = dragRef.current;
+    const effectiveDims = (project: Project) => {
+      if (ds && ds.projectId === project.id && ds.personName === person.name) {
+        return { startMonth: ds.currentStartMonth, duration: ds.currentDuration };
+      }
+      return { startMonth: project.startMonth, duration: project.duration };
+    };
+
+    // Synthesize ghost projects (auto-discovered Linear projects with open work
+    // assigned to this person but not represented in roadmap-data.ts).
+    const ghostProjectIds = new Set<string>();
+    const ghostProjects: Project[] = [];
+    if (showDiscovered) {
+      const existingNames = new Set<string>();
+      for (const p of person.projects) {
+        existingNames.add(p.name);
+        if (p.linearProjectName) existingNames.add(p.linearProjectName);
+      }
+      for (const dp of discoveredProjects) {
+        if (!dp.assigneeNames.has(person.name)) continue;
+        if (existingNames.has(dp.name)) continue;
+        const dims = ghostDimensionsFor(dp);
+        if (!dims) continue;
+        const id = `disc-${dp.id}`;
+        ghostProjectIds.add(id);
+        ghostProjects.push({
+          id,
+          name: dp.name,
+          linearProjectName: dp.name,
+          startMonth: dims.startMonth,
+          duration: dims.duration,
+          tasks: [],
+        });
+      }
+    }
+
+    const allProjects: Project[] = [...person.projects, ...ghostProjects];
+
+    const personProjects = allProjects
+      .map((p) => ({ project: p, range: projectAbsoluteRange(effectiveDims(p)) }))
+      .filter(({ range }) => rangesOverlap(range, visibleRange))
+      .sort((a, b) => a.range.start.getTime() - b.range.start.getTime());
+
+    type LanedProj = { project: Project; range: { start: Date; end: Date }; lane: number };
+    const laneEnds: number[] = [];
+    const laned: LanedProj[] = [];
+    for (const { project, range } of personProjects) {
+      let placed = false;
+      for (let i = 0; i < laneEnds.length; i++) {
+        if (laneEnds[i] < range.start.getTime()) {
+          laneEnds[i] = range.end.getTime();
+          laned.push({ project, range, lane: i });
+          placed = true;
+          break;
+        }
+      }
+      if (!placed) {
+        laneEnds.push(range.end.getTime());
+        laned.push({ project, range, lane: laneEnds.length - 1 });
+      }
+    }
+    const laneCount = Math.max(1, laneEnds.length);
+
+    type RowTicket = StandaloneTicket & { columnIndexOverride: number };
+    // Tickets only render when their Linear cycle matches a visible column's
+    // cycle. A ticket without a cycle is hidden — it isn't planned for any
+    // visible week.
+    const personTickets: RowTicket[] = [];
+    if (showSubtestEdits) {
+      const cycleColumnByCycleId = new Map<string, number>();
+      cycleByColumn.forEach((cyc, i) => {
+        if (cyc) cycleColumnByCycleId.set(cyc.id, i);
+      });
+      for (const t of tickets) {
+        if (t.assigneeName !== person.name) continue;
+        if (!t.cycleId) continue;
+        const ci = cycleColumnByCycleId.get(t.cycleId);
+        if (ci === undefined) continue;
+        personTickets.push({ ...t, columnIndexOverride: ci });
+      }
+    }
+
+    const byColumn: StandaloneTicket[][] = columns.map(() => []);
+    for (const t of personTickets) {
+      const ci = t.columnIndexOverride;
+      if (ci >= 0 && ci < columns.length) byColumn[ci].push(t);
+    }
+
+    const maxBulletsInColumn = showBullets ? Math.max(0, ...byColumn.map((b) => b.length)) : 0;
+    const barsHeight = laneCount * (ROW_BAR_HEIGHT + ROW_BAR_GAP);
+    const bulletsHeight = showBullets
+      ? maxBulletsInColumn * BULLET_LINE_HEIGHT + (maxBulletsInColumn > 0 ? 6 : 0)
+      : 0;
+    const rowHeight = ROW_PAD_Y * 2 + barsHeight + bulletsHeight;
+
+    const rowBg = hexToRgba(person.color, idx % 2 === 0 ? 0.10 : 0.16);
+    const sidebarBg = (() => {
+      const alpha = idx % 2 === 0 ? 0.10 : 0.16;
+      const r = parseInt(person.color.slice(1, 3), 16);
+      const g = parseInt(person.color.slice(3, 5), 16);
+      const b = parseInt(person.color.slice(5, 7), 16);
+      const br = Math.round(r * alpha + 240 * (1 - alpha));
+      const bg = Math.round(g * alpha + 240 * (1 - alpha));
+      const bb = Math.round(b * alpha + 240 * (1 - alpha));
+      return `rgb(${br},${bg},${bb})`;
+    })();
+
+    return (
+      <div
+        key={person.name}
+        style={{
+          display: "flex",
+          minHeight: rowHeight,
+          background: rowBg,
+          borderBottom: "1px solid #e8e8ef",
+        }}
+      >
+        <div
+          style={{
+            width: SIDEBAR,
+            flexShrink: 0,
+            padding: "10px 12px",
+            position: "sticky",
+            left: 0,
+            zIndex: 2,
+            background: sidebarBg,
+            borderRight: "1px solid #e8e8ef",
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+          }}
+        >
+          <div style={{ width: 4, height: 28, background: person.color, borderRadius: 2 }} />
+          <span style={{ fontSize: 13, fontWeight: 700, color: "#0f172a" }}>{person.name}</span>
+        </div>
+        <div style={{ flex: 1, position: "relative", height: rowHeight }}>
+          {columns.map((_, i) => (
+            <div
+              key={`vline-${i}`}
+              style={{
+                position: "absolute",
+                left: i * colWidth,
+                top: 0,
+                width: 1,
+                height: rowHeight,
+                background: "rgba(15,23,42,0.06)",
+              }}
+            />
+          ))}
+
+          {laned.map(({ project, range, lane }) => {
+            const drawStart = range.start < visibleRange.start ? visibleRange.start : range.start;
+            const drawEndInclusive = range.end > visibleRange.end ? visibleRange.end : range.end;
+            const drawEndExclusive = new Date(drawEndInclusive);
+            drawEndExclusive.setDate(drawEndExclusive.getDate() + 1);
+            const startPos = prFractionalColPos(drawStart, columns);
+            const endPos = prFractionalColPos(drawEndExclusive, columns);
+            const x = startPos * colWidth + 4;
+            const w = Math.max(20, (endPos - startPos) * colWidth - 8);
+            const y = ROW_PAD_Y + lane * (ROW_BAR_HEIGHT + ROW_BAR_GAP);
+            const isDragging = !!ds && ds.projectId === project.id && ds.personName === person.name;
+            const isGhost = ghostProjectIds.has(project.id);
+            return (
+              <div
+                key={project.id}
+                style={{
+                  position: "absolute",
+                  left: x,
+                  top: y,
+                  width: w,
+                  height: ROW_BAR_HEIGHT,
+                  background: isGhost
+                    ? hexToRgba(person.color, 0.18)
+                    : hexToRgba(person.color, isDragging ? 0.95 : 0.85),
+                  color: isGhost ? "#1e293b" : barTextColor(person.color, 0.85),
+                  border: isGhost ? `1px dashed ${hexToRgba(person.color, 0.7)}` : "none",
+                  borderRadius: 6,
+                  fontFamily: "var(--font-sans)",
+                  fontSize: 12,
+                  fontWeight: 700,
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  boxShadow: isDragging
+                    ? "0 4px 12px rgba(15,23,42,0.18)"
+                    : isGhost
+                      ? "none"
+                      : "0 1px 2px rgba(15,23,42,0.08)",
+                  cursor: isGhost ? "pointer" : onMoveProject ? "grab" : "pointer",
+                  userSelect: "none",
+                }}
+                title={`${project.name}${isGhost ? " (auto-discovered)" : ""}\n${range.start.toLocaleDateString()} – ${range.end.toLocaleDateString()}`}
+                onMouseDown={(e) => {
+                  if (!isGhost) startDrag(e, project, person, "move");
+                }}
+                onClick={(e) => {
+                  if (didDragRef.current) {
+                    e.preventDefault();
+                    return;
+                  }
+                  onProjectClick(project, person);
+                }}
+              >
+                <div
+                  style={{
+                    height: "100%",
+                    padding: "0 10px",
+                    display: "flex",
+                    alignItems: "center",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}
+                >
+                  {project.name}
+                </div>
+                {onMoveProject && !isGhost && (
+                  <div
+                    onMouseDown={(e) => startDrag(e, project, person, "resize")}
+                    style={{
+                      position: "absolute",
+                      right: 0,
+                      top: 0,
+                      width: 6,
+                      height: "100%",
+                      cursor: "ew-resize",
+                      background: "rgba(255,255,255,0.0)",
+                    }}
+                    title="Drag to resize"
+                  />
+                )}
+              </div>
+            );
+          })}
+
+          {showBullets && byColumn.map((items, i) => (
+            <div
+              key={`bullets-${i}`}
+              style={{
+                position: "absolute",
+                left: i * colWidth + 8,
+                top: ROW_PAD_Y + barsHeight + 4,
+                width: colWidth - 12,
+                fontSize: 12,
+                color: "#1e293b",
+                fontFamily: "var(--font-sans)",
+              }}
+            >
+              {items.map((t) => (
+                <div
+                  key={t.id}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                    lineHeight: `${BULLET_LINE_HEIGHT}px`,
+                  }}
+                >
+                  <span
+                    title={t.state.name}
+                    style={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: 999,
+                      background: t.state.color,
+                      border: t.state.type === "unstarted" || t.state.type === "backlog"
+                        ? `1.5px solid ${t.state.color}`
+                        : "none",
+                      backgroundColor: t.state.type === "unstarted" || t.state.type === "backlog"
+                        ? "transparent"
+                        : t.state.color,
+                      flexShrink: 0,
+                      cursor: "help",
+                    }}
+                  />
+                  <button
+                    onClick={() => onIssueClick(t.id)}
+                    title={`${t.identifier} · ${t.state.name} · Due ${formatDate(t.dueDate)}`}
+                    style={{
+                      flex: 1,
+                      textAlign: "left",
+                      padding: 0,
+                      border: "none",
+                      background: "transparent",
+                      cursor: "pointer",
+                      color: "#1e293b",
+                      fontFamily: "var(--font-sans)",
+                      fontSize: 12,
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
+                  >
+                    <span style={{ fontWeight: 700, color: "#6366f1", marginRight: 6 }}>{t.identifier}</span>
+                    {t.title}
+                  </button>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  const breadcrumb = (
+    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+      <div style={{ display: "flex", alignItems: "center", background: "#f1f5f9", borderRadius: 8, padding: 2 }}>
+        {(["year", "month", "week"] as PRGranularity[]).map((g) => {
+          const active = granularity === g;
+          return (
+            <button
+              key={g}
+              onClick={() => setGranularity(g)}
+              style={{
+                fontFamily: "var(--font-sans)",
+                fontSize: 12,
+                fontWeight: 600,
+                height: 26,
+                padding: "0 12px",
+                border: "none",
+                borderRadius: 6,
+                cursor: "pointer",
+                textTransform: "capitalize",
+                background: active ? "white" : "transparent",
+                color: active ? "#1e293b" : "#64748b",
+                boxShadow: active ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
+              }}
+            >
+              {g}
+            </button>
+          );
+        })}
+      </div>
+      <button onClick={navigatePrev} style={prNavBtnStyle}>‹</button>
+      <button onClick={navigateNext} style={prNavBtnStyle}>›</button>
+      <button onClick={navigateToday} style={{ ...prNavBtnStyle, width: "auto", padding: "0 10px" }}>Today</button>
+      <h2 style={{ margin: "0 0 0 8px", fontSize: 18, fontWeight: 800, color: "#0f172a" }}>{title}</h2>
+      <label
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 6,
+          marginLeft: "auto",
+          padding: "6px 12px",
+          borderRadius: 8,
+          border: "1px solid #e2e8f0",
+          background: showSubtestEdits ? "#eef2ff" : "white",
+          color: showSubtestEdits ? "#4338ca" : "#475569",
+          fontFamily: "var(--font-sans)",
+          fontSize: 13,
+          fontWeight: 600,
+          cursor: "pointer",
+          userSelect: "none",
+        }}
+      >
+        <input
+          type="checkbox"
+          checked={showSubtestEdits}
+          onChange={(e) => setShowSubtestEdits(e.target.checked)}
+          style={{ margin: 0, cursor: "pointer" }}
+        />
+        Show tickets
+      </label>
+      <div style={{ position: "relative" }}>
+        <button
+          ref={filterBtnRef}
+          onClick={() => setFilterOpen((v) => !v)}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 6,
+            padding: "6px 12px",
+            borderRadius: 8,
+            border: "1px solid #e2e8f0",
+            background: activeFilterCount > 0 ? "#eef2ff" : "white",
+            color: activeFilterCount > 0 ? "#4338ca" : "#475569",
+            fontFamily: "var(--font-sans)",
+            fontSize: 13,
+            fontWeight: 600,
+            cursor: "pointer",
+          }}
+        >
+          Filters
+          {activeFilterCount > 0 && (
+            <span
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                minWidth: 18,
+                height: 18,
+                padding: "0 6px",
+                borderRadius: 999,
+                background: "#4338ca",
+                color: "white",
+                fontSize: 11,
+                fontWeight: 700,
+              }}
+            >
+              {activeFilterCount}
+            </span>
+          )}
+        </button>
+        {filterOpen && (
+          <FilterPopover
+            people={people}
+            teamFilter={teamFilter}
+            setTeamFilter={setTeamFilter}
+            selectedPeople={selectedPeople}
+            setSelectedPeople={setSelectedPeople}
+            showDiscovered={showDiscovered}
+            setShowDiscovered={setShowDiscovered}
+            onClose={() => setFilterOpen(false)}
+            anchorRef={filterBtnRef}
+          />
+        )}
+      </div>
+    </div>
+  );
+
+  return (
+    <div
+      ref={containerRef}
+      style={{ height: "calc(100vh - 80px)", overflow: "auto", background: "#fafafa", fontFamily: "var(--font-sans)" }}
+    >
+      <div
+        style={{
+          padding: "16px 20px",
+          borderBottom: "1px solid #e8e8ef",
+          background: "white",
+          position: "sticky",
+          top: 0,
+          zIndex: 5,
+        }}
+      >
+        {breadcrumb}
+        <div style={{ marginTop: 6, fontSize: 12, color: "#64748b" }}>
+          {ticketsLoading
+            ? "Loading tickets…"
+            : `Showing ${visiblePeople.length} ${visiblePeople.length === 1 ? "person" : "people"}`}
+        </div>
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column", minWidth: SIDEBAR + columns.length * colWidth }}>
+        {phases && phases.length > 0 && visibleRange && (() => {
+          const PHASE_HEIGHT_LOCAL = 32;
+          const visiblePhases = phases
+            .map((ph) => ({ phase: ph, range: projectAbsoluteRange(ph) }))
+            .filter(({ range }) => rangesOverlap(range, visibleRange));
+          return (
+            <div
+              style={{
+                display: "flex",
+                position: "sticky",
+                top: 70,
+                zIndex: 4,
+                background: "white",
+                borderBottom: "1px solid #e8e8ef",
+              }}
+            >
+              <div
+                style={{
+                  width: SIDEBAR,
+                  flexShrink: 0,
+                  height: PHASE_HEIGHT_LOCAL,
+                  borderRight: "1px solid #e8e8ef",
+                  background: "white",
+                }}
+              />
+              <div style={{ position: "relative", flex: 1, height: PHASE_HEIGHT_LOCAL }}>
+                {visiblePhases.map(({ phase, range }) => {
+                  const drawStart = range.start < visibleRange.start ? visibleRange.start : range.start;
+                  const drawEndInclusive = range.end > visibleRange.end ? visibleRange.end : range.end;
+                  const drawEndExclusive = new Date(drawEndInclusive);
+                  drawEndExclusive.setDate(drawEndExclusive.getDate() + 1);
+                  const startPos = prFractionalColPos(drawStart, columns);
+                  const endPos = prFractionalColPos(drawEndExclusive, columns);
+                  const x = startPos * colWidth;
+                  const w = Math.max(0, (endPos - startPos) * colWidth);
+                  return (
+                    <div
+                      key={phase.name}
+                      title={phase.name}
+                      style={{
+                        position: "absolute",
+                        left: x,
+                        top: 0,
+                        width: w,
+                        height: PHASE_HEIGHT_LOCAL,
+                        background: phase.color,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontFamily: "var(--font-sans)",
+                        fontSize: 12,
+                        fontWeight: 700,
+                        color: "#1e293b",
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        borderRight: "1px solid rgba(15,23,42,0.06)",
+                      }}
+                    >
+                      {phase.name}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })()}
+
+        <div
+          style={{
+            display: "flex",
+            position: "sticky",
+            top: phases && phases.length > 0 ? 70 + 32 : 70,
+            zIndex: 4,
+            background: "white",
+            borderBottom: "2px solid #e8e8ef",
+          }}
+        >
+          <div
+            style={{
+              width: SIDEBAR,
+              flexShrink: 0,
+              padding: "10px 12px",
+              fontSize: 12,
+              fontWeight: 700,
+              color: "#64748b",
+              textTransform: "uppercase",
+              letterSpacing: "0.06em",
+              borderRight: "1px solid #e8e8ef",
+              background: "white",
+            }}
+          >
+            Person
+          </div>
+          {columns.map((c, i) => {
+            const drillable = granularity !== "week";
+            const cyc = cycleByColumn[i];
+            return (
+              <button
+                key={`col-${i}`}
+                onClick={() => drillable && onColumnHeaderClick(i)}
+                disabled={!drillable}
+                style={{
+                  width: colWidth,
+                  flexShrink: 0,
+                  padding: "10px 12px",
+                  fontFamily: "var(--font-sans)",
+                  fontSize: 13,
+                  fontWeight: 700,
+                  color: "#0f172a",
+                  background: "white",
+                  border: "none",
+                  borderLeft: i === 0 ? "none" : "1px solid #e8e8ef",
+                  textAlign: "left",
+                  cursor: drillable ? "pointer" : "default",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 2,
+                  alignItems: "flex-start",
+                }}
+                title={drillable ? `Drill into ${c.label}` : undefined}
+              >
+                <span>{c.label}</span>
+                {granularity !== "year" && cyc && (
+                  <span style={{ fontSize: 10, fontWeight: 600, color: "#64748b" }}>
+                    Cycle {cyc.number}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {visiblePeople.map((p, i) => renderRow(p, i))}
       </div>
     </div>
   );
@@ -6502,8 +8012,57 @@ export function RoadmapView({ people, months, phases, teams, initialOverrides }:
             addToast("success", `Assigned "${proj.name}" to ${owner}`);
           }}
         />
+      ) : viewMode === "projects" ? (
+        <ProductRoadmapView
+          people={teamAndPersonFiltered}
+          phases={phases}
+          cycles={cycles}
+          onProjectClick={(project, person) => {
+            if (project.linearProjectName) {
+              setSelectedLinearProject({
+                project,
+                personName: person.name,
+                personColor: person.color,
+                linearProjectName: project.linearProjectName,
+              });
+            } else {
+              setSelected({ project, personName: person.name, personColor: person.color });
+            }
+          }}
+          onIssueClick={setSelectedLinearIssueId}
+          onMoveProject={(personName, projectId, newStart, newDuration, prevStart, prevDuration) => {
+            setLocalPeople((prev) =>
+              prev.map((p) =>
+                p.name !== personName
+                  ? p
+                  : {
+                      ...p,
+                      projects: p.projects.map((pr) =>
+                        pr.id !== projectId
+                          ? pr
+                          : { ...pr, startMonth: newStart, duration: newDuration },
+                      ),
+                    },
+              ),
+            );
+            saveOverride("updatePosition", {
+              key: `${personName}:${projectId}`,
+              startMonth: newStart,
+              duration: newDuration,
+            });
+            pushUndo({
+              type: "move",
+              projectId,
+              personName,
+              prevStart,
+              prevDuration,
+              newStart,
+              newDuration,
+            });
+          }}
+        />
       ) : (
-      <div className="roadmap-container" ref={scrollRef}>
+      <div className="roadmap-container" ref={scrollRef} style={{ display: "none" }}>
         {/* ── Sticky header (phases + month columns) ──────────────────── */}
         <div className="roadmap-header">
           {/* Phase row */}

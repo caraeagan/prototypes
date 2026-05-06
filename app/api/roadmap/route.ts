@@ -46,6 +46,7 @@ export async function POST(request: NextRequest) {
       "saveWeeklyPlan",
       "saveWeekNote",
       "toggleWeekSignoff",
+      "saveTicketOrder",
     ]);
     if (!knownActions.has(action)) {
       return NextResponse.json(
@@ -204,6 +205,24 @@ export async function POST(request: NextRequest) {
             overrides.weekNotes[weekKey] = note;
           } else {
             delete overrides.weekNotes[weekKey];
+          }
+          break;
+        }
+        case "saveTicketOrder": {
+          const { weekKey, personName, order } = payload as {
+            weekKey: string;
+            personName: string;
+            order: string[];
+          };
+          if (!overrides.ticketOrders) overrides.ticketOrders = {};
+          if (!overrides.ticketOrders[weekKey]) overrides.ticketOrders[weekKey] = {};
+          if (!order || order.length === 0) {
+            delete overrides.ticketOrders[weekKey][personName];
+            if (Object.keys(overrides.ticketOrders[weekKey]).length === 0) {
+              delete overrides.ticketOrders[weekKey];
+            }
+          } else {
+            overrides.ticketOrders[weekKey][personName] = order;
           }
           break;
         }
