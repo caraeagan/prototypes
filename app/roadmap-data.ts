@@ -266,7 +266,24 @@ export const PEOPLE: Person[] = [
     name: "Hlib",
     color: "#43A047",
     team: "Engineering",
-    projects: [],
+    projects: [
+      {
+        id: "p053",
+        name: "Internal App - Norming Edits",
+        linearProjectName: "Internal App - Norming Edits",
+        startMonth: 2,
+        duration: 3,
+        tasks: [],
+      },
+      {
+        id: "p054",
+        name: "Foreign Language Instructions",
+        linearProjectName: "Foreign Language Instructions",
+        startMonth: 2,
+        duration: 1,
+        tasks: [],
+      },
+    ],
   },
   {
     name: "Alex",

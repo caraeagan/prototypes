@@ -213,7 +213,7 @@ function mergeOverridesIntoPeople(
               duration: posOv?.duration ?? a.duration,
               order: posOv?.order,
               tasks: [],
-              linearProjectName: null,
+              linearProjectName: a.linearProjectName ?? null,
             };
           });
         return { ...person, projects: [...person.projects, ...newProjects] };
@@ -7637,7 +7637,7 @@ export function RoadmapView({ people, months, phases, teams, initialOverrides }:
 
       saveOverride("addProject", {
         personName: data.owner,
-        project: { name: data.name, startMonth, duration },
+        project: { name: data.name, startMonth, duration, linearProjectName: linearName ?? null },
       }).catch((err) => console.error("Failed to save addition:", err));
 
       if (data.notes.trim()) {
@@ -8008,7 +8008,7 @@ export function RoadmapView({ people, months, phases, teams, initialOverrides }:
               if (p.name !== owner) return p;
               return { ...p, projects: [...p.projects, { id: newId, name: proj.name, startMonth, duration, tasks: [], linearProjectName: proj.name }] };
             }));
-            saveOverride("addProject", { personName: owner, project: { name: proj.name, startMonth, duration } });
+            saveOverride("addProject", { personName: owner, project: { name: proj.name, startMonth, duration, linearProjectName: proj.name } });
             addToast("success", `Assigned "${proj.name}" to ${owner}`);
           }}
         />
@@ -8510,7 +8510,7 @@ export function RoadmapView({ people, months, phases, teams, initialOverrides }:
               if (p.name !== pName) return p;
               return { ...p, projects: [...p.projects, { id: newId, name: proj.name, startMonth: proj.startMonth, duration: proj.duration, tasks: [], linearProjectName: proj.linearProjectName }] };
             }));
-            saveOverride("addProject", { personName: pName, project: { name: proj.name, startMonth: proj.startMonth, duration: proj.duration } });
+            saveOverride("addProject", { personName: pName, project: { name: proj.name, startMonth: proj.startMonth, duration: proj.duration, linearProjectName: proj.linearProjectName } });
           }}
           onRemoveProjectFromPerson={(pName, projId) => {
             const proj = localPeople.find((p) => p.name === pName)?.projects.find((p) => p.id === projId);
@@ -8555,7 +8555,7 @@ export function RoadmapView({ people, months, phases, teams, initialOverrides }:
               if (p.name !== pName) return p;
               return { ...p, projects: [...p.projects, { id: newId, name: proj.name, startMonth: proj.startMonth, duration: proj.duration, tasks: [], linearProjectName: proj.linearProjectName }] };
             }));
-            saveOverride("addProject", { personName: pName, project: { name: proj.name, startMonth: proj.startMonth, duration: proj.duration } });
+            saveOverride("addProject", { personName: pName, project: { name: proj.name, startMonth: proj.startMonth, duration: proj.duration, linearProjectName: proj.linearProjectName } });
           }}
           onRemoveProjectFromPerson={(pName, projId) => {
             const proj = localPeople.find((p) => p.name === pName)?.projects.find((p) => p.id === projId);

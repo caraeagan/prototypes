@@ -13,7 +13,7 @@ export type RoadmapOverrides = {
   positions?: Record<string, { startMonth: number; duration: number; order?: number }>;
   additions?: Record<
     string,
-    { name: string; startMonth: number; duration: number }[]
+    { name: string; startMonth: number; duration: number; linearProjectName?: string | null }[]
   >;
   deletions?: string[];
   renames?: Record<string, string>;

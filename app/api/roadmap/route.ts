@@ -34,6 +34,7 @@ export async function POST(request: NextRequest) {
     const knownActions = new Set([
       "updatePosition",
       "addProject",
+      "removeAddition",
       "deleteProject",
       "renameProject",
       "addDependency",
@@ -73,6 +74,20 @@ export async function POST(request: NextRequest) {
           if (!overrides.additions[personName])
             overrides.additions[personName] = [];
           overrides.additions[personName].push(project);
+          break;
+        }
+        case "removeAddition": {
+          const { personName, name } = payload as {
+            personName: string;
+            name: string;
+          };
+          const list = overrides.additions?.[personName];
+          if (list) {
+            overrides.additions![personName] = list.filter((a) => a.name !== name);
+            if (overrides.additions![personName].length === 0) {
+              delete overrides.additions![personName];
+            }
+          }
           break;
         }
         case "deleteProject": {
