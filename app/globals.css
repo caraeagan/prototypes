@@ -1437,6 +1437,17 @@ body.dragging * {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
 }
 
+/* ── Weekly bullet drag handle ─────────────────────────────────────────── */
+
+.weekly-bullet-row:hover .weekly-bullet-grip,
+.weekly-bullet-grip:focus-visible {
+  opacity: 1 !important;
+}
+
+.weekly-bullet-grip:active {
+  cursor: grabbing;
+}
+
 /* ── Print styles ─────────────────────────────────────────────────────── */
 
 @media print {

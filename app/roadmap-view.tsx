@@ -4754,6 +4754,12 @@ function PersonWeekSection({
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const latestRef = useRef<Bullet[]>(initialBullets);
   const [linkPopoverFor, setLinkPopoverFor] = useState<{ bulletId: string; rect: DOMRect; query: string } | null>(null);
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  // dragOverId: bullet ID currently hovered while dragging.
+  // dragOverPos: "before" inserts above the hovered bullet, "after" inserts below
+  // (decided by which half of the row the mouse is in).
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
+  const [dragOverPos, setDragOverPos] = useState<"before" | "after" | null>(null);
 
   // Reset when the week or initial data changes
   useEffect(() => {
@@ -4848,6 +4854,25 @@ function PersonWeekSection({
     });
   };
 
+  const reorderBullets = (fromId: string, toId: string, pos: "before" | "after") => {
+    if (fromId === toId) return;
+    setBullets((prev) => {
+      const fromIdx = prev.findIndex((b) => b.id === fromId);
+      const toIdx = prev.findIndex((b) => b.id === toId);
+      if (fromIdx < 0 || toIdx < 0) return prev;
+      const next = [...prev];
+      const [moved] = next.splice(fromIdx, 1);
+      // Recompute the target index after removal — if the source was before
+      // the target, the target index has shifted left by one.
+      let insertAt = toIdx + (pos === "after" ? 1 : 0);
+      if (fromIdx < toIdx) insertAt -= 1;
+      next.splice(insertAt, 0, moved);
+      if (next.every((b, i) => b.id === prev[i]?.id)) return prev; // no-op
+      scheduleSave(next);
+      return next;
+    });
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>, bullet: Bullet) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -4900,9 +4925,83 @@ function PersonWeekSection({
           </button>
         ) : (
           <ul style={{ listStyle: "disc", margin: 0, padding: 0, paddingLeft: 18 }}>
-            {bullets.map((b) => (
-              <li key={b.id} style={{ marginBottom: 6, color: "#1e293b" }}>
-                <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
+            {bullets.map((b) => {
+              const isDragging = draggingId === b.id;
+              const showIndicator = dragOverId === b.id && draggingId && draggingId !== b.id;
+              return (
+              <li
+                key={b.id}
+                className="weekly-bullet-row"
+                onDragOver={(e) => {
+                  if (!draggingId || draggingId === b.id) return;
+                  e.preventDefault();
+                  e.dataTransfer.dropEffect = "move";
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  const pos = e.clientY < rect.top + rect.height / 2 ? "before" : "after";
+                  if (dragOverId !== b.id || dragOverPos !== pos) {
+                    setDragOverId(b.id);
+                    setDragOverPos(pos);
+                  }
+                }}
+                onDragLeave={(e) => {
+                  // Only clear if leaving the row entirely (not entering a child).
+                  if (!e.currentTarget.contains(e.relatedTarget as Node | null)) {
+                    if (dragOverId === b.id) {
+                      setDragOverId(null);
+                      setDragOverPos(null);
+                    }
+                  }
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  const fromId = e.dataTransfer.getData("text/bullet-id") || draggingId;
+                  if (fromId && dragOverPos) reorderBullets(fromId, b.id, dragOverPos);
+                  setDraggingId(null);
+                  setDragOverId(null);
+                  setDragOverPos(null);
+                }}
+                style={{
+                  marginBottom: 6,
+                  color: "#1e293b",
+                  opacity: isDragging ? 0.4 : 1,
+                  borderTop: showIndicator && dragOverPos === "before" ? "2px solid #6366f1" : "2px solid transparent",
+                  borderBottom: showIndicator && dragOverPos === "after" ? "2px solid #6366f1" : "2px solid transparent",
+                  transition: "border-color 80ms ease",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "flex-start", gap: 6 }}>
+                  <span
+                    draggable
+                    onDragStart={(e) => {
+                      setDraggingId(b.id);
+                      e.dataTransfer.effectAllowed = "move";
+                      e.dataTransfer.setData("text/bullet-id", b.id);
+                    }}
+                    onDragEnd={() => {
+                      setDraggingId(null);
+                      setDragOverId(null);
+                      setDragOverPos(null);
+                    }}
+                    className="weekly-bullet-grip"
+                    title="Drag to reorder"
+                    aria-label="Drag to reorder bullet"
+                    style={{
+                      flexShrink: 0,
+                      width: 14,
+                      marginLeft: -16,
+                      marginTop: 4,
+                      color: "#cbd5e1",
+                      cursor: "grab",
+                      userSelect: "none",
+                      lineHeight: 1,
+                      fontSize: 14,
+                      textAlign: "center",
+                      opacity: 0,
+                      transition: "opacity 120ms ease",
+                    }}
+                  >
+                    ⋮⋮
+                  </span>
                   <textarea
                     data-bullet-id={b.id}
                     value={b.text}
@@ -4967,7 +5066,8 @@ function PersonWeekSection({
                   </div>
                 )}
               </li>
-            ))}
+              );
+            })}
           </ul>
         )}
         {bullets.length > 0 && (
