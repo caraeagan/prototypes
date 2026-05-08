@@ -1442,6 +1442,7 @@ body.dragging * {
 .weekly-bullet-row:hover .weekly-bullet-grip,
 .weekly-bullet-grip:focus-visible {
   opacity: 1 !important;
+  color: #475569 !important;
 }
 
 .weekly-bullet-grip:active {

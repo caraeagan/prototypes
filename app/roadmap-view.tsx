@@ -4987,17 +4987,17 @@ function PersonWeekSection({
                     aria-label="Drag to reorder bullet"
                     style={{
                       flexShrink: 0,
-                      width: 14,
-                      marginLeft: -16,
-                      marginTop: 4,
-                      color: "#cbd5e1",
+                      width: 16,
+                      marginLeft: -22,
+                      marginTop: 2,
+                      color: "#94a3b8",
                       cursor: "grab",
                       userSelect: "none",
                       lineHeight: 1,
-                      fontSize: 14,
+                      fontSize: 16,
                       textAlign: "center",
-                      opacity: 0,
-                      transition: "opacity 120ms ease",
+                      opacity: 0.55,
+                      transition: "opacity 120ms ease, color 120ms ease",
                     }}
                   >
                     ⋮⋮
