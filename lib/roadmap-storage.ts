@@ -20,7 +20,7 @@ export type RoadmapOverrides = {
   dependencies?: { from: string; to: string }[];
   cycleBuckets?: Record<string, CycleBuckets>;
   descriptions?: Record<string, string>;
-  futureProjects?: { name: string; description: string; linearProjectId?: string; linearProjectUrl?: string }[];
+  futureProjects?: { name: string; description: string; linearProjectId?: string; linearProjectUrl?: string; startDate?: string; targetDate?: string }[];
   // weekNotes[weekKey] = top-of-week intro/context for that planning week.
   weekNotes?: Record<string, string>;
   // weekSignoffs[weekKey][personName] = signoff record (presence = signed).

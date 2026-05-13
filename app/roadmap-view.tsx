@@ -2789,22 +2789,77 @@ type FutureProject = {
   description: string;
   linearProjectId?: string;
   linearProjectUrl?: string;
+  startDate?: string;
+  targetDate?: string;
 };
 
-function FutureProjectsView({ people, onAssignToRoadmap }: { people: Person[]; onAssignToRoadmap: (proj: FutureProject, owner: string, startDate: string, endDate: string) => void }) {
+type FPDragState = {
+  index: number;
+  mode: "move" | "resize";
+  startMouseX: number;
+  originalStart: Date;
+  originalEnd: Date;
+  currentStart: Date;
+  currentEnd: Date;
+};
+
+function toIsoDate(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function FutureProjectsView({
+  people,
+  phases,
+  onAssignToRoadmap,
+}: {
+  people: Person[];
+  phases?: Phase[];
+  onAssignToRoadmap: (proj: FutureProject, owner: string, startDate: string, endDate: string) => void;
+}) {
   const [projects, setProjects] = useState<FutureProject[]>([]);
   const [loading, setLoading] = useState(true);
-  const [adding, setAdding] = useState(false);
-  const [newName, setNewName] = useState("");
   const [creating, setCreating] = useState(false);
   const [defaultTeamId, setDefaultTeamId] = useState<string | null>(null);
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
   const [assignOwner, setAssignOwner] = useState("");
   const [assignStart, setAssignStart] = useState("");
   const [assignEnd, setAssignEnd] = useState("");
+  const [popupOpen, setPopupOpen] = useState(false);
+  const [popupName, setPopupName] = useState("");
+
+  const today = new Date();
+  const [granularity, setGranularity] = useState<PRGranularity>("year");
+  const [year, setYear] = useState(today.getFullYear());
+  const [month, setMonth] = useState(today.getMonth());
+  const [weekStartIso, setWeekStartIso] = useState(() => {
+    const d = new Date(today);
+    d.setHours(0, 0, 0, 0);
+    const dow = d.getDay();
+    d.setDate(d.getDate() + (dow === 0 ? -6 : 1 - dow));
+    return toIsoDate(d);
+  });
 
   useEffect(() => {
-    fetchOverrides().then((ov) => { setProjects(ov.futureProjects ?? []); setLoading(false); });
+    fetchOverrides().then((ov) => {
+      const list = ov.futureProjects ?? [];
+      const todayIso = toIsoDate(new Date());
+      const monthOutIso = toIsoDate(new Date(Date.now() + 30 * 86400000));
+      const migrated = list.map((p) => {
+        if (p.startDate && p.targetDate) return p;
+        return { ...p, startDate: p.startDate ?? todayIso, targetDate: p.targetDate ?? monthOutIso };
+      });
+      setProjects(migrated);
+      setLoading(false);
+      list.forEach((p, idx) => {
+        if (!p.startDate || !p.targetDate) {
+          const u = migrated[idx];
+          saveOverride("updateFutureProject", {
+            index: idx,
+            project: { startDate: u.startDate, targetDate: u.targetDate },
+          }).catch(() => {});
+        }
+      });
+    });
     linearQuery<{ teams: { nodes: { id: string; name: string }[] } }>(
       `query { teams(first: 10) { nodes { id name } } }`,
     ).then((data) => {
@@ -2813,8 +2868,193 @@ function FutureProjectsView({ people, onAssignToRoadmap }: { people: Person[]; o
     }).catch(() => {});
   }, []);
 
-  const addProject = async () => {
-    if (!newName.trim() || !defaultTeamId) return;
+  const columns = useMemo<{ start: Date; end: Date; label: string }[]>(() => {
+    if (granularity === "year") {
+      return Array.from({ length: 24 }, (_, i) => {
+        const m = i % 12;
+        const y = year + Math.floor(i / 12);
+        return {
+          start: prStartOfMonth(y, m),
+          end: prEndOfMonth(y, m),
+          label: i === 0 || m === 0 ? `${PR_SHORT_MO[m]} ${y}` : PR_SHORT_MO[m],
+        };
+      });
+    }
+    if (granularity === "month") return prWeeksInMonth(year, month);
+    const start = new Date(weekStartIso + "T00:00:00");
+    const end = new Date(start);
+    end.setDate(end.getDate() + 6);
+    const sm = PR_SHORT_MO[start.getMonth()];
+    const em = PR_SHORT_MO[end.getMonth()];
+    const label = sm === em
+      ? `${sm} ${start.getDate()}–${end.getDate()}, ${end.getFullYear()}`
+      : `${sm} ${start.getDate()} – ${em} ${end.getDate()}, ${end.getFullYear()}`;
+    return [{ start, end, label }];
+  }, [granularity, year, month, weekStartIso]);
+
+  const visibleRange = useMemo(() => {
+    if (columns.length === 0) return null;
+    return { start: columns[0].start, end: columns[columns.length - 1].end };
+  }, [columns]);
+
+  const navigatePrev = () => {
+    if (granularity === "year") setYear((y) => y - 1);
+    else if (granularity === "month") {
+      if (month === 0) { setMonth(11); setYear((y) => y - 1); }
+      else setMonth((m) => m - 1);
+    } else {
+      const d = new Date(weekStartIso + "T00:00:00");
+      d.setDate(d.getDate() - 7);
+      setWeekStartIso(toIsoDate(d));
+    }
+  };
+  const navigateNext = () => {
+    if (granularity === "year") setYear((y) => y + 1);
+    else if (granularity === "month") {
+      if (month === 11) { setMonth(0); setYear((y) => y + 1); }
+      else setMonth((m) => m + 1);
+    } else {
+      const d = new Date(weekStartIso + "T00:00:00");
+      d.setDate(d.getDate() + 7);
+      setWeekStartIso(toIsoDate(d));
+    }
+  };
+  const navigateToday = () => {
+    const t = new Date();
+    setYear(t.getFullYear());
+    setMonth(t.getMonth());
+    const d = new Date(t);
+    d.setHours(0, 0, 0, 0);
+    const dow = d.getDay();
+    d.setDate(d.getDate() + (dow === 0 ? -6 : 1 - dow));
+    setWeekStartIso(toIsoDate(d));
+  };
+
+  const title = useMemo(() => {
+    if (granularity === "year") return "";
+    if (granularity === "month") return `${PR_FULL_MO[month]} ${year}`;
+    return `Week of ${columns[0]?.label ?? ""}`;
+  }, [granularity, year, month, columns]);
+
+  const SIDEBAR = 160;
+  const MIN_COL_WIDTH = granularity === "week" ? 720 : granularity === "year" ? 100 : 220;
+  const ROW_PAD_Y = 12;
+  const ROW_BAR_HEIGHT = 30;
+  const ROW_BAR_GAP = 6;
+  const PHASE_HEIGHT_LOCAL = 32;
+  const TOOLBAR_HEIGHT = 70;
+
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const [containerWidth, setContainerWidth] = useState(0);
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const ro = new ResizeObserver((entries) => {
+      for (const e of entries) setContainerWidth(e.contentRect.width);
+    });
+    ro.observe(containerRef.current);
+    return () => ro.disconnect();
+  }, []);
+
+  const colWidth = useMemo(() => {
+    if (containerWidth <= 0 || columns.length === 0) return MIN_COL_WIDTH;
+    const avail = containerWidth - SIDEBAR;
+    return Math.max(MIN_COL_WIDTH, Math.floor(avail / columns.length));
+  }, [containerWidth, columns.length, MIN_COL_WIDTH]);
+
+  const dragRef = useRef<FPDragState | null>(null);
+  const didDragRef = useRef(false);
+  const [, setDragTick] = useState(0);
+  const forceRender = () => setDragTick((t) => t + 1);
+
+  const [datelessDragIdx, setDatelessDragIdx] = useState<number | null>(null);
+  const [dropPreviewX, setDropPreviewX] = useState<number | null>(null);
+
+  const xToDateOnTimeline = (x: number): Date => {
+    if (columns.length === 0) return new Date();
+    const fractional = x / colWidth;
+    const colIdx = Math.max(0, Math.min(columns.length - 1, Math.floor(fractional)));
+    const frac = Math.max(0, Math.min(1, fractional - Math.floor(fractional)));
+    const col = columns[colIdx];
+    const colEnd = new Date(col.end);
+    colEnd.setDate(colEnd.getDate() + 1);
+    const span = colEnd.getTime() - col.start.getTime();
+    return new Date(col.start.getTime() + frac * span);
+  };
+
+  useEffect(() => {
+    const daysPerCol = granularity === "year" ? 30.44 : 7;
+    const daysPerPx = daysPerCol / colWidth;
+    const onMove = (e: MouseEvent) => {
+      const ds = dragRef.current;
+      if (!ds) return;
+      const dx = e.clientX - ds.startMouseX;
+      if (Math.abs(dx) > 3) didDragRef.current = true;
+      const dMs = dx * daysPerPx * 86400000;
+      if (ds.mode === "move") {
+        ds.currentStart = new Date(ds.originalStart.getTime() + dMs);
+        ds.currentEnd = new Date(ds.originalEnd.getTime() + dMs);
+      } else {
+        const minMs = 86400000; // 1 day minimum span
+        let newEnd = new Date(ds.originalEnd.getTime() + dMs);
+        if (newEnd.getTime() < ds.currentStart.getTime() + minMs) {
+          newEnd = new Date(ds.currentStart.getTime() + minMs);
+        }
+        ds.currentEnd = newEnd;
+      }
+      forceRender();
+    };
+    const onUp = () => {
+      const ds = dragRef.current;
+      if (!ds) return;
+      if (didDragRef.current) {
+        const snap = (d: Date) => {
+          const x = new Date(d);
+          x.setHours(0, 0, 0, 0);
+          return x;
+        };
+        const newStart = snap(ds.currentStart);
+        const newEnd = snap(ds.currentEnd);
+        const startIso = toIsoDate(newStart);
+        const endIso = toIsoDate(newEnd);
+        const idx = ds.index;
+        setProjects((prev) => prev.map((p, i) => i === idx ? { ...p, startDate: startIso, targetDate: endIso } : p));
+        saveOverride("updateFutureProject", { index: idx, project: { startDate: startIso, targetDate: endIso } }).catch(() => {});
+      }
+      dragRef.current = null;
+      setTimeout(() => { didDragRef.current = false; }, 0);
+      forceRender();
+    };
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+    return () => {
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+    };
+  }, [granularity, colWidth]);
+
+  const startDrag = (
+    e: React.MouseEvent,
+    index: number,
+    startIso: string,
+    endIso: string,
+    mode: "move" | "resize",
+  ) => {
+    e.stopPropagation();
+    e.preventDefault();
+    didDragRef.current = false;
+    const start = new Date(startIso + "T00:00:00");
+    const end = new Date(endIso + "T00:00:00");
+    dragRef.current = {
+      index, mode, startMouseX: e.clientX,
+      originalStart: start, originalEnd: end,
+      currentStart: start, currentEnd: end,
+    };
+    forceRender();
+  };
+
+  const createProject = async (rawName: string, withDates: boolean): Promise<FutureProject | null> => {
+    const name = rawName.trim();
+    if (!name || !defaultTeamId) return null;
     setCreating(true);
     try {
       const res = await fetch("/api/linear", {
@@ -2822,12 +3062,11 @@ function FutureProjectsView({ people, onAssignToRoadmap }: { people: Person[]; o
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           query: `mutation CreateProject($input: ProjectCreateInput!) { projectCreate(input: $input) { success project { id name url } } }`,
-          variables: { input: { name: newName.trim(), teamIds: [defaultTeamId] } },
+          variables: { input: { name, teamIds: [defaultTeamId] } },
         }),
       });
       const json = await res.json();
       const created = json.data?.projectCreate;
-      // Link to Marker Method! LFG initiative
       if (created?.project?.id) {
         fetch("/api/linear", {
           method: "POST",
@@ -2837,19 +3076,42 @@ function FutureProjectsView({ people, onAssignToRoadmap }: { people: Person[]; o
           }),
         }).catch(() => {});
       }
-      const newProject: FutureProject = { name: newName.trim(), description: "", linearProjectId: created?.project?.id, linearProjectUrl: created?.project?.url };
+      const newProject: FutureProject = {
+        name,
+        description: "",
+        linearProjectId: created?.project?.id,
+        linearProjectUrl: created?.project?.url,
+        ...(withDates ? {
+          startDate: toIsoDate(new Date()),
+          targetDate: toIsoDate(new Date(Date.now() + 30 * 86400000)),
+        } : {}),
+      };
       setProjects((prev) => [...prev, newProject]);
       saveOverride("addFutureProject", { project: newProject });
-      setNewName("");
-      setAdding(false);
-    } catch (err) { console.error("Failed to create:", err); }
+      return newProject;
+    } catch (err) { console.error("Failed to create:", err); return null; }
     finally { setCreating(false); }
+  };
+
+  const addProjectFromPopup = async () => {
+    const created = await createProject(popupName, false);
+    if (created) { setPopupName(""); setPopupOpen(false); }
   };
 
   const removeProject = (idx: number) => {
     setProjects((prev) => prev.filter((_, i) => i !== idx));
     saveOverride("removeFutureProject", { index: idx });
     if (selectedIdx === idx) setSelectedIdx(null);
+    else if (selectedIdx !== null && selectedIdx > idx) setSelectedIdx(selectedIdx - 1);
+  };
+
+  const openPanel = (idx: number) => {
+    const p = projects[idx];
+    if (!p) return;
+    setSelectedIdx(idx);
+    setAssignOwner(people[0]?.name ?? "");
+    setAssignStart(p.startDate ?? toIsoDate(new Date()));
+    setAssignEnd(p.targetDate ?? toIsoDate(new Date(Date.now() + 90 * 86400000)));
   };
 
   const handleAssign = () => {
@@ -2860,96 +3122,679 @@ function FutureProjectsView({ people, onAssignToRoadmap }: { people: Person[]; o
     setSelectedIdx(null);
   };
 
+  const saveDates = () => {
+    if (selectedIdx === null || !assignStart || !assignEnd) return;
+    const idx = selectedIdx;
+    setProjects((prev) => prev.map((p, i) => i === idx ? { ...p, startDate: assignStart, targetDate: assignEnd } : p));
+    saveOverride("updateFutureProject", { index: idx, project: { startDate: assignStart, targetDate: assignEnd } }).catch(() => {});
+  };
+
   const selectedProj = selectedIdx !== null ? projects[selectedIdx] : null;
 
+  // Build dated/dateless lists with original indices preserved
+  const enriched = projects.map((proj, idx) => ({ proj, idx }));
+  const dated = enriched.filter(({ proj }) => proj.startDate && proj.targetDate);
+  const dateless = enriched.filter(({ proj }) => !proj.startDate || !proj.targetDate);
+
+  type BarItem = { proj: FutureProject; idx: number; range: { start: Date; end: Date } };
+  const bars: BarItem[] = dated.map(({ proj, idx }) => ({
+    proj, idx,
+    range: {
+      start: new Date(proj.startDate! + "T00:00:00"),
+      end: new Date(proj.targetDate! + "T00:00:00"),
+    },
+  }));
+
+  const ds = dragRef.current;
+  const effectiveRange = (b: BarItem): { start: Date; end: Date } => {
+    if (ds && ds.index === b.idx) return { start: ds.currentStart, end: ds.currentEnd };
+    return b.range;
+  };
+
+  const visibleBars: BarItem[] = visibleRange
+    ? bars
+        .map((b) => ({ ...b, range: effectiveRange(b) }))
+        .filter(({ range }) => rangesOverlap(range, visibleRange))
+        .sort((a, b) => a.range.start.getTime() - b.range.start.getTime())
+    : [];
+
+  type LanedBar = BarItem & { lane: number };
+  const laneEnds: number[] = [];
+  const laned: LanedBar[] = [];
+  for (const b of visibleBars) {
+    let placed = false;
+    for (let i = 0; i < laneEnds.length; i++) {
+      if (laneEnds[i] < b.range.start.getTime()) {
+        laneEnds[i] = b.range.end.getTime();
+        laned.push({ ...b, lane: i });
+        placed = true;
+        break;
+      }
+    }
+    if (!placed) {
+      laneEnds.push(b.range.end.getTime());
+      laned.push({ ...b, lane: laneEnds.length - 1 });
+    }
+  }
+  const laneCount = Math.max(1, laneEnds.length);
+  const barsHeight = laneCount * (ROW_BAR_HEIGHT + ROW_BAR_GAP);
+  const rowHeight = Math.max(120, ROW_PAD_Y * 2 + barsHeight);
+
+  const BAR_COLOR = "#22c55e";
   const labelStyle: React.CSSProperties = { fontSize: 11, fontWeight: 600, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.04em", display: "block", marginBottom: 6 };
   const inputStyle: React.CSSProperties = { fontFamily: "var(--font-sans)", fontSize: 14, padding: "8px 12px", borderRadius: 8, border: "1px solid #e2e8f0", width: "100%", outline: "none" };
 
+  const breadcrumb = (
+    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+      <div style={{ display: "flex", alignItems: "center", background: "#f1f5f9", borderRadius: 8, padding: 2 }}>
+        {(["year", "month", "week"] as PRGranularity[]).map((g) => {
+          const active = granularity === g;
+          return (
+            <button
+              key={g}
+              onClick={() => setGranularity(g)}
+              style={{
+                fontFamily: "var(--font-sans)",
+                fontSize: 12,
+                fontWeight: 600,
+                height: 26,
+                padding: "0 12px",
+                border: "none",
+                borderRadius: 6,
+                cursor: "pointer",
+                textTransform: "capitalize",
+                background: active ? "white" : "transparent",
+                color: active ? "#1e293b" : "#64748b",
+                boxShadow: active ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
+              }}
+            >
+              {g}
+            </button>
+          );
+        })}
+      </div>
+      <button onClick={navigatePrev} style={prNavBtnStyle}>‹</button>
+      <button onClick={navigateNext} style={prNavBtnStyle}>›</button>
+      <button onClick={navigateToday} style={{ ...prNavBtnStyle, width: "auto", padding: "0 10px" }}>Today</button>
+      <h2 style={{ margin: "0 0 0 8px", fontSize: 18, fontWeight: 800, color: "#0f172a" }}>{title || "Future Projects"}</h2>
+    </div>
+  );
+
   return (
-    <div style={{ display: "flex", fontFamily: "var(--font-sans)", height: "calc(100vh - 120px)", overflow: "hidden" }}>
-      {/* Left — project list */}
-      <div style={{ flex: "0 0 360px", borderRight: "1px solid #e2e8f0", overflow: "auto", padding: "24px" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
-          <h2 style={{ fontSize: 20, fontWeight: 800, color: "#22c55e", margin: 0 }}>Future Projects</h2>
-          <button
-            onClick={() => setAdding(!adding)}
-            style={{ fontFamily: "var(--font-sans)", fontSize: 20, fontWeight: 700, width: 36, height: 36, borderRadius: "50%", border: "none", background: "#22c55e", color: "white", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
-          >+</button>
+    <div style={{ position: "relative", height: "calc(100vh - 80px)", overflow: "hidden" }}>
+      <div
+        ref={containerRef}
+        style={{ height: "100%", overflow: "auto", background: "#fafafa", fontFamily: "var(--font-sans)" }}
+      >
+        <div
+          style={{
+            padding: "16px 20px",
+            borderBottom: "1px solid #e8e8ef",
+            background: "white",
+            position: "sticky",
+            top: 0,
+            zIndex: 5,
+          }}
+        >
+          {breadcrumb}
+          <div style={{ marginTop: 6, fontSize: 12, color: "#64748b" }}>
+            {loading
+              ? "Loading…"
+              : `${dated.length} scheduled · ${dateless.length} without dates`}
+          </div>
         </div>
 
-        {adding && (
-          <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
-            <input type="text" placeholder="Project name" value={newName} onChange={(e) => setNewName(e.target.value)} autoFocus
-              onKeyDown={(e) => { if (e.key === "Enter" && newName.trim()) addProject(); if (e.key === "Escape") setAdding(false); }}
-              style={{ flex: 1, fontFamily: "var(--font-sans)", fontSize: 14, padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: 8, outline: "none" }}
-            />
-            <button onClick={addProject} disabled={!newName.trim() || creating}
-              style={{ fontFamily: "var(--font-sans)", fontSize: 13, fontWeight: 600, padding: "8px 16px", border: "none", borderRadius: 8, background: newName.trim() ? "#22c55e" : "#cbd5e1", color: "white", cursor: newName.trim() ? "pointer" : "default" }}
-            >{creating ? "..." : "Add"}</button>
-          </div>
-        )}
+        <div style={{ display: "flex", flexDirection: "column", minWidth: SIDEBAR + columns.length * colWidth }}>
+          {phases && phases.length > 0 && visibleRange && (() => {
+            const visiblePhases = phases
+              .map((ph) => ({ phase: ph, range: projectAbsoluteRange(ph) }))
+              .filter(({ range }) => rangesOverlap(range, visibleRange));
+            return (
+              <div
+                style={{
+                  display: "flex",
+                  position: "sticky",
+                  top: TOOLBAR_HEIGHT,
+                  zIndex: 4,
+                  background: "white",
+                  borderBottom: "1px solid #e8e8ef",
+                }}
+              >
+                <div
+                  style={{
+                    width: SIDEBAR,
+                    flexShrink: 0,
+                    height: PHASE_HEIGHT_LOCAL,
+                    borderRight: "1px solid #e8e8ef",
+                    background: "white",
+                  }}
+                />
+                <div style={{ position: "relative", flex: 1, height: PHASE_HEIGHT_LOCAL }}>
+                  {visiblePhases.map(({ phase, range }) => {
+                    const drawStart = range.start < visibleRange.start ? visibleRange.start : range.start;
+                    const drawEndInclusive = range.end > visibleRange.end ? visibleRange.end : range.end;
+                    const drawEndExclusive = new Date(drawEndInclusive);
+                    drawEndExclusive.setDate(drawEndExclusive.getDate() + 1);
+                    const startPos = prFractionalColPos(drawStart, columns);
+                    const endPos = prFractionalColPos(drawEndExclusive, columns);
+                    const x = startPos * colWidth;
+                    const w = Math.max(0, (endPos - startPos) * colWidth);
+                    return (
+                      <div
+                        key={phase.name}
+                        title={phase.name}
+                        style={{
+                          position: "absolute",
+                          left: x,
+                          top: 0,
+                          width: w,
+                          height: PHASE_HEIGHT_LOCAL,
+                          background: phase.color,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontFamily: "var(--font-sans)",
+                          fontSize: 12,
+                          fontWeight: 700,
+                          color: "#1e293b",
+                          whiteSpace: "nowrap",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          borderRight: "1px solid rgba(15,23,42,0.06)",
+                        }}
+                      >
+                        {phase.name}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })()}
 
-        {loading && <div style={{ color: "#94a3b8", padding: "40px 0", textAlign: "center" }}>Loading...</div>}
-
-        {!loading && projects.length === 0 && !adding && (
-          <div style={{ color: "#94a3b8", padding: "40px 0", textAlign: "center", fontSize: 14 }}>No future projects yet.</div>
-        )}
-
-        {!loading && projects.map((proj, idx) => (
-          <div key={idx}
-            onClick={() => { setSelectedIdx(idx); setAssignOwner(people[0]?.name ?? ""); setAssignStart(new Date().toISOString().split("T")[0]); setAssignEnd(new Date(Date.now() + 90*86400000).toISOString().split("T")[0]); }}
+          <div
             style={{
-              display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", marginBottom: 8,
-              background: selectedIdx === idx ? "#f0fdf4" : "white", borderRadius: 10,
-              border: selectedIdx === idx ? "2px solid #22c55e" : "1px solid #e2e8f0",
-              cursor: "pointer", transition: "all 0.1s",
+              display: "flex",
+              position: "sticky",
+              top: phases && phases.length > 0 ? TOOLBAR_HEIGHT + PHASE_HEIGHT_LOCAL : TOOLBAR_HEIGHT,
+              zIndex: 4,
+              background: "white",
+              borderBottom: "2px solid #e8e8ef",
             }}
           >
-            <span style={{ fontSize: 16, fontWeight: 600, color: "#1e293b", flex: 1 }}>
-              {proj.name}
-            </span>
-            {proj.linearProjectUrl && (
-              <a href={proj.linearProjectUrl} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}
-                style={{ fontSize: 12, color: "#22c55e", textDecoration: "none", flexShrink: 0 }}>Linear &#8599;</a>
-            )}
-            <span
-              onClick={(e) => { e.stopPropagation(); if (confirm(`Remove "${proj.name}"?`)) removeProject(idx); }}
-              style={{ fontSize: 16, color: "#cbd5e1", padding: "0 4px", lineHeight: 1, flexShrink: 0 }}
-              onMouseEnter={(e) => { (e.currentTarget as HTMLSpanElement).style.color = "#dc2626"; }}
-              onMouseLeave={(e) => { (e.currentTarget as HTMLSpanElement).style.color = "#cbd5e1"; }}
-            >&times;</span>
+            <div
+              style={{
+                width: SIDEBAR,
+                flexShrink: 0,
+                padding: "10px 12px",
+                fontSize: 12,
+                fontWeight: 700,
+                color: "#64748b",
+                textTransform: "uppercase",
+                letterSpacing: "0.06em",
+                borderRight: "1px solid #e8e8ef",
+                background: "white",
+              }}
+            >
+              Unassigned
+            </div>
+            {columns.map((c, i) => {
+              const drillable = granularity !== "week";
+              return (
+                <button
+                  key={`col-${i}`}
+                  onClick={() => {
+                    if (!drillable) return;
+                    if (granularity === "year") { setMonth(i); setGranularity("month"); }
+                    else if (granularity === "month") {
+                      const w = columns[i];
+                      setWeekStartIso(toIsoDate(w.start));
+                      setGranularity("week");
+                    }
+                  }}
+                  disabled={!drillable}
+                  style={{
+                    width: colWidth,
+                    flexShrink: 0,
+                    padding: "10px 12px",
+                    fontFamily: "var(--font-sans)",
+                    fontSize: 13,
+                    fontWeight: 700,
+                    color: "#0f172a",
+                    background: "white",
+                    border: "none",
+                    borderLeft: i === 0 ? "none" : "1px solid #e8e8ef",
+                    textAlign: "left",
+                    cursor: drillable ? "pointer" : "default",
+                  }}
+                  title={drillable ? `Drill into ${c.label}` : undefined}
+                >
+                  {c.label}
+                </button>
+              );
+            })}
           </div>
-        ))}
+
+          {/* Timeline row */}
+          {visibleRange && (
+            <div
+              style={{
+                display: "flex",
+                minHeight: rowHeight,
+                background: hexToRgba(BAR_COLOR, 0.05),
+                borderBottom: "1px solid #e8e8ef",
+              }}
+            >
+              <div
+                style={{
+                  width: SIDEBAR,
+                  flexShrink: 0,
+                  padding: "10px 12px",
+                  position: "sticky",
+                  left: 0,
+                  zIndex: 2,
+                  background: hexToRgba(BAR_COLOR, 0.08),
+                  borderRight: "1px solid #e8e8ef",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                }}
+              >
+                <div style={{ width: 4, height: 28, background: BAR_COLOR, borderRadius: 2 }} />
+                <span style={{ fontSize: 13, fontWeight: 700, color: "#0f172a" }}>Future Projects</span>
+              </div>
+              <div
+                style={{
+                  flex: 1,
+                  position: "relative",
+                  height: rowHeight,
+                  outline: datelessDragIdx !== null ? `2px dashed ${BAR_COLOR}` : "none",
+                  outlineOffset: -2,
+                  background: datelessDragIdx !== null ? hexToRgba(BAR_COLOR, 0.04) : "transparent",
+                }}
+                onDragOver={(e) => {
+                  if (datelessDragIdx === null) return;
+                  e.preventDefault();
+                  e.dataTransfer.dropEffect = "move";
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  setDropPreviewX(e.clientX - rect.left);
+                }}
+                onDragLeave={() => setDropPreviewX(null)}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  const idxStr = e.dataTransfer.getData("text/plain");
+                  const idx = parseInt(idxStr, 10);
+                  setDatelessDragIdx(null);
+                  setDropPreviewX(null);
+                  if (isNaN(idx)) return;
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  const x = e.clientX - rect.left;
+                  const startDate = xToDateOnTimeline(x);
+                  startDate.setHours(0, 0, 0, 0);
+                  const endDate = new Date(startDate.getTime() + 30 * 86400000);
+                  const startIso = toIsoDate(startDate);
+                  const endIso = toIsoDate(endDate);
+                  setProjects((prev) => prev.map((p, i) => i === idx ? { ...p, startDate: startIso, targetDate: endIso } : p));
+                  saveOverride("updateFutureProject", { index: idx, project: { startDate: startIso, targetDate: endIso } }).catch(() => {});
+                }}
+              >
+                {columns.map((_, i) => (
+                  <div
+                    key={`vline-${i}`}
+                    style={{
+                      position: "absolute",
+                      left: i * colWidth,
+                      top: 0,
+                      width: 1,
+                      height: rowHeight,
+                      background: "rgba(15,23,42,0.06)",
+                    }}
+                  />
+                ))}
+
+                {datelessDragIdx !== null && dropPreviewX !== null && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      left: dropPreviewX,
+                      top: ROW_PAD_Y,
+                      width: Math.max(20, (30 / (granularity === "year" ? 30.44 : 7)) * colWidth - 8),
+                      height: ROW_BAR_HEIGHT,
+                      background: hexToRgba(BAR_COLOR, 0.35),
+                      border: `2px dashed ${BAR_COLOR}`,
+                      borderRadius: 6,
+                      pointerEvents: "none",
+                    }}
+                  />
+                )}
+
+                {laned.map(({ proj, idx, range, lane }) => {
+                  const drawStart = range.start < visibleRange.start ? visibleRange.start : range.start;
+                  const drawEndInclusive = range.end > visibleRange.end ? visibleRange.end : range.end;
+                  const drawEndExclusive = new Date(drawEndInclusive);
+                  drawEndExclusive.setDate(drawEndExclusive.getDate() + 1);
+                  const startPos = prFractionalColPos(drawStart, columns);
+                  const endPos = prFractionalColPos(drawEndExclusive, columns);
+                  const x = startPos * colWidth + 4;
+                  const w = Math.max(20, (endPos - startPos) * colWidth - 8);
+                  const y = ROW_PAD_Y + lane * (ROW_BAR_HEIGHT + ROW_BAR_GAP);
+                  const isDragging = !!ds && ds.index === idx;
+                  return (
+                    <div
+                      key={`bar-${idx}`}
+                      style={{
+                        position: "absolute",
+                        left: x,
+                        top: y,
+                        width: w,
+                        height: ROW_BAR_HEIGHT,
+                        background: hexToRgba(BAR_COLOR, isDragging ? 0.95 : 0.85),
+                        color: "white",
+                        borderRadius: 6,
+                        fontFamily: "var(--font-sans)",
+                        fontSize: 12,
+                        fontWeight: 700,
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        boxShadow: isDragging
+                          ? "0 4px 12px rgba(15,23,42,0.18)"
+                          : "0 1px 2px rgba(15,23,42,0.08)",
+                        cursor: "grab",
+                        userSelect: "none",
+                      }}
+                      title={`${proj.name}\n${range.start.toLocaleDateString()} – ${range.end.toLocaleDateString()}`}
+                      onMouseDown={(e) => startDrag(e, idx, proj.startDate!, proj.targetDate!, "move")}
+                      onClick={(e) => {
+                        if (didDragRef.current) { e.preventDefault(); return; }
+                        openPanel(idx);
+                      }}
+                    >
+                      <div
+                        style={{
+                          height: "100%",
+                          padding: "0 10px",
+                          display: "flex",
+                          alignItems: "center",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                        }}
+                      >
+                        {proj.name}
+                      </div>
+                      <div
+                        onMouseDown={(e) => startDrag(e, idx, proj.startDate!, proj.targetDate!, "resize")}
+                        style={{
+                          position: "absolute",
+                          right: 0,
+                          top: 0,
+                          width: 6,
+                          height: "100%",
+                          cursor: "ew-resize",
+                          background: "rgba(255,255,255,0.0)",
+                        }}
+                        title="Drag to resize"
+                      />
+                    </div>
+                  );
+                })}
+
+                {!loading && laned.length === 0 && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      left: 0,
+                      right: 0,
+                      top: 0,
+                      bottom: 0,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "#94a3b8",
+                      fontSize: 13,
+                      pointerEvents: "none",
+                    }}
+                  >
+                    No scheduled future projects in this range
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Without Dates list */}
+          <div
+            style={{
+              padding: "20px 24px",
+              background: "white",
+              position: "sticky",
+              left: 0,
+              width: containerWidth > 0 ? containerWidth : "100%",
+              boxSizing: "border-box",
+              borderTop: "1px solid #e8e8ef",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 12 }}>
+              <h3 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: "#0f172a", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                Without Dates
+              </h3>
+              <button
+                onClick={() => { setPopupName(""); setPopupOpen(true); }}
+                style={{
+                  fontFamily: "var(--font-sans)",
+                  fontSize: 13,
+                  fontWeight: 700,
+                  padding: "6px 14px",
+                  border: "none",
+                  borderRadius: 8,
+                  background: BAR_COLOR,
+                  color: "white",
+                  cursor: "pointer",
+                }}
+              >
+                + Add Project
+              </button>
+            </div>
+            {loading && (
+              <div style={{ color: "#94a3b8", fontSize: 13, padding: "12px 0" }}>Loading…</div>
+            )}
+            {!loading && dateless.length === 0 && (
+              <div style={{ color: "#94a3b8", fontSize: 13, padding: "12px 0" }}>
+                No undated projects. Click <strong>+ Add Project</strong> to create one, then drag it onto the timeline.
+              </div>
+            )}
+            {!loading && dateless.length > 0 && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {dateless.map(({ proj, idx }) => (
+                  <div
+                    key={idx}
+                    draggable
+                    onDragStart={(e) => {
+                      e.dataTransfer.setData("text/plain", String(idx));
+                      e.dataTransfer.effectAllowed = "move";
+                      setDatelessDragIdx(idx);
+                    }}
+                    onDragEnd={() => { setDatelessDragIdx(null); setDropPreviewX(null); }}
+                    onClick={() => openPanel(idx)}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 12,
+                      padding: "10px 14px",
+                      background: selectedIdx === idx ? "#f0fdf4" : "#f8fafc",
+                      borderRadius: 8,
+                      border: selectedIdx === idx ? `2px solid ${BAR_COLOR}` : "1px solid #e2e8f0",
+                      cursor: "grab",
+                      opacity: datelessDragIdx === idx ? 0.4 : 1,
+                    }}
+                  >
+                    <span
+                      style={{ color: "#94a3b8", fontSize: 14, lineHeight: 1, cursor: "grab", flexShrink: 0 }}
+                      title="Drag to timeline"
+                    >
+                      ⋮⋮
+                    </span>
+                    <span style={{ fontSize: 14, fontWeight: 600, color: "#1e293b", flex: 1 }}>
+                      {proj.name}
+                    </span>
+                    {proj.linearProjectUrl && (
+                      <a
+                        href={proj.linearProjectUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        style={{ fontSize: 12, color: BAR_COLOR, textDecoration: "none" }}
+                      >
+                        Linear &#8599;
+                      </a>
+                    )}
+                    <span
+                      onClick={(e) => { e.stopPropagation(); if (confirm(`Remove "${proj.name}"?`)) removeProject(idx); }}
+                      style={{ fontSize: 16, color: "#cbd5e1", padding: "0 4px", lineHeight: 1 }}
+                      onMouseEnter={(e) => { (e.currentTarget as HTMLSpanElement).style.color = "#dc2626"; }}
+                      onMouseLeave={(e) => { (e.currentTarget as HTMLSpanElement).style.color = "#cbd5e1"; }}
+                    >
+                      &times;
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
-      {/* Right — detail/assign panel */}
-      <div style={{ flex: 1, overflow: "auto", padding: "24px 32px" }}>
-        {!selectedProj && (
-          <div style={{ color: "#94a3b8", textAlign: "center", paddingTop: 80, fontSize: 15 }}>
-            Select a project to assign it to the roadmap
+      {/* Add Project popup */}
+      {popupOpen && (
+        <div
+          onClick={() => { if (!creating) setPopupOpen(false); }}
+          style={{
+            position: "absolute",
+            inset: 0,
+            background: "rgba(15,23,42,0.40)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 20,
+            fontFamily: "var(--font-sans)",
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: "white",
+              borderRadius: 14,
+              boxShadow: "0 20px 60px rgba(15,23,42,0.25)",
+              width: 440,
+              maxWidth: "90vw",
+              padding: "24px 24px 20px",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+              <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: "#0f172a" }}>New Future Project</h3>
+              <button
+                onClick={() => { if (!creating) setPopupOpen(false); }}
+                aria-label="Close"
+                style={{ fontFamily: "var(--font-sans)", fontSize: 20, lineHeight: 1, background: "transparent", border: "none", color: "#94a3b8", cursor: "pointer", padding: "0 4px" }}
+              >
+                &times;
+              </button>
+            </div>
+            <label style={{ fontSize: 11, fontWeight: 600, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.04em", display: "block", marginBottom: 6 }}>
+              Project Name
+            </label>
+            <input
+              type="text"
+              value={popupName}
+              onChange={(e) => setPopupName(e.target.value)}
+              autoFocus
+              placeholder="e.g. Adaptive Pacing v2"
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && popupName.trim() && !creating) addProjectFromPopup();
+                if (e.key === "Escape" && !creating) setPopupOpen(false);
+              }}
+              style={{ width: "100%", fontFamily: "var(--font-sans)", fontSize: 15, padding: "10px 12px", border: "1px solid #e2e8f0", borderRadius: 8, outline: "none", marginBottom: 8 }}
+            />
+            <div style={{ fontSize: 12, color: "#64748b", marginBottom: 20 }}>
+              Added without dates. Drag it onto the timeline to schedule.
+            </div>
+            <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+              <button
+                onClick={() => { if (!creating) setPopupOpen(false); }}
+                disabled={creating}
+                style={{ fontFamily: "var(--font-sans)", fontSize: 14, padding: "10px 18px", border: "1px solid #e2e8f0", borderRadius: 8, background: "white", color: "#64748b", cursor: creating ? "default" : "pointer" }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={addProjectFromPopup}
+                disabled={!popupName.trim() || creating}
+                style={{ fontFamily: "var(--font-sans)", fontSize: 14, fontWeight: 700, padding: "10px 20px", border: "none", borderRadius: 8, background: popupName.trim() && !creating ? BAR_COLOR : "#cbd5e1", color: "white", cursor: popupName.trim() && !creating ? "pointer" : "default" }}
+              >
+                {creating ? "Adding…" : "Add Project"}
+              </button>
+            </div>
           </div>
-        )}
+        </div>
+      )}
 
-        {selectedProj && (
-          <div>
-            <h2 style={{ fontSize: 24, fontWeight: 800, color: "#1e293b", margin: "0 0 6px" }}>{selectedProj.name}</h2>
+      {/* Slide-in side panel */}
+      {selectedProj && (
+        <>
+          <div
+            onClick={() => setSelectedIdx(null)}
+            style={{
+              position: "absolute",
+              inset: 0,
+              background: "rgba(15,23,42,0.18)",
+              zIndex: 10,
+            }}
+          />
+          <div
+            style={{
+              position: "absolute",
+              top: 0,
+              right: 0,
+              bottom: 0,
+              width: 420,
+              background: "white",
+              boxShadow: "-8px 0 24px rgba(15,23,42,0.10)",
+              padding: "24px 28px",
+              overflow: "auto",
+              zIndex: 11,
+              fontFamily: "var(--font-sans)",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 6 }}>
+              <h2 style={{ fontSize: 22, fontWeight: 800, color: "#1e293b", margin: 0, lineHeight: 1.25 }}>{selectedProj.name}</h2>
+              <button
+                onClick={() => setSelectedIdx(null)}
+                aria-label="Close"
+                style={{ fontFamily: "var(--font-sans)", fontSize: 20, lineHeight: 1, background: "transparent", border: "none", color: "#94a3b8", cursor: "pointer", padding: "0 4px" }}
+              >
+                &times;
+              </button>
+            </div>
             {selectedProj.linearProjectUrl && (
-              <a href={selectedProj.linearProjectUrl} target="_blank" rel="noopener noreferrer"
-                style={{ fontSize: 13, color: "#22c55e", textDecoration: "none", display: "inline-block", marginBottom: 24 }}>
+              <a
+                href={selectedProj.linearProjectUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ fontSize: 13, color: BAR_COLOR, textDecoration: "none", display: "inline-block", marginBottom: 20 }}
+              >
                 View in Linear &#8599;
               </a>
             )}
-            {!selectedProj.linearProjectUrl && <div style={{ marginBottom: 24 }} />}
+            {!selectedProj.linearProjectUrl && <div style={{ marginBottom: 20 }} />}
 
-            <div style={{ background: "white", borderRadius: 12, border: "1px solid #e2e8f0", padding: 24 }}>
-              <div style={{ marginBottom: 20 }}>
+            <div style={{ background: "#f8fafc", borderRadius: 12, border: "1px solid #e2e8f0", padding: 20 }}>
+              <div style={{ marginBottom: 16 }}>
                 <label style={labelStyle}>Owner</label>
                 <select value={assignOwner} onChange={(e) => setAssignOwner(e.target.value)} style={inputStyle}>
                   {people.map((p) => <option key={p.name} value={p.name}>{p.name}</option>)}
                 </select>
               </div>
 
-              <div style={{ display: "flex", gap: 16, marginBottom: 24 }}>
+              <div style={{ display: "flex", gap: 12, marginBottom: 18 }}>
                 <div style={{ flex: 1 }}>
                   <label style={labelStyle}>Start Date</label>
                   <input type="date" value={assignStart} onChange={(e) => setAssignStart(e.target.value)} style={inputStyle} />
@@ -2960,30 +3805,31 @@ function FutureProjectsView({ people, onAssignToRoadmap }: { people: Person[]; o
                 </div>
               </div>
 
-              <div style={{ display: "flex", gap: 10 }}>
-                <button onClick={handleAssign}
-                  style={{ fontFamily: "var(--font-sans)", fontSize: 14, fontWeight: 700, padding: "10px 24px", border: "none", borderRadius: 8, background: "#22c55e", color: "white", cursor: "pointer" }}
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <button
+                  onClick={handleAssign}
+                  style={{ fontFamily: "var(--font-sans)", fontSize: 14, fontWeight: 700, padding: "10px 20px", border: "none", borderRadius: 8, background: BAR_COLOR, color: "white", cursor: "pointer" }}
                 >
-                  Add to Roadmap
+                  Assign to Roadmap
                 </button>
-                <button onClick={() => setSelectedIdx(null)}
-                  style={{ fontFamily: "var(--font-sans)", fontSize: 14, padding: "10px 24px", border: "1px solid #e2e8f0", borderRadius: 8, background: "white", cursor: "pointer", color: "#64748b" }}
+                <button
+                  onClick={saveDates}
+                  style={{ fontFamily: "var(--font-sans)", fontSize: 14, fontWeight: 600, padding: "10px 20px", border: "1px solid #e2e8f0", borderRadius: 8, background: "white", color: "#1e293b", cursor: "pointer" }}
                 >
-                  Cancel
+                  Save Dates Only
                 </button>
               </div>
             </div>
 
-            {/* Remove */}
             <button
               onClick={() => { if (confirm(`Remove "${selectedProj.name}" from future projects?`)) removeProject(selectedIdx!); }}
-              style={{ fontFamily: "var(--font-sans)", fontSize: 12, color: "#dc2626", background: "none", border: "none", cursor: "pointer", marginTop: 24, padding: 0 }}
+              style={{ fontFamily: "var(--font-sans)", fontSize: 12, color: "#dc2626", background: "none", border: "none", cursor: "pointer", marginTop: 20, padding: 0 }}
             >
               Remove from Future Projects
             </button>
           </div>
-        )}
-      </div>
+        </>
+      )}
     </div>
   );
 }
@@ -8101,6 +8947,7 @@ export function RoadmapView({ people, months, phases, teams, initialOverrides }:
       ) : viewMode === "futureProjects" ? (
         <FutureProjectsView
           people={localPeople}
+          phases={phases}
           onAssignToRoadmap={(proj, owner, startDate, endDate) => {
             const startMonth = dateToMonthIndex(startDate);
             const endMonth = dateToMonthIndex(endDate);
