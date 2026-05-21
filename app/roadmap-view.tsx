@@ -3222,7 +3222,7 @@ function FutureProjectsView({
     const p = projects[idx];
     if (!p) return;
     setSelectedIdx(idx);
-    setAssignOwner(people[0]?.name ?? "");
+    setAssignOwner("");
     setAssignStart(p.startDate ?? toIsoDate(new Date()));
     setAssignEnd(p.targetDate ?? toIsoDate(new Date(Date.now() + 90 * 86400000)));
   };
@@ -3903,6 +3903,7 @@ function FutureProjectsView({
               <div style={{ marginBottom: 16 }}>
                 <label style={labelStyle}>Owner</label>
                 <select value={assignOwner} onChange={(e) => setAssignOwner(e.target.value)} style={inputStyle}>
+                  <option value="">Select owner…</option>
                   {people.map((p) => <option key={p.name} value={p.name}>{p.name}</option>)}
                 </select>
               </div>
@@ -3921,7 +3922,8 @@ function FutureProjectsView({
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 <button
                   onClick={handleAssign}
-                  style={{ fontFamily: "var(--font-sans)", fontSize: 14, fontWeight: 700, padding: "10px 20px", border: "none", borderRadius: 8, background: BAR_COLOR, color: "white", cursor: "pointer" }}
+                  disabled={!assignOwner}
+                  style={{ fontFamily: "var(--font-sans)", fontSize: 14, fontWeight: 700, padding: "10px 20px", border: "none", borderRadius: 8, background: assignOwner ? BAR_COLOR : "#cbd5e1", color: "white", cursor: assignOwner ? "pointer" : "default" }}
                 >
                   Assign to Roadmap
                 </button>
