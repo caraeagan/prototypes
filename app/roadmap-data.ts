@@ -82,7 +82,7 @@ export const TEAMS: Team[] = [
   { name: "Product", color: "#EAB308", members: ["Cara"] },
   { name: "Design", color: "#A16207", members: ["Maria", "Carlos"] },
   { name: "Psychometrics", color: "#D97706", members: ["Erica", "David"] },
-  { name: "Operations & GTM", color: "#1D4ED8", members: ["Eleanor", "Erin", "Stef", "Sam", "Molly"] },
+  { name: "Operations & GTM", color: "#1D4ED8", members: ["Eleanor", "Erin", "Stef", "Sam", "Molly", "Audrey"] },
 ];
 
 // ── Helper to generate task IDs ────────────────────────────────────────────
@@ -575,6 +575,12 @@ export const PEOPLE: Person[] = [
   {
     name: "Sam",
     color: "#7CB342",
+    team: "Operations & GTM",
+    projects: [],
+  },
+  {
+    name: "Audrey",
+    color: "#0277BD",
     team: "Operations & GTM",
     projects: [],
   },
