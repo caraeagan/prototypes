@@ -184,12 +184,14 @@ function mergeOverridesIntoPeople(
         const keyById = `${person.name}:${proj.id}`;
         const posOv = ov.positions?.[key] ?? ov.positions?.[keyById];
         const renameOv = ov.renames?.[key];
+        const linkOv = ov.linearLinks?.[keyById];
         return {
           ...proj,
           name: renameOv || proj.name,
           startMonth: posOv?.startMonth ?? proj.startMonth,
           duration: posOv?.duration ?? proj.duration,
           order: posOv?.order ?? proj.order,
+          linearProjectName: linkOv ?? proj.linearProjectName,
         };
       }),
   }));
@@ -206,6 +208,7 @@ function mergeOverridesIntoPeople(
             const nameKey = `${personName}:${a.name}`;
             const idKey = `${personName}:${stableId}`;
             const posOv = ov.positions?.[nameKey] ?? ov.positions?.[idKey];
+            const linkOv = ov.linearLinks?.[idKey];
             return {
               id: stableId,
               name: a.name,
@@ -213,7 +216,7 @@ function mergeOverridesIntoPeople(
               duration: posOv?.duration ?? a.duration,
               order: posOv?.order,
               tasks: [],
-              linearProjectName: a.linearProjectName ?? null,
+              linearProjectName: linkOv ?? a.linearProjectName ?? null,
             };
           });
         return { ...person, projects: [...person.projects, ...newProjects] };
@@ -1502,6 +1505,7 @@ function DetailPanel({
   onRemoveProjectFromPerson,
   onMoveToFuture,
   onRename,
+  onLinkLinearProject,
 }: {
   project: Project;
   personName: string;
@@ -1515,6 +1519,7 @@ function DetailPanel({
   onRemoveProjectFromPerson?: (personName: string, projectId: string) => void;
   onMoveToFuture?: (personName: string, project: Project) => void;
   onRename?: (personName: string, projectId: string, oldName: string, newName: string) => void;
+  onLinkLinearProject?: (personName: string, projectId: string, linearProjectName: string) => void;
 }) {
   const doneCount = project.tasks.filter((t) => t.status === "done").length;
   const inProgressCount = project.tasks.filter(
@@ -1533,6 +1538,39 @@ function DetailPanel({
   );
   const [notes, setNotes] = useState("");
   const [savingNotes, setSavingNotes] = useState(false);
+
+  // ── Link Linear project picker ─────────────────────────────────────────
+  const [linkingMode, setLinkingMode] = useState(false);
+  const [linkProjects, setLinkProjects] = useState<{ id: string; name: string }[] | null>(null);
+  const [linkSearch, setLinkSearch] = useState("");
+  const [linkSaving, setLinkSaving] = useState(false);
+
+  useEffect(() => {
+    if (!linkingMode || linkProjects !== null) return;
+    linearQuery<{ projects: { nodes: { id: string; name: string }[] } }>(
+      `query { projects(first: 100) { nodes { id name } } }`,
+    )
+      .then((data) => {
+        setLinkProjects(data.projects.nodes.slice().sort((a, b) => a.name.localeCompare(b.name)));
+      })
+      .catch(() => setLinkProjects([]));
+  }, [linkingMode, linkProjects]);
+
+  const handleLinkLinear = (linearName: string) => {
+    if (linkSaving) return;
+    setLinkSaving(true);
+    onLinkLinearProject?.(personName, project.id, linearName);
+    saveOverride("linkLinearProject", {
+      key: `${personName}:${project.id}`,
+      linearProjectName: linearName,
+    })
+      .catch((err) => console.error("Link Linear project failed:", err))
+      .finally(() => {
+        setLinkSaving(false);
+        // Close so the next click opens the Linear-aware detail panel.
+        onClose();
+      });
+  };
 
   const editStartMonth = dateToMonthIndex(editStartDate);
   const editEndMonth = dateToMonthIndex(editEndDate);
@@ -1747,6 +1785,81 @@ function DetailPanel({
               }}
             />
           </div>
+        </div>
+
+        {/* Link to Linear project */}
+        <div style={{ padding: "12px 16px", borderBottom: "1px solid #f1f5f9" }}>
+          <label style={{ fontSize: 11, fontWeight: 600, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 6 }}>
+            Linear Project
+          </label>
+          {!linkingMode ? (
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ fontSize: 13, color: "#94a3b8", flex: 1 }}>Not linked</span>
+              <button
+                onClick={() => setLinkingMode(true)}
+                style={{
+                  fontFamily: "var(--font-sans)", fontSize: 12, fontWeight: 600,
+                  padding: "6px 12px", cursor: "pointer", borderRadius: 6,
+                  border: "1px solid #6366f1", background: "white", color: "#6366f1",
+                }}
+              >
+                Link Linear project
+              </button>
+            </div>
+          ) : (
+            <div>
+              <input
+                type="text"
+                autoFocus
+                value={linkSearch}
+                onChange={(e) => setLinkSearch(e.target.value)}
+                placeholder={linkProjects === null ? "Loading Linear projects..." : "Search Linear projects..."}
+                disabled={linkProjects === null || linkSaving}
+                style={{
+                  width: "100%", fontFamily: "var(--font-sans)", fontSize: 13,
+                  padding: "6px 10px", border: "1px solid #e2e8f0", borderRadius: 6,
+                  outline: "none", marginBottom: 6,
+                }}
+              />
+              <div style={{ maxHeight: 200, overflowY: "auto", border: "1px solid #e2e8f0", borderRadius: 6 }}>
+                {linkProjects === null && (
+                  <div style={{ padding: "8px 10px", fontSize: 12, color: "#94a3b8" }}>Loading...</div>
+                )}
+                {linkProjects !== null && linkProjects
+                  .filter((lp) => !linkSearch.trim() || lp.name.toLowerCase().includes(linkSearch.trim().toLowerCase()))
+                  .map((lp) => (
+                    <div
+                      key={lp.id}
+                      onClick={() => handleLinkLinear(lp.name)}
+                      style={{
+                        padding: "6px 10px", fontSize: 13, cursor: "pointer",
+                        borderBottom: "1px solid #f1f5f9",
+                      }}
+                      onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.background = "#f8fafc"; }}
+                      onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = "transparent"; }}
+                    >
+                      {lp.name}
+                    </div>
+                  ))}
+                {linkProjects !== null && linkProjects.filter((lp) => !linkSearch.trim() || lp.name.toLowerCase().includes(linkSearch.trim().toLowerCase())).length === 0 && (
+                  <div style={{ padding: "8px 10px", fontSize: 12, color: "#94a3b8" }}>No matches</div>
+                )}
+              </div>
+              <div style={{ marginTop: 6, display: "flex", justifyContent: "flex-end", gap: 6 }}>
+                <button
+                  onClick={() => { setLinkingMode(false); setLinkSearch(""); }}
+                  disabled={linkSaving}
+                  style={{
+                    fontFamily: "var(--font-sans)", fontSize: 12, padding: "4px 10px",
+                    border: "1px solid #e0e0ea", borderRadius: 6, background: "white",
+                    color: "#475569", cursor: linkSaving ? "default" : "pointer",
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="detail-stats">
@@ -9473,6 +9586,17 @@ export function RoadmapView({ people, months, phases, teams, initialOverrides }:
           }}
           onMoveToFuture={handleMoveToFuture}
           onRename={handleRenameProject}
+          onLinkLinearProject={(pName, projId, linearName) => {
+            setLocalPeople((prev) => prev.map((p) => {
+              if (p.name !== pName) return p;
+              return {
+                ...p,
+                projects: p.projects.map((pr) =>
+                  pr.id !== projId ? pr : { ...pr, linearProjectName: linearName },
+                ),
+              };
+            }));
+          }}
         />
       )}
 

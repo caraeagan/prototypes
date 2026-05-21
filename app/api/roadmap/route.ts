@@ -44,6 +44,7 @@ export async function POST(request: NextRequest) {
       "removeFutureProject",
       "updateFutureProject",
       "saveDescription",
+      "linkLinearProject",
       "saveWeeklyPlan",
       "saveWeekNote",
       "toggleWeekSignoff",
@@ -192,6 +193,19 @@ export async function POST(request: NextRequest) {
             overrides.descriptions[key] = description;
           } else {
             delete overrides.descriptions[key];
+          }
+          break;
+        }
+        case "linkLinearProject": {
+          const { key, linearProjectName } = payload as {
+            key: string;
+            linearProjectName: string | null;
+          };
+          if (!overrides.linearLinks) overrides.linearLinks = {};
+          if (linearProjectName) {
+            overrides.linearLinks[key] = linearProjectName;
+          } else {
+            delete overrides.linearLinks[key];
           }
           break;
         }
