@@ -49,6 +49,9 @@ export async function POST(request: NextRequest) {
       "saveWeekNote",
       "toggleWeekSignoff",
       "saveTicketOrder",
+      "saveProjectOrder",
+      "saveWeeklyPersonNote",
+      "saveWeeklyTicketOrder",
     ]);
     if (!knownActions.has(action)) {
       return NextResponse.json(
@@ -252,6 +255,65 @@ export async function POST(request: NextRequest) {
             }
           } else {
             overrides.ticketOrders[weekKey][personName] = order;
+          }
+          break;
+        }
+        case "saveProjectOrder": {
+          const { weekKey, personName, order } = payload as {
+            weekKey: string;
+            personName: string;
+            order: string[];
+          };
+          if (!overrides.projectOrders) overrides.projectOrders = {};
+          if (!overrides.projectOrders[weekKey]) overrides.projectOrders[weekKey] = {};
+          if (!order || order.length === 0) {
+            delete overrides.projectOrders[weekKey][personName];
+            if (Object.keys(overrides.projectOrders[weekKey]).length === 0) {
+              delete overrides.projectOrders[weekKey];
+            }
+          } else {
+            overrides.projectOrders[weekKey][personName] = order;
+          }
+          break;
+        }
+        case "saveWeeklyPersonNote": {
+          const { weekKey, personName, note } = payload as {
+            weekKey: string;
+            personName: string;
+            note: string;
+          };
+          if (!overrides.weeklyPersonNotes) overrides.weeklyPersonNotes = {};
+          if (!overrides.weeklyPersonNotes[weekKey]) overrides.weeklyPersonNotes[weekKey] = {};
+          if (note && note.trim()) {
+            overrides.weeklyPersonNotes[weekKey][personName] = note;
+          } else {
+            delete overrides.weeklyPersonNotes[weekKey][personName];
+            if (Object.keys(overrides.weeklyPersonNotes[weekKey]).length === 0) {
+              delete overrides.weeklyPersonNotes[weekKey];
+            }
+          }
+          break;
+        }
+        case "saveWeeklyTicketOrder": {
+          const { weekKey, personName, projectId, order } = payload as {
+            weekKey: string;
+            personName: string;
+            projectId: string;
+            order: string[];
+          };
+          if (!overrides.weeklyTicketOrders) overrides.weeklyTicketOrders = {};
+          if (!overrides.weeklyTicketOrders[weekKey]) overrides.weeklyTicketOrders[weekKey] = {};
+          if (!overrides.weeklyTicketOrders[weekKey][personName]) overrides.weeklyTicketOrders[weekKey][personName] = {};
+          if (!order || order.length === 0) {
+            delete overrides.weeklyTicketOrders[weekKey][personName][projectId];
+            if (Object.keys(overrides.weeklyTicketOrders[weekKey][personName]).length === 0) {
+              delete overrides.weeklyTicketOrders[weekKey][personName];
+              if (Object.keys(overrides.weeklyTicketOrders[weekKey]).length === 0) {
+                delete overrides.weeklyTicketOrders[weekKey];
+              }
+            }
+          } else {
+            overrides.weeklyTicketOrders[weekKey][personName][projectId] = order;
           }
           break;
         }

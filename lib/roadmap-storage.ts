@@ -44,6 +44,17 @@ export type RoadmapOverrides = {
   // person's bullet column in the given week. Unknown IDs fall back to API
   // order (appended at the end).
   ticketOrders?: Record<string, Record<string, string[]>>;
+  // projectOrders[weekKey][personName] = ordered Linear project IDs for the
+  // auto-grouped weekly view. Projects not in this list render after the
+  // ordered ones, sorted alphabetically.
+  projectOrders?: Record<string, Record<string, string[]>>;
+  // weeklyPersonNotes[weekKey][personName] = free-form notes the person added
+  // under their auto-grouped tickets for that week.
+  weeklyPersonNotes?: Record<string, Record<string, string>>;
+  // weeklyTicketOrders[weekKey][personName][projectId] = ordered Linear issue
+  // IDs for the auto-grouped weekly view. Tickets not in this list render
+  // after the ordered ones, sorted by Linear priority.
+  weeklyTicketOrders?: Record<string, Record<string, Record<string, string[]>>>;
 };
 
 function sleep(ms: number) {

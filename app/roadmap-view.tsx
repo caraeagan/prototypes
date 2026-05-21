@@ -3227,10 +3227,10 @@ function FutureProjectsView({
     setAssignEnd(p.targetDate ?? toIsoDate(new Date(Date.now() + 90 * 86400000)));
   };
 
-  const handleAssign = () => {
-    if (selectedIdx === null || !assignOwner || !assignStart || !assignEnd) return;
+  const assignWithOwner = (owner: string) => {
+    if (selectedIdx === null || !owner || !assignStart || !assignEnd) return;
     const proj = projects[selectedIdx];
-    onAssignToRoadmap(proj, assignOwner, assignStart, assignEnd);
+    onAssignToRoadmap(proj, owner, assignStart, assignEnd);
     removeProject(selectedIdx);
     setSelectedIdx(null);
   };
@@ -3902,10 +3902,21 @@ function FutureProjectsView({
             <div style={{ background: "#f8fafc", borderRadius: 12, border: "1px solid #e2e8f0", padding: 20 }}>
               <div style={{ marginBottom: 16 }}>
                 <label style={labelStyle}>Owner</label>
-                <select value={assignOwner} onChange={(e) => setAssignOwner(e.target.value)} style={inputStyle}>
+                <select
+                  value={assignOwner}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setAssignOwner(v);
+                    if (v) assignWithOwner(v);
+                  }}
+                  style={inputStyle}
+                >
                   <option value="">Select owner…</option>
                   {people.map((p) => <option key={p.name} value={p.name}>{p.name}</option>)}
                 </select>
+                <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 4 }}>
+                  Pick an owner to assign this project to the roadmap.
+                </div>
               </div>
 
               <div style={{ display: "flex", gap: 12, marginBottom: 18 }}>
@@ -3920,13 +3931,6 @@ function FutureProjectsView({
               </div>
 
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                <button
-                  onClick={handleAssign}
-                  disabled={!assignOwner}
-                  style={{ fontFamily: "var(--font-sans)", fontSize: 14, fontWeight: 700, padding: "10px 20px", border: "none", borderRadius: 8, background: assignOwner ? BAR_COLOR : "#cbd5e1", color: "white", cursor: assignOwner ? "pointer" : "default" }}
-                >
-                  Assign to Roadmap
-                </button>
                 <button
                   onClick={saveDates}
                   style={{ fontFamily: "var(--font-sans)", fontSize: 14, fontWeight: 600, padding: "10px 20px", border: "1px solid #e2e8f0", borderRadius: 8, background: "white", color: "#1e293b", cursor: "pointer" }}
@@ -4494,8 +4498,12 @@ function ProductRoadmapView({
   const [discoveredProjects, setDiscoveredProjects] = useState<DiscoveredProject[]>([]);
   const [showDiscovered, setShowDiscovered] = useState(false);
 
-  // One-time fetch of all Linear projects + open ticket assignees.
+  // Lazy fetch all Linear projects + open ticket assignees — only when the
+  // user toggles "Show all Linear projects" on. Eager-fetching ran into
+  // Linear's 10000 complexity limit on first load.
   useEffect(() => {
+    if (!showDiscovered) return;
+    if (discoveredProjects.length > 0) return; // already fetched once
     let cancelled = false;
     linearQuery<{
       projects: {
@@ -4515,10 +4523,10 @@ function ProductRoadmapView({
       };
     }>(
       `query AllProjectsAssignees {
-        projects(first: 100, includeArchived: true) {
+        projects(first: 50, includeArchived: true) {
           nodes {
             id name startDate targetDate state
-            issues(first: 100, includeArchived: true) {
+            issues(first: 50, includeArchived: true) {
               nodes {
                 state { type }
                 assignee { displayName }
@@ -4558,7 +4566,7 @@ function ProductRoadmapView({
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [showDiscovered, discoveredProjects.length]);
 
 
   const dragRef = useRef<PRDragState | null>(null);
@@ -5540,6 +5548,20 @@ function formatWeekRange(monday: Date): string {
 type LinearIssueLink = { id: string; identifier: string; url: string; title: string };
 type Bullet = { id: string; text: string; linearIssue?: LinearIssueLink };
 
+// Issue assigned to someone for the selected week — used by the auto
+// "From Linear" section in Weekly Planning.
+type WeeklyLinearIssue = {
+  id: string;
+  identifier: string;
+  url: string;
+  title: string;
+  priority: number;
+  state: { name: string; color: string; type: string };
+  projectId: string | null;
+  projectName: string | null;
+  projectColor: string | null;
+};
+
 function newBulletId(): string {
   return `b-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
@@ -5702,166 +5724,363 @@ function LinearSearchPopover({
   );
 }
 
-function PersonWeekSection({
+function PersonAutoLinearSection({
   person,
-  weekKey,
-  initialBullets,
-  onSavedStateChange,
+  issues,
+  loading,
+  projectOrder,
+  onSaveProjectOrder,
+  ticketOrders,
+  onSaveTicketOrder,
 }: {
   person: Person;
-  weekKey: string;
-  initialBullets: Bullet[];
-  onSavedStateChange: (state: "saving" | "saved" | "error") => void;
+  issues: WeeklyLinearIssue[];
+  loading: boolean;
+  projectOrder: string[];
+  onSaveProjectOrder: (personName: string, order: string[]) => void;
+  ticketOrders: Record<string, string[]>;
+  onSaveTicketOrder: (personName: string, projectId: string, order: string[]) => void;
 }) {
-  const [bullets, setBullets] = useState<Bullet[]>(initialBullets);
-  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const latestRef = useRef<Bullet[]>(initialBullets);
-  const [linkPopoverFor, setLinkPopoverFor] = useState<{ bulletId: string; rect: DOMRect; query: string } | null>(null);
+  // Group issues by project. Use "__no_project__" sentinel for issues with
+  // no project so they still render in one bucket at the end.
+  const groups = useMemo(() => {
+    type Group = {
+      projectId: string;
+      projectName: string;
+      projectColor: string | null;
+      issues: WeeklyLinearIssue[];
+    };
+    const byId: Record<string, Group> = {};
+    for (const i of issues) {
+      const pid = i.projectId ?? "__no_project__";
+      const pname = i.projectName ?? "No project";
+      if (!byId[pid]) {
+        byId[pid] = { projectId: pid, projectName: pname, projectColor: i.projectColor, issues: [] };
+      }
+      byId[pid].issues.push(i);
+    }
+    // Apply saved per-project ticket order; unknown IDs append in priority
+    // order (1=urgent first, 0=No priority last).
+    for (const g of Object.values(byId)) {
+      const saved = ticketOrders[g.projectId] ?? [];
+      const byIdMap: Record<string, WeeklyLinearIssue> = {};
+      for (const t of g.issues) byIdMap[t.id] = t;
+      const orderedIds = saved.filter((id) => byIdMap[id]);
+      const orderedSet = new Set(orderedIds);
+      const rest = g.issues
+        .filter((t) => !orderedSet.has(t.id))
+        .sort((a, b) => {
+          const pa = a.priority === 0 ? 99 : a.priority;
+          const pb = b.priority === 0 ? 99 : b.priority;
+          if (pa !== pb) return pa - pb;
+          return a.title.localeCompare(b.title);
+        });
+      g.issues = [...orderedIds.map((id) => byIdMap[id]), ...rest];
+    }
+    // Apply saved project order; unknown IDs append alphabetically.
+    const orderedIds = projectOrder.filter((id) => byId[id]);
+    const orderedSet = new Set(orderedIds);
+    const rest = Object.values(byId)
+      .filter((g) => !orderedSet.has(g.projectId))
+      .sort((a, b) => {
+        // "__no_project__" goes last; otherwise alphabetical.
+        if (a.projectId === "__no_project__") return 1;
+        if (b.projectId === "__no_project__") return -1;
+        return a.projectName.localeCompare(b.projectName);
+      });
+    return [...orderedIds.map((id) => byId[id]), ...rest];
+  }, [issues, projectOrder, ticketOrders]);
+
   const [draggingId, setDraggingId] = useState<string | null>(null);
-  // dragOverId: bullet ID currently hovered while dragging.
-  // dragOverPos: "before" inserts above the hovered bullet, "after" inserts below
-  // (decided by which half of the row the mouse is in).
   const [dragOverId, setDragOverId] = useState<string | null>(null);
   const [dragOverPos, setDragOverPos] = useState<"before" | "after" | null>(null);
 
-  // Reset when the week or initial data changes
-  useEffect(() => {
-    setBullets(initialBullets);
-    latestRef.current = initialBullets;
-  }, [weekKey, person.name]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Ticket-level drag state — scoped per project to avoid cross-project drops.
+  const [ticketDrag, setTicketDrag] = useState<{ projectId: string; ticketId: string } | null>(null);
+  const [ticketDragOver, setTicketDragOver] = useState<{ projectId: string; ticketId: string; pos: "before" | "after" } | null>(null);
 
-  const scheduleSave = (next: Bullet[]) => {
-    latestRef.current = next;
-    if (saveTimer.current) clearTimeout(saveTimer.current);
+  const reorder = (fromId: string, toId: string, pos: "before" | "after") => {
+    if (fromId === toId) return;
+    const ids = groups.map((g) => g.projectId);
+    const fromIdx = ids.indexOf(fromId);
+    const toIdx = ids.indexOf(toId);
+    if (fromIdx < 0 || toIdx < 0) return;
+    const next = [...ids];
+    const [moved] = next.splice(fromIdx, 1);
+    let insertAt = toIdx + (pos === "after" ? 1 : 0);
+    if (fromIdx < toIdx) insertAt -= 1;
+    next.splice(insertAt, 0, moved);
+    onSaveProjectOrder(person.name, next);
+  };
+
+  const reorderTickets = (projectId: string, fromId: string, toId: string, pos: "before" | "after") => {
+    if (fromId === toId) return;
+    const group = groups.find((g) => g.projectId === projectId);
+    if (!group) return;
+    const ids = group.issues.map((t) => t.id);
+    const fromIdx = ids.indexOf(fromId);
+    const toIdx = ids.indexOf(toId);
+    if (fromIdx < 0 || toIdx < 0) return;
+    const next = [...ids];
+    const [moved] = next.splice(fromIdx, 1);
+    let insertAt = toIdx + (pos === "after" ? 1 : 0);
+    if (fromIdx < toIdx) insertAt -= 1;
+    next.splice(insertAt, 0, moved);
+    onSaveTicketOrder(person.name, projectId, next);
+  };
+
+  if (loading) {
+    return (
+      <div style={{ paddingLeft: 20, marginBottom: 12, fontSize: 12, color: "#94a3b8" }}>
+        Loading tickets…
+      </div>
+    );
+  }
+
+  if (groups.length === 0) {
+    return (
+      <div style={{ paddingLeft: 20, marginBottom: 12, fontSize: 12, color: "#94a3b8" }}>
+        No Linear tickets in this week.
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ paddingLeft: 20, marginBottom: 14 }}>
+      <div style={{
+        fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase",
+        letterSpacing: "0.06em", marginBottom: 8,
+      }}>
+        From Linear
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        {groups.map((g) => {
+          const isDragging = draggingId === g.projectId;
+          const showIndicator = dragOverId === g.projectId && draggingId && draggingId !== g.projectId;
+          return (
+            <div
+              key={g.projectId}
+              onDragOver={(e) => {
+                if (!draggingId || draggingId === g.projectId) return;
+                e.preventDefault();
+                e.dataTransfer.dropEffect = "move";
+                const rect = e.currentTarget.getBoundingClientRect();
+                const pos = e.clientY < rect.top + rect.height / 2 ? "before" : "after";
+                if (dragOverId !== g.projectId || dragOverPos !== pos) {
+                  setDragOverId(g.projectId);
+                  setDragOverPos(pos);
+                }
+              }}
+              onDragLeave={(e) => {
+                if (!e.currentTarget.contains(e.relatedTarget as Node | null)) {
+                  if (dragOverId === g.projectId) {
+                    setDragOverId(null);
+                    setDragOverPos(null);
+                  }
+                }
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                const fromId = e.dataTransfer.getData("text/project-id") || draggingId;
+                if (fromId && dragOverPos) reorder(fromId, g.projectId, dragOverPos);
+                setDraggingId(null);
+                setDragOverId(null);
+                setDragOverPos(null);
+              }}
+              style={{
+                opacity: isDragging ? 0.4 : 1,
+                borderTop: showIndicator && dragOverPos === "before" ? "2px solid #6366f1" : "2px solid transparent",
+                borderBottom: showIndicator && dragOverPos === "after" ? "2px solid #6366f1" : "2px solid transparent",
+                transition: "border-color 80ms ease",
+              }}
+            >
+              <div style={{
+                display: "flex", alignItems: "center", gap: 6, padding: "4px 8px",
+                background: "#fef9c3", border: "1px solid #facc15", borderRadius: 6,
+              }}>
+                <span
+                  draggable
+                  onDragStart={(e) => {
+                    setDraggingId(g.projectId);
+                    e.dataTransfer.effectAllowed = "move";
+                    e.dataTransfer.setData("text/project-id", g.projectId);
+                  }}
+                  onDragEnd={() => {
+                    setDraggingId(null);
+                    setDragOverId(null);
+                    setDragOverPos(null);
+                  }}
+                  title="Drag to reorder"
+                  aria-label="Drag to reorder project"
+                  style={{
+                    flexShrink: 0, color: "#94a3b8", cursor: "grab",
+                    userSelect: "none", fontSize: 14, lineHeight: 1,
+                  }}
+                >
+                  ⋮⋮
+                </span>
+                {g.projectColor && (
+                  <span style={{
+                    width: 8, height: 8, borderRadius: "50%", flexShrink: 0,
+                    background: g.projectColor,
+                  }} />
+                )}
+                <span style={{ fontSize: 13, fontWeight: 700, color: "#0f172a" }}>
+                  {g.projectName}
+                </span>
+                <span style={{ fontSize: 11, color: "#94a3b8", marginLeft: "auto" }}>
+                  {g.issues.length} ticket{g.issues.length !== 1 ? "s" : ""}
+                </span>
+              </div>
+              <ul style={{ listStyle: "none", margin: 0, padding: "4px 0 4px 24px" }}>
+                {g.issues.map((i) => {
+                  const isTDragging = ticketDrag?.ticketId === i.id;
+                  const isTOver = ticketDragOver?.projectId === g.projectId && ticketDragOver.ticketId === i.id && ticketDrag?.ticketId !== i.id;
+                  return (
+                  <li
+                    key={i.id}
+                    onDragOver={(e) => {
+                      if (!ticketDrag || ticketDrag.projectId !== g.projectId || ticketDrag.ticketId === i.id) return;
+                      e.preventDefault();
+                      e.dataTransfer.dropEffect = "move";
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      const pos: "before" | "after" = e.clientY < rect.top + rect.height / 2 ? "before" : "after";
+                      if (ticketDragOver?.ticketId !== i.id || ticketDragOver.pos !== pos) {
+                        setTicketDragOver({ projectId: g.projectId, ticketId: i.id, pos });
+                      }
+                    }}
+                    onDragLeave={(e) => {
+                      if (!e.currentTarget.contains(e.relatedTarget as Node | null)) {
+                        if (ticketDragOver?.ticketId === i.id) setTicketDragOver(null);
+                      }
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      const fromId = e.dataTransfer.getData("text/ticket-id") || ticketDrag?.ticketId;
+                      const pos = ticketDragOver?.pos;
+                      if (fromId && pos) reorderTickets(g.projectId, fromId, i.id, pos);
+                      setTicketDrag(null);
+                      setTicketDragOver(null);
+                    }}
+                    style={{
+                      display: "flex", alignItems: "center", gap: 6, padding: "3px 0",
+                      fontSize: 12, color: "#1e293b",
+                      opacity: isTDragging ? 0.4 : 1,
+                      borderTop: isTOver && ticketDragOver?.pos === "before" ? "2px solid #6366f1" : "2px solid transparent",
+                      borderBottom: isTOver && ticketDragOver?.pos === "after" ? "2px solid #6366f1" : "2px solid transparent",
+                      transition: "border-color 80ms ease",
+                    }}
+                  >
+                    <span
+                      draggable
+                      onDragStart={(e) => {
+                        setTicketDrag({ projectId: g.projectId, ticketId: i.id });
+                        e.dataTransfer.effectAllowed = "move";
+                        e.dataTransfer.setData("text/ticket-id", i.id);
+                      }}
+                      onDragEnd={() => {
+                        setTicketDrag(null);
+                        setTicketDragOver(null);
+                      }}
+                      title="Drag to reorder"
+                      aria-label="Drag to reorder ticket"
+                      style={{
+                        flexShrink: 0, color: "#cbd5e1", cursor: "grab",
+                        userSelect: "none", fontSize: 12, lineHeight: 1,
+                      }}
+                    >
+                      ⋮⋮
+                    </span>
+                    <span style={{
+                      width: 6, height: 6, borderRadius: "50%", flexShrink: 0,
+                      backgroundColor: i.state.color,
+                    }} />
+                    <a
+                      href={i.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ color: "#475569", fontSize: 10, textDecoration: "none", flexShrink: 0 }}
+                    >
+                      {i.identifier}
+                    </a>
+                    <a
+                      href={i.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        color: "#1e293b", textDecoration: "none", flex: 1,
+                        overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                      }}
+                      title={i.title}
+                    >
+                      {i.title}
+                    </a>
+                    <span style={{
+                      fontSize: 10, fontWeight: 600, padding: "1px 6px", borderRadius: 999,
+                      backgroundColor: hexToRgba(i.state.color, 0.15), color: i.state.color,
+                      flexShrink: 0,
+                    }}>
+                      {i.state.name}
+                    </span>
+                  </li>
+                  );
+                })}
+              </ul>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function PersonWeekSection({
+  person,
+  weekKey,
+  onSavedStateChange,
+  autoIssues,
+  autoIssuesLoading,
+  projectOrder,
+  onSaveProjectOrder,
+  ticketOrders,
+  onSaveTicketOrder,
+  initialNote,
+}: {
+  person: Person;
+  weekKey: string;
+  onSavedStateChange: (state: "saving" | "saved" | "error") => void;
+  autoIssues: WeeklyLinearIssue[];
+  autoIssuesLoading: boolean;
+  projectOrder: string[];
+  onSaveProjectOrder: (personName: string, order: string[]) => void;
+  ticketOrders: Record<string, string[]>;
+  onSaveTicketOrder: (personName: string, projectId: string, order: string[]) => void;
+  initialNote: string;
+}) {
+  const [noteDraft, setNoteDraft] = useState(initialNote);
+  const noteSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Reset note when switching weeks/people.
+  useEffect(() => {
+    setNoteDraft(initialNote);
+  }, [weekKey, person.name, initialNote]);
+
+  const onNoteChange = (value: string) => {
+    setNoteDraft(value);
+    if (noteSaveTimer.current) clearTimeout(noteSaveTimer.current);
     onSavedStateChange("saving");
-    saveTimer.current = setTimeout(() => {
-      const toSave = latestRef.current
-        .map((b) => ({ id: b.id, text: b.text.trim(), linearIssue: b.linearIssue }))
-        .filter((b) => b.text.length > 0 || b.linearIssue);
-      saveOverride("saveWeeklyPlan", { weekKey, personName: person.name, bullets: toSave })
+    noteSaveTimer.current = setTimeout(() => {
+      saveOverride("saveWeeklyPersonNote", { weekKey, personName: person.name, note: value })
         .then(() => onSavedStateChange("saved"))
         .catch(() => onSavedStateChange("error"));
     }, 500);
   };
 
-  const attachIssue = (bulletId: string, issue: LinearIssueLink) => {
-    setBullets((prev) => {
-      const next = prev.map((b) => {
-        if (b.id !== bulletId) return b;
-        // If text contains the URL we just matched, strip it for cleanliness.
-        const stripped = b.text.replace(LINEAR_URL_REGEX, "").replace(/\s{2,}/g, " ").trim();
-        const newText = stripped.length > 0 ? stripped : (b.text.trim().length === 0 ? issue.title : b.text);
-        return { ...b, text: newText, linearIssue: issue };
-      });
-      scheduleSave(next);
-      return next;
-    });
-    setLinkPopoverFor(null);
-  };
-
-  const detachIssue = (bulletId: string) => {
-    setBullets((prev) => {
-      const next = prev.map((b) => (b.id === bulletId ? { ...b, linearIssue: undefined } : b));
-      scheduleSave(next);
-      return next;
-    });
-  };
-
-  const handleBlurMaybeAutoLink = async (bullet: Bullet) => {
-    if (bullet.linearIssue) return;
-    const ident = extractLinearIdentifier(bullet.text);
-    if (!ident) return;
-    const issue = await fetchLinearIssueByIdentifier(ident);
-    if (issue) attachIssue(bullet.id, issue);
-  };
-
   useEffect(() => {
     return () => {
-      if (saveTimer.current) clearTimeout(saveTimer.current);
+      if (noteSaveTimer.current) clearTimeout(noteSaveTimer.current);
     };
   }, []);
-
-  const updateBullet = (id: string, text: string) => {
-    setBullets((prev) => {
-      const next = prev.map((b) => (b.id === id ? { ...b, text } : b));
-      scheduleSave(next);
-      return next;
-    });
-  };
-
-  const addBullet = (afterId?: string) => {
-    setBullets((prev) => {
-      const newB: Bullet = { id: newBulletId(), text: "" };
-      let next: Bullet[];
-      if (afterId) {
-        const idx = prev.findIndex((b) => b.id === afterId);
-        next = [...prev.slice(0, idx + 1), newB, ...prev.slice(idx + 1)];
-      } else {
-        next = [...prev, newB];
-      }
-      scheduleSave(next);
-      // Focus the new bullet on next tick
-      setTimeout(() => {
-        const el = document.querySelector<HTMLTextAreaElement>(`[data-bullet-id="${newB.id}"]`);
-        el?.focus();
-      }, 0);
-      return next;
-    });
-  };
-
-  const removeBullet = (id: string) => {
-    setBullets((prev) => {
-      const next = prev.filter((b) => b.id !== id);
-      scheduleSave(next);
-      return next;
-    });
-  };
-
-  const reorderBullets = (fromId: string, toId: string, pos: "before" | "after") => {
-    if (fromId === toId) return;
-    setBullets((prev) => {
-      const fromIdx = prev.findIndex((b) => b.id === fromId);
-      const toIdx = prev.findIndex((b) => b.id === toId);
-      if (fromIdx < 0 || toIdx < 0) return prev;
-      const next = [...prev];
-      const [moved] = next.splice(fromIdx, 1);
-      // Recompute the target index after removal — if the source was before
-      // the target, the target index has shifted left by one.
-      let insertAt = toIdx + (pos === "after" ? 1 : 0);
-      if (fromIdx < toIdx) insertAt -= 1;
-      next.splice(insertAt, 0, moved);
-      if (next.every((b, i) => b.id === prev[i]?.id)) return prev; // no-op
-      scheduleSave(next);
-      return next;
-    });
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>, bullet: Bullet) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      addBullet(bullet.id);
-    } else if (e.key === "Backspace" && bullet.text === "") {
-      e.preventDefault();
-      const idx = bullets.findIndex((b) => b.id === bullet.id);
-      if (idx > 0) {
-        removeBullet(bullet.id);
-        setTimeout(() => {
-          const prev = bullets[idx - 1];
-          const el = document.querySelector<HTMLTextAreaElement>(`[data-bullet-id="${prev.id}"]`);
-          el?.focus();
-          el?.setSelectionRange(el.value.length, el.value.length);
-        }, 0);
-      } else if (bullets.length === 1) {
-        // Keep at least one empty bullet visible
-        removeBullet(bullet.id);
-      }
-    }
-  };
-
-  const autoGrow = (el: HTMLTextAreaElement) => {
-    el.style.height = "auto";
-    el.style.height = `${el.scrollHeight}px`;
-  };
 
   return (
     <section style={{ marginBottom: 28 }}>
@@ -5874,205 +6093,53 @@ function PersonWeekSection({
         <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "#0f172a" }}>{person.name}</h3>
         <span style={{ fontSize: 12, color: "#94a3b8" }}>{person.team}</span>
       </div>
-      <div style={{ paddingLeft: 20 }}>
-        {bullets.length === 0 ? (
-          <button
-            onClick={() => addBullet()}
-            style={{
-              fontFamily: "var(--font-sans)", fontSize: 13, color: "#94a3b8",
-              background: "transparent", border: "1px dashed #cbd5e1", borderRadius: 6,
-              padding: "6px 10px", cursor: "text",
-            }}
-          >
-            + Add a bullet
-          </button>
-        ) : (
-          <ul style={{ listStyle: "disc", margin: 0, padding: 0, paddingLeft: 18 }}>
-            {bullets.map((b) => {
-              const isDragging = draggingId === b.id;
-              const showIndicator = dragOverId === b.id && draggingId && draggingId !== b.id;
-              return (
-              <li
-                key={b.id}
-                className="weekly-bullet-row"
-                onDragOver={(e) => {
-                  if (!draggingId || draggingId === b.id) return;
-                  e.preventDefault();
-                  e.dataTransfer.dropEffect = "move";
-                  const rect = e.currentTarget.getBoundingClientRect();
-                  const pos = e.clientY < rect.top + rect.height / 2 ? "before" : "after";
-                  if (dragOverId !== b.id || dragOverPos !== pos) {
-                    setDragOverId(b.id);
-                    setDragOverPos(pos);
-                  }
-                }}
-                onDragLeave={(e) => {
-                  // Only clear if leaving the row entirely (not entering a child).
-                  if (!e.currentTarget.contains(e.relatedTarget as Node | null)) {
-                    if (dragOverId === b.id) {
-                      setDragOverId(null);
-                      setDragOverPos(null);
-                    }
-                  }
-                }}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  const fromId = e.dataTransfer.getData("text/bullet-id") || draggingId;
-                  if (fromId && dragOverPos) reorderBullets(fromId, b.id, dragOverPos);
-                  setDraggingId(null);
-                  setDragOverId(null);
-                  setDragOverPos(null);
-                }}
-                style={{
-                  marginBottom: 6,
-                  color: "#1e293b",
-                  opacity: isDragging ? 0.4 : 1,
-                  borderTop: showIndicator && dragOverPos === "before" ? "2px solid #6366f1" : "2px solid transparent",
-                  borderBottom: showIndicator && dragOverPos === "after" ? "2px solid #6366f1" : "2px solid transparent",
-                  transition: "border-color 80ms ease",
-                }}
-              >
-                <div style={{ display: "flex", alignItems: "flex-start", gap: 6 }}>
-                  <span
-                    draggable
-                    onDragStart={(e) => {
-                      setDraggingId(b.id);
-                      e.dataTransfer.effectAllowed = "move";
-                      e.dataTransfer.setData("text/bullet-id", b.id);
-                    }}
-                    onDragEnd={() => {
-                      setDraggingId(null);
-                      setDragOverId(null);
-                      setDragOverPos(null);
-                    }}
-                    className="weekly-bullet-grip"
-                    title="Drag to reorder"
-                    aria-label="Drag to reorder bullet"
-                    style={{
-                      flexShrink: 0,
-                      width: 16,
-                      marginLeft: -22,
-                      marginTop: 2,
-                      color: "#94a3b8",
-                      cursor: "grab",
-                      userSelect: "none",
-                      lineHeight: 1,
-                      fontSize: 16,
-                      textAlign: "center",
-                      opacity: 0.55,
-                      transition: "opacity 120ms ease, color 120ms ease",
-                    }}
-                  >
-                    ⋮⋮
-                  </span>
-                  <textarea
-                    data-bullet-id={b.id}
-                    value={b.text}
-                    onChange={(e) => { updateBullet(b.id, e.target.value); autoGrow(e.currentTarget); }}
-                    onKeyDown={(e) => handleKeyDown(e, b)}
-                    onFocus={(e) => autoGrow(e.currentTarget)}
-                    onBlur={() => handleBlurMaybeAutoLink(b)}
-                    ref={(el) => { if (el) autoGrow(el); }}
-                    rows={1}
-                    placeholder="Type and press Enter"
-                    style={{
-                      flex: 1,
-                      fontFamily: "var(--font-sans)", fontSize: 14, lineHeight: 1.5,
-                      border: "none", outline: "none", resize: "none",
-                      background: "transparent", color: "#1e293b", padding: "2px 0",
-                      overflow: "hidden",
-                    }}
-                  />
-                  {!b.linearIssue && (
-                    <button
-                      onClick={(e) => {
-                        const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-                        setLinkPopoverFor({ bulletId: b.id, rect, query: "" });
-                      }}
-                      title="Link a Linear ticket"
-                      style={{
-                        flexShrink: 0, fontSize: 11, fontWeight: 600,
-                        padding: "3px 8px", border: "1px solid #e2e8f0", borderRadius: 6,
-                        background: "white", color: "#64748b", cursor: "pointer",
-                        marginTop: 2,
-                      }}
-                    >
-                      + Link
-                    </button>
-                  )}
-                </div>
-                {b.linearIssue && (
-                  <div style={{ marginTop: 4, marginLeft: 0, display: "flex", alignItems: "center", gap: 6 }}>
-                    <a
-                      href={b.linearIssue.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{
-                        display: "inline-flex", alignItems: "center", gap: 6,
-                        fontSize: 11, fontWeight: 600, color: "#4f46e5",
-                        textDecoration: "none",
-                        padding: "3px 8px", borderRadius: 6,
-                        background: "#eef2ff", border: "1px solid #e0e7ff",
-                      }}
-                    >
-                      <span>{b.linearIssue.identifier}</span>
-                      <span style={{ color: "#64748b", fontWeight: 400, maxWidth: 280, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{b.linearIssue.title}</span>
-                    </a>
-                    <button
-                      onClick={() => detachIssue(b.id)}
-                      title="Remove link"
-                      style={{
-                        fontSize: 11, color: "#94a3b8", background: "transparent",
-                        border: "none", cursor: "pointer", padding: "0 4px",
-                      }}
-                    >×</button>
-                  </div>
-                )}
-              </li>
-              );
-            })}
-          </ul>
-        )}
-        {bullets.length > 0 && (
-          <button
-            onClick={() => addBullet()}
-            style={{
-              fontFamily: "var(--font-sans)", fontSize: 12, color: "#94a3b8",
-              background: "transparent", border: "none", padding: "4px 0",
-              cursor: "pointer", marginTop: 4,
-            }}
-          >
-            + Add bullet
-          </button>
-        )}
-      </div>
-      {linkPopoverFor && (
-        <LinearSearchPopover
-          anchorRect={linkPopoverFor.rect}
-          initialQuery={linkPopoverFor.query}
-          onSelect={(issue) => attachIssue(linkPopoverFor.bulletId, issue)}
-          onClose={() => setLinkPopoverFor(null)}
+      <PersonAutoLinearSection
+        person={person}
+        issues={autoIssues}
+        loading={autoIssuesLoading}
+        projectOrder={projectOrder}
+        onSaveProjectOrder={onSaveProjectOrder}
+        ticketOrders={ticketOrders}
+        onSaveTicketOrder={onSaveTicketOrder}
+      />
+      <div style={{ paddingLeft: 20, marginTop: 10 }}>
+        <label style={{ fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 6 }}>
+          Notes
+        </label>
+        <textarea
+          value={noteDraft}
+          onChange={(e) => onNoteChange(e.target.value)}
+          placeholder="Add notes for this week…"
+          style={{
+            fontFamily: "var(--font-sans)", fontSize: 13, lineHeight: 1.5,
+            width: "100%", minHeight: 60, padding: "8px 10px",
+            border: "1px solid #e2e8f0", borderRadius: 8,
+            background: "#fff", color: "#1e293b", outline: "none",
+            resize: "vertical",
+          }}
         />
-      )}
+      </div>
     </section>
   );
 }
 
 function WeeklyPlanningView({ people }: { people: Person[] }) {
   const [weekKey, setWeekKey] = useState<string>(() => formatWeekKey(getMondayOfWeek(new Date())));
-  const [plans, setPlans] = useState<Record<string, Record<string, Bullet[]>>>({});
-  const [notes, setNotes] = useState<Record<string, string>>({});
-  const [signoffs, setSignoffs] = useState<Record<string, Record<string, { at: string }>>>({});
+  const [projectOrders, setProjectOrders] = useState<Record<string, Record<string, string[]>>>({});
+  const [ticketOrders, setTicketOrders] = useState<Record<string, Record<string, Record<string, string[]>>>>({});
+  const [personNotes, setPersonNotes] = useState<Record<string, Record<string, string>>>({});
   const [loading, setLoading] = useState(true);
   const [saveState, setSaveState] = useState<"saving" | "saved" | "error" | "idle">("idle");
-  const [noteDraft, setNoteDraft] = useState<string>("");
-  const noteSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Linear issues for the selected week, grouped by normalized assignee name.
+  const [weeklyIssues, setWeeklyIssues] = useState<Record<string, WeeklyLinearIssue[]>>({});
+  const [weeklyIssuesLoading, setWeeklyIssuesLoading] = useState(false);
 
   useEffect(() => {
     fetchOverrides().then((ov) => {
-      setPlans(ov.weeklyPlans ?? {});
-      setNotes(ov.weekNotes ?? {});
-      setSignoffs(ov.weekSignoffs ?? {});
+      setProjectOrders(ov.projectOrders ?? {});
+      setTicketOrders(ov.weeklyTicketOrders ?? {});
+      setPersonNotes(ov.weeklyPersonNotes ?? {});
       setLoading(false);
     });
   }, []);
@@ -6081,46 +6148,123 @@ function WeeklyPlanningView({ people }: { people: Person[] }) {
   useEffect(() => {
     const onSaved = () => {
       fetchOverrides().then((ov) => {
-        setPlans(ov.weeklyPlans ?? {});
-        setNotes(ov.weekNotes ?? {});
-        setSignoffs(ov.weekSignoffs ?? {});
+        setProjectOrders(ov.projectOrders ?? {});
+        setTicketOrders(ov.weeklyTicketOrders ?? {});
+        setPersonNotes(ov.weeklyPersonNotes ?? {});
       });
     };
     window.addEventListener("roadmap-saved", onSaved);
     return () => window.removeEventListener("roadmap-saved", onSaved);
   }, []);
 
+  // Fetch Linear issues whose cycle covers the selected week (or whose
+  // dueDate falls within Mon–Sun for teams without cycles). Grouped by
+  // assignee using normalizeAssigneeName so they match roadmap people.
   useEffect(() => {
-    setNoteDraft(notes[weekKey] ?? "");
-  }, [weekKey, notes]);
+    let cancelled = false;
+    // Identify the cycle for the selected week by cycle.startsAt being within
+    // ±24h of the selected Monday. Linear stores cycle.startsAt in the team's
+    // local timezone, so a tighter Mon→Sun UTC window still overlaps the
+    // previous cycle. The ±24h window picks exactly one cycle per team — the
+    // one that "starts on this Monday" regardless of timezone.
+    const mondayUtc = new Date(`${weekKey}T00:00:00.000Z`);
+    const windowStart = new Date(mondayUtc.getTime() - 24 * 3600 * 1000).toISOString();
+    const windowEnd = new Date(mondayUtc.getTime() + 24 * 3600 * 1000).toISOString();
 
-  const toggleSignoff = (personName: string) => {
-    const currentlySigned = !!signoffs[weekKey]?.[personName];
-    const next = !currentlySigned;
-    setSignoffs((prev) => {
-      const copy = { ...prev, [weekKey]: { ...(prev[weekKey] ?? {}) } };
-      if (next) {
-        copy[weekKey][personName] = { at: new Date().toISOString() };
-      } else {
-        delete copy[weekKey][personName];
-      }
+    setWeeklyIssuesLoading(true);
+    linearQuery<{
+      issues: {
+        nodes: {
+          id: string;
+          identifier: string;
+          url: string;
+          title: string;
+          priority: number;
+          state: { name: string; color: string; type: string };
+          assignee: { displayName: string } | null;
+          project: { id: string; name: string; color: string | null } | null;
+        }[];
+      };
+    }>(
+      `query WeeklyAssigneeIssues($windowStart: DateTimeOrDuration!, $windowEnd: DateTimeOrDuration!) {
+        issues(
+          first: 100,
+          filter: {
+            cycle: { startsAt: { gte: $windowStart, lt: $windowEnd } }
+          }
+        ) {
+          nodes {
+            id identifier url title priority
+            state { name color type }
+            assignee { displayName }
+            project { id name color }
+          }
+        }
+      }`,
+      { windowStart, windowEnd },
+    )
+      .then((data) => {
+        if (cancelled) return;
+        const byPerson: Record<string, WeeklyLinearIssue[]> = {};
+        for (const issue of data.issues.nodes) {
+          // Skip completed/canceled — we only want open work for the week.
+          if (issue.state.type === "completed" || issue.state.type === "canceled") continue;
+          if (!issue.assignee) continue;
+          const name = normalizeAssigneeName(issue.assignee.displayName);
+          if (!name) continue;
+          if (!byPerson[name]) byPerson[name] = [];
+          byPerson[name].push({
+            id: issue.id,
+            identifier: issue.identifier,
+            url: issue.url,
+            title: issue.title,
+            priority: issue.priority,
+            state: issue.state,
+            projectId: issue.project?.id ?? null,
+            projectName: issue.project?.name ?? null,
+            projectColor: issue.project?.color ?? null,
+          });
+        }
+        setWeeklyIssues(byPerson);
+      })
+      .catch((err) => {
+        if (!cancelled) console.error("Failed to fetch weekly issues:", err);
+      })
+      .finally(() => {
+        if (!cancelled) setWeeklyIssuesLoading(false);
+      });
+
+    return () => { cancelled = true; };
+  }, [weekKey]);
+
+  const saveProjectOrder = (personName: string, order: string[]) => {
+    setProjectOrders((prev) => {
+      const copy = { ...prev };
+      if (!copy[weekKey]) copy[weekKey] = {};
+      else copy[weekKey] = { ...copy[weekKey] };
+      copy[weekKey][personName] = order;
       return copy;
     });
     setSaveState("saving");
-    saveOverride("toggleWeekSignoff", { weekKey, personName, signed: next })
+    saveOverride("saveProjectOrder", { weekKey, personName, order })
       .then(() => setSaveState("saved"))
       .catch(() => setSaveState("error"));
   };
 
-  const onNoteChange = (value: string) => {
-    setNoteDraft(value);
-    if (noteSaveTimer.current) clearTimeout(noteSaveTimer.current);
+  const saveTicketOrderForProject = (personName: string, projectId: string, order: string[]) => {
+    setTicketOrders((prev) => {
+      const copy = { ...prev };
+      if (!copy[weekKey]) copy[weekKey] = {};
+      else copy[weekKey] = { ...copy[weekKey] };
+      if (!copy[weekKey][personName]) copy[weekKey][personName] = {};
+      else copy[weekKey][personName] = { ...copy[weekKey][personName] };
+      copy[weekKey][personName][projectId] = order;
+      return copy;
+    });
     setSaveState("saving");
-    noteSaveTimer.current = setTimeout(() => {
-      saveOverride("saveWeekNote", { weekKey, note: value })
-        .then(() => setSaveState("saved"))
-        .catch(() => setSaveState("error"));
-    }, 500);
+    saveOverride("saveWeeklyTicketOrder", { weekKey, personName, projectId, order })
+      .then(() => setSaveState("saved"))
+      .catch(() => setSaveState("error"));
   };
 
   const monday = parseWeekKey(weekKey);
@@ -6142,8 +6286,6 @@ function WeeklyPlanningView({ people }: { people: Person[] }) {
     team: teamName,
     members: people.filter((p) => p.team === teamName),
   })).filter((g) => g.members.length > 0);
-
-  const weekPlan = plans[weekKey] ?? {};
 
   const saveStateLabel = saveState === "saving" ? "Saving…" : saveState === "saved" ? "Saved" : saveState === "error" ? "Save failed" : "";
   const saveStateColor = saveState === "error" ? "#dc2626" : saveState === "saving" ? "#94a3b8" : "#22c55e";
@@ -6182,86 +6324,6 @@ function WeeklyPlanningView({ people }: { people: Person[] }) {
           </span>
         </div>
 
-        {!loading && (() => {
-          const weekSign = signoffs[weekKey] ?? {};
-          const signedCount = WEEKLY_SIGNOFF_PEOPLE.filter((n) => weekSign[n]).length;
-          const allSigned = signedCount === WEEKLY_SIGNOFF_PEOPLE.length;
-          return (
-            <div
-              style={{
-                marginBottom: 20, padding: "14px 16px",
-                background: allSigned ? "#ecfdf5" : "#fff",
-                border: `1px solid ${allSigned ? "#a7f3d0" : "#e2e8f0"}`,
-                borderRadius: 12,
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10, flexWrap: "wrap", gap: 8 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: "#0f172a" }}>
-                    Plan sign-off
-                  </span>
-                  <span style={{ fontSize: 12, color: allSigned ? "#059669" : "#64748b", fontWeight: 600 }}>
-                    {allSigned ? "✓ All approved" : `${signedCount} / ${WEEKLY_SIGNOFF_PEOPLE.length} approved`}
-                  </span>
-                </div>
-              </div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                {WEEKLY_SIGNOFF_PEOPLE.map((name) => {
-                  const signed = !!weekSign[name];
-                  const at = weekSign[name]?.at;
-                  return (
-                    <button
-                      key={name}
-                      onClick={() => toggleSignoff(name)}
-                      title={signed && at ? `Signed off ${new Date(at).toLocaleString()}` : "Click to sign off"}
-                      style={{
-                        display: "inline-flex", alignItems: "center", gap: 8,
-                        fontFamily: "var(--font-sans)", fontSize: 13, fontWeight: 600,
-                        padding: "6px 12px", borderRadius: 999,
-                        cursor: "pointer",
-                        background: signed ? "#22c55e" : "white",
-                        color: signed ? "white" : "#475569",
-                        border: `1px solid ${signed ? "#16a34a" : "#e2e8f0"}`,
-                      }}
-                    >
-                      <span
-                        style={{
-                          display: "inline-flex", alignItems: "center", justifyContent: "center",
-                          width: 16, height: 16, borderRadius: 4,
-                          background: signed ? "white" : "transparent",
-                          border: `1.5px solid ${signed ? "white" : "#cbd5e1"}`,
-                          color: signed ? "#16a34a" : "transparent",
-                          fontSize: 12, fontWeight: 800, lineHeight: 1,
-                        }}
-                      >
-                        {signed ? "✓" : ""}
-                      </span>
-                      {name}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        })()}
-
-        {!loading && (
-          <div style={{ marginBottom: 28 }}>
-            <textarea
-              value={noteDraft}
-              onChange={(e) => onNoteChange(e.target.value)}
-              placeholder="Week intro / context (optional)…"
-              style={{
-                fontFamily: "var(--font-sans)", fontSize: 14, lineHeight: 1.5,
-                width: "100%", minHeight: 80, padding: "12px 14px",
-                border: "1px solid #e2e8f0", borderRadius: 10,
-                background: "#fff", color: "#1e293b", outline: "none",
-                resize: "vertical",
-              }}
-            />
-          </div>
-        )}
-
         {loading ? (
           <div style={{ color: "#94a3b8", padding: "40px 0", textAlign: "center" }}>Loading...</div>
         ) : (
@@ -6276,8 +6338,14 @@ function WeeklyPlanningView({ people }: { people: Person[] }) {
                     key={`${weekKey}-${person.name}`}
                     person={person}
                     weekKey={weekKey}
-                    initialBullets={weekPlan[person.name] ?? []}
                     onSavedStateChange={(s) => setSaveState(s)}
+                    autoIssues={weeklyIssues[person.name] ?? []}
+                    autoIssuesLoading={weeklyIssuesLoading}
+                    projectOrder={projectOrders[weekKey]?.[person.name] ?? []}
+                    onSaveProjectOrder={saveProjectOrder}
+                    ticketOrders={ticketOrders[weekKey]?.[person.name] ?? {}}
+                    onSaveTicketOrder={saveTicketOrderForProject}
+                    initialNote={personNotes[weekKey]?.[person.name] ?? ""}
                   />
                 ))}
               </div>
