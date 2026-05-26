@@ -1540,13 +1540,21 @@ function DetailPanel({
   const [savingNotes, setSavingNotes] = useState(false);
 
   // ── Link Linear project picker ─────────────────────────────────────────
-  const [linkingMode, setLinkingMode] = useState(false);
+  const [linkingMode, setLinkingMode] = useState<false | "search" | "create">(false);
   const [linkProjects, setLinkProjects] = useState<{ id: string; name: string }[] | null>(null);
   const [linkSearch, setLinkSearch] = useState("");
   const [linkSaving, setLinkSaving] = useState(false);
 
+  // ── Create Linear project form state ───────────────────────────────────
+  const [linkTeams, setLinkTeams] = useState<{ id: string; name: string }[] | null>(null);
+  const [createName, setCreateName] = useState("");
+  const [createTeamId, setCreateTeamId] = useState<string>("");
+  const [createStart, setCreateStart] = useState("");
+  const [createTarget, setCreateTarget] = useState("");
+  const [createError, setCreateError] = useState<string | null>(null);
+
   useEffect(() => {
-    if (!linkingMode || linkProjects !== null) return;
+    if (linkingMode !== "search" || linkProjects !== null) return;
     linearQuery<{ projects: { nodes: { id: string; name: string }[] } }>(
       `query { projects(first: 100) { nodes { id name } } }`,
     )
@@ -1555,6 +1563,19 @@ function DetailPanel({
       })
       .catch(() => setLinkProjects([]));
   }, [linkingMode, linkProjects]);
+
+  useEffect(() => {
+    if (linkingMode !== "create" || linkTeams !== null) return;
+    linearQuery<{ teams: { nodes: { id: string; name: string }[] } }>(
+      `query { teams(first: 50) { nodes { id name } } }`,
+    )
+      .then((data) => {
+        const teams = data.teams.nodes.slice().sort((a, b) => a.name.localeCompare(b.name));
+        setLinkTeams(teams);
+        if (teams.length > 0) setCreateTeamId((prev) => prev || teams[0].id);
+      })
+      .catch(() => setLinkTeams([]));
+  }, [linkingMode, linkTeams]);
 
   const handleLinkLinear = (linearName: string) => {
     if (linkSaving) return;
@@ -1570,6 +1591,48 @@ function DetailPanel({
         // Close so the next click opens the Linear-aware detail panel.
         onClose();
       });
+  };
+
+  const handleCreateLinearProject = async () => {
+    if (linkSaving) return;
+    const name = createName.trim();
+    if (!name) {
+      setCreateError("Name is required");
+      return;
+    }
+    if (!createTeamId) {
+      setCreateError("Team is required");
+      return;
+    }
+    setCreateError(null);
+    setLinkSaving(true);
+    try {
+      const res = await fetch("/api/linear/create-project", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name,
+          teamIds: [createTeamId],
+          startDate: createStart || undefined,
+          targetDate: createTarget || undefined,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        throw new Error(json.error || "Failed to create Linear project");
+      }
+      onLinkLinearProject?.(personName, project.id, name);
+      await saveOverride("linkLinearProject", {
+        key: `${personName}:${project.id}`,
+        linearProjectName: name,
+      });
+      onClose();
+    } catch (err) {
+      console.error("Create Linear project failed:", err);
+      setCreateError(err instanceof Error ? err.message : "Failed to create");
+    } finally {
+      setLinkSaving(false);
+    }
   };
 
   const editStartMonth = dateToMonthIndex(editStartDate);
@@ -1792,11 +1855,11 @@ function DetailPanel({
           <label style={{ fontSize: 11, fontWeight: 600, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 6 }}>
             Linear Project
           </label>
-          {!linkingMode ? (
+          {linkingMode === false ? (
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <span style={{ fontSize: 13, color: "#94a3b8", flex: 1 }}>Not linked</span>
               <button
-                onClick={() => setLinkingMode(true)}
+                onClick={() => setLinkingMode("search")}
                 style={{
                   fontFamily: "var(--font-sans)", fontSize: 12, fontWeight: 600,
                   padding: "6px 12px", cursor: "pointer", borderRadius: 6,
@@ -1805,8 +1868,24 @@ function DetailPanel({
               >
                 Link Linear project
               </button>
+              <button
+                onClick={() => {
+                  setCreateName(project.name);
+                  setCreateStart(monthIndexToDate(project.startMonth));
+                  setCreateTarget(monthIndexToDate(project.startMonth + project.duration));
+                  setCreateError(null);
+                  setLinkingMode("create");
+                }}
+                style={{
+                  fontFamily: "var(--font-sans)", fontSize: 12, fontWeight: 600,
+                  padding: "6px 12px", cursor: "pointer", borderRadius: 6,
+                  border: "1px solid #6366f1", background: "#6366f1", color: "white",
+                }}
+              >
+                Create new
+              </button>
             </div>
-          ) : (
+          ) : linkingMode === "search" ? (
             <div>
               <input
                 type="text"
@@ -1845,7 +1924,24 @@ function DetailPanel({
                   <div style={{ padding: "8px 10px", fontSize: 12, color: "#94a3b8" }}>No matches</div>
                 )}
               </div>
-              <div style={{ marginTop: 6, display: "flex", justifyContent: "flex-end", gap: 6 }}>
+              <div style={{ marginTop: 6, display: "flex", justifyContent: "space-between", gap: 6 }}>
+                <button
+                  onClick={() => {
+                    setCreateName(project.name);
+                    setCreateStart(monthIndexToDate(project.startMonth));
+                    setCreateTarget(monthIndexToDate(project.startMonth + project.duration));
+                    setCreateError(null);
+                    setLinkingMode("create");
+                  }}
+                  disabled={linkSaving}
+                  style={{
+                    fontFamily: "var(--font-sans)", fontSize: 12, padding: "4px 10px",
+                    border: "1px solid #6366f1", borderRadius: 6, background: "white",
+                    color: "#6366f1", cursor: linkSaving ? "default" : "pointer",
+                  }}
+                >
+                  + Create new
+                </button>
                 <button
                   onClick={() => { setLinkingMode(false); setLinkSearch(""); }}
                   disabled={linkSaving}
@@ -1856,6 +1952,104 @@ function DetailPanel({
                   }}
                 >
                   Cancel
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <div>
+                  <label style={{ fontSize: 11, fontWeight: 600, color: "#64748b", display: "block", marginBottom: 4 }}>Name</label>
+                  <input
+                    type="text"
+                    autoFocus
+                    value={createName}
+                    onChange={(e) => setCreateName(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") handleCreateLinearProject(); }}
+                    disabled={linkSaving}
+                    style={{
+                      width: "100%", fontFamily: "var(--font-sans)", fontSize: 13,
+                      padding: "6px 10px", border: "1px solid #e2e8f0", borderRadius: 6,
+                      outline: "none",
+                    }}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: 11, fontWeight: 600, color: "#64748b", display: "block", marginBottom: 4 }}>Team</label>
+                  <select
+                    value={createTeamId}
+                    onChange={(e) => setCreateTeamId(e.target.value)}
+                    disabled={linkTeams === null || linkSaving}
+                    style={{
+                      width: "100%", fontFamily: "var(--font-sans)", fontSize: 13,
+                      padding: "6px 10px", border: "1px solid #e2e8f0", borderRadius: 6,
+                      outline: "none", background: "white",
+                    }}
+                  >
+                    {linkTeams === null && <option value="">Loading teams...</option>}
+                    {linkTeams !== null && linkTeams.length === 0 && <option value="">No teams found</option>}
+                    {linkTeams?.map((t) => (
+                      <option key={t.id} value={t.id}>{t.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ fontSize: 11, fontWeight: 600, color: "#64748b", display: "block", marginBottom: 4 }}>Start</label>
+                    <input
+                      type="date"
+                      value={createStart}
+                      onChange={(e) => setCreateStart(e.target.value)}
+                      disabled={linkSaving}
+                      style={{
+                        width: "100%", fontFamily: "var(--font-sans)", fontSize: 13,
+                        padding: "6px 10px", border: "1px solid #e2e8f0", borderRadius: 6,
+                        outline: "none",
+                      }}
+                    />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ fontSize: 11, fontWeight: 600, color: "#64748b", display: "block", marginBottom: 4 }}>Target</label>
+                    <input
+                      type="date"
+                      value={createTarget}
+                      onChange={(e) => setCreateTarget(e.target.value)}
+                      disabled={linkSaving}
+                      style={{
+                        width: "100%", fontFamily: "var(--font-sans)", fontSize: 13,
+                        padding: "6px 10px", border: "1px solid #e2e8f0", borderRadius: 6,
+                        outline: "none",
+                      }}
+                    />
+                  </div>
+                </div>
+                {createError && (
+                  <div style={{ fontSize: 12, color: "#dc2626" }}>{createError}</div>
+                )}
+              </div>
+              <div style={{ marginTop: 10, display: "flex", justifyContent: "flex-end", gap: 6 }}>
+                <button
+                  onClick={() => { setLinkingMode(false); setCreateError(null); }}
+                  disabled={linkSaving}
+                  style={{
+                    fontFamily: "var(--font-sans)", fontSize: 12, padding: "4px 10px",
+                    border: "1px solid #e0e0ea", borderRadius: 6, background: "white",
+                    color: "#475569", cursor: linkSaving ? "default" : "pointer",
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleCreateLinearProject}
+                  disabled={linkSaving || linkTeams === null}
+                  style={{
+                    fontFamily: "var(--font-sans)", fontSize: 12, fontWeight: 600,
+                    padding: "4px 12px", borderRadius: 6,
+                    border: "1px solid #6366f1", background: "#6366f1", color: "white",
+                    cursor: linkSaving ? "default" : "pointer", opacity: linkSaving ? 0.6 : 1,
+                  }}
+                >
+                  {linkSaving ? "Creating..." : "Create & link"}
                 </button>
               </div>
             </div>
