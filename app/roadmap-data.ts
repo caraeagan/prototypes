@@ -24,6 +24,9 @@ export type Person = {
   team: string;
   projects: Project[];
   sparkle?: boolean; // render this person's bars/swatch with an animated shimmer
+  avatar?: string; // optional tiny avatar image shown next to the name (path under /public)
+  dvdCart?: boolean; // bounce a shopping-cart emoji around this person's row, DVD-logo style
+  minRowHeight?: number; // floor for this person's row height (px), e.g. to give room to roam
 };
 
 export type Phase = {
@@ -499,6 +502,7 @@ export const PEOPLE: Person[] = [
     name: "Erin",
     color: "#FB8C00",
     sparkle: true,
+    avatar: "/taylor-swift.png",
     team: "Operations & GTM",
     projects: [
       {
@@ -622,6 +626,9 @@ export const PEOPLE: Person[] = [
   {
     name: "Lucie",
     color: "#00838F",
+    avatar: "/lucie.webp",
+    dvdCart: true,
+    minRowHeight: 320,
     team: "Engineering",
     projects: [
       {

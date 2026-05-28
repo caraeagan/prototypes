@@ -312,6 +312,91 @@ function barTextColor(hex: string, bgAlpha: number): string {
   return `rgb(${dr},${dg},${db})`;
 }
 
+// ── DVD-screensaver shopping carts ─────────────────────────────────────────
+// Bounces `count` cart emojis around a row. Bounds are recomputed every frame
+// from the wrapper's on-screen rect intersected with the browser window, so
+// the carts ricochet off the *visible window* edges rather than escaping into
+// the off-screen part of a horizontally-scrolled row. Rendered behind the bars.
+const CART_SIZE = 28;
+const SIDEBAR_X = 160; // keep carts clear of the sticky person sidebar
+
+function DvdCarts({ count }: { count: number }) {
+  const wrapRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const wrap = wrapRef.current;
+    if (!wrap) return;
+    const els = Array.from(wrap.children) as HTMLElement[];
+    if (els.length === 0) return;
+
+    const h0 = wrap.clientHeight || 200;
+    const carts = els.map(() => {
+      const speed = 1.3 + Math.random() * 1.4;
+      const angle = Math.random() * Math.PI * 2;
+      return {
+        x: 120 + Math.random() * 240,
+        y: Math.random() * Math.max(1, h0 - CART_SIZE),
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+      };
+    });
+
+    const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let raf = 0;
+    const tick = () => {
+      const rect = wrap.getBoundingClientRect();
+      const h = wrap.clientHeight;
+      // Visible window mapped into the wrapper's local coordinate space.
+      const minX = Math.max(0, SIDEBAR_X - rect.left);
+      const maxX = Math.max(minX + CART_SIZE, window.innerWidth - rect.left - CART_SIZE);
+      const maxY = Math.max(CART_SIZE, h - CART_SIZE);
+      for (let i = 0; i < carts.length; i++) {
+        const c = carts[i];
+        c.x += c.vx;
+        c.y += c.vy;
+        if (c.x <= minX) { c.x = minX; c.vx = Math.abs(c.vx); }
+        else if (c.x >= maxX) { c.x = maxX; c.vx = -Math.abs(c.vx); }
+        if (c.y <= 0) { c.y = 0; c.vy = Math.abs(c.vy); }
+        else if (c.y >= maxY) { c.y = maxY; c.vy = -Math.abs(c.vy); }
+        els[i].style.transform = `translate(${c.x}px, ${c.y}px)`;
+      }
+      if (!prefersReduced) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [count]);
+
+  return (
+    <div
+      ref={wrapRef}
+      aria-hidden
+      style={{
+        position: "absolute",
+        inset: 0,
+        overflow: "hidden",
+        pointerEvents: "none",
+        zIndex: 0,
+      }}
+    >
+      {Array.from({ length: count }).map((_, i) => (
+        <span
+          key={i}
+          style={{
+            position: "absolute",
+            left: 0,
+            top: 0,
+            fontSize: CART_SIZE - 4,
+            lineHeight: 1,
+            willChange: "transform",
+          }}
+        >
+          🛒
+        </span>
+      ))}
+    </div>
+  );
+}
+
 // ── Linear API client helper ──────────────────────────────────────────────
 
 async function linearQuery<T = unknown>(
@@ -5213,7 +5298,10 @@ function ProductRoadmapView({
     const bulletsHeight = showBullets
       ? maxBulletsInColumn * BULLET_LINE_HEIGHT + (maxBulletsInColumn > 0 ? 6 : 0)
       : 0;
-    const rowHeight = ROW_PAD_Y * 2 + barsHeight + bulletsHeight;
+    const rowHeight = Math.max(
+      ROW_PAD_Y * 2 + barsHeight + bulletsHeight,
+      person.minRowHeight ?? 0,
+    );
 
     const rowBg = hexToRgba(person.color, idx % 2 === 0 ? 0.10 : 0.16);
     const sidebarBg = (() => {
@@ -5237,28 +5325,73 @@ function ProductRoadmapView({
           borderBottom: "1px solid #e8e8ef",
         }}
       >
-        <div
-          style={{
-            width: SIDEBAR,
-            flexShrink: 0,
-            padding: "10px 12px",
-            position: "sticky",
-            left: 0,
-            zIndex: 2,
-            background: sidebarBg,
-            borderRight: "1px solid #e8e8ef",
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-          }}
-        >
+        {person.avatar ? (
           <div
-            className={person.sparkle ? "sparkle-swatch" : undefined}
-            style={{ width: 4, height: 28, background: person.sparkle ? undefined : person.color, borderRadius: 2 }}
-          />
-          <span style={{ fontSize: 13, fontWeight: 700, color: "#0f172a" }}>{person.name}</span>
-        </div>
+            style={{
+              width: SIDEBAR,
+              flexShrink: 0,
+              padding: 0,
+              position: "sticky",
+              left: 0,
+              zIndex: 2,
+              borderRight: "1px solid #e8e8ef",
+              overflow: "hidden",
+            }}
+          >
+            <img
+              src={person.avatar}
+              alt={person.name}
+              style={{
+                position: "absolute",
+                inset: 0,
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+              }}
+            />
+            <span
+              style={{
+                position: "absolute",
+                left: 8,
+                bottom: 8,
+                fontSize: 13,
+                fontWeight: 700,
+                color: "#fff",
+                border: "1.5px solid #fff",
+                borderRadius: 4,
+                padding: "2px 8px",
+                background: "rgba(0,0,0,0.3)",
+                textShadow: "0 1px 2px rgba(0,0,0,0.6)",
+              }}
+            >
+              {person.name}
+            </span>
+          </div>
+        ) : (
+          <div
+            style={{
+              width: SIDEBAR,
+              flexShrink: 0,
+              padding: "10px 12px",
+              position: "sticky",
+              left: 0,
+              zIndex: 2,
+              background: sidebarBg,
+              borderRight: "1px solid #e8e8ef",
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+            }}
+          >
+            <div
+              className={person.sparkle ? "sparkle-swatch" : undefined}
+              style={{ width: 4, height: 28, background: person.sparkle ? undefined : person.color, borderRadius: 2 }}
+            />
+            <span style={{ fontSize: 13, fontWeight: 700, color: "#0f172a" }}>{person.name}</span>
+          </div>
+        )}
         <div style={{ flex: 1, position: "relative", height: rowHeight }}>
+          {person.dvdCart && <DvdCarts count={10} />}
           {columns.map((_, i) => (
             <div
               key={`vline-${i}`}
