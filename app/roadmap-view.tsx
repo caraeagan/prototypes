@@ -5252,7 +5252,10 @@ function ProductRoadmapView({
             gap: 8,
           }}
         >
-          <div style={{ width: 4, height: 28, background: person.color, borderRadius: 2 }} />
+          <div
+            className={person.sparkle ? "sparkle-swatch" : undefined}
+            style={{ width: 4, height: 28, background: person.sparkle ? undefined : person.color, borderRadius: 2 }}
+          />
           <span style={{ fontSize: 13, fontWeight: 700, color: "#0f172a" }}>{person.name}</span>
         </div>
         <div style={{ flex: 1, position: "relative", height: rowHeight }}>
@@ -5282,19 +5285,23 @@ function ProductRoadmapView({
             const y = ROW_PAD_Y + lane * (ROW_BAR_HEIGHT + ROW_BAR_GAP);
             const isDragging = !!ds && ds.projectId === project.id && ds.personName === person.name;
             const isGhost = ghostProjectIds.has(project.id);
+            const sparkle = !!person.sparkle && !isGhost;
             return (
               <div
                 key={project.id}
+                className={sparkle ? "sparkle-bar" : undefined}
                 style={{
                   position: "absolute",
                   left: x,
                   top: y,
                   width: w,
                   height: ROW_BAR_HEIGHT,
-                  background: isGhost
-                    ? hexToRgba(person.color, 0.18)
-                    : hexToRgba(person.color, isDragging ? 0.95 : 0.85),
-                  color: isGhost ? "#1e293b" : barTextColor(person.color, 0.85),
+                  background: sparkle
+                    ? undefined
+                    : isGhost
+                      ? hexToRgba(person.color, 0.18)
+                      : hexToRgba(person.color, isDragging ? 0.95 : 0.85),
+                  color: sparkle ? "#7c2d12" : isGhost ? "#1e293b" : barTextColor(person.color, 0.85),
                   border: isGhost ? `1px dashed ${hexToRgba(person.color, 0.7)}` : "none",
                   borderRadius: 6,
                   fontFamily: "var(--font-sans)",
@@ -5304,9 +5311,11 @@ function ProductRoadmapView({
                   overflow: "hidden",
                   boxShadow: isDragging
                     ? "0 4px 12px rgba(15,23,42,0.18)"
-                    : isGhost
-                      ? "none"
-                      : "0 1px 2px rgba(15,23,42,0.08)",
+                    : sparkle
+                      ? undefined
+                      : isGhost
+                        ? "none"
+                        : "0 1px 2px rgba(15,23,42,0.08)",
                   cursor: isGhost ? "pointer" : onMoveProject ? "grab" : "pointer",
                   userSelect: "none",
                 }}

@@ -1533,3 +1533,49 @@ body.dragging * {
     max-width: 100vw;
   }
 }
+
+/* Sparkly orange: a moving sheen across the bar plus a soft glow. */
+@keyframes sparkle-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@keyframes sparkle-glow {
+  0%,
+  100% {
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08), 0 0 6px rgba(251, 140, 0, 0.45);
+  }
+  50% {
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08), 0 0 14px rgba(255, 183, 77, 0.85);
+  }
+}
+
+.sparkle-bar {
+  background-image: linear-gradient(
+    110deg,
+    #fb8c00 0%,
+    #ffb74d 25%,
+    #fff3e0 45%,
+    #ffb74d 65%,
+    #fb8c00 100%
+  );
+  background-size: 200% 100%;
+  animation: sparkle-shimmer 2.6s linear infinite, sparkle-glow 2.6s ease-in-out infinite;
+}
+
+.sparkle-swatch {
+  background-image: linear-gradient(180deg, #fb8c00 0%, #ffd180 50%, #fb8c00 100%);
+  background-size: 100% 200%;
+  animation: sparkle-shimmer 2.6s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sparkle-bar,
+  .sparkle-swatch {
+    animation: none;
+  }
+}

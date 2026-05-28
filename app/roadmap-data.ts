@@ -23,6 +23,7 @@ export type Person = {
   color: string;
   team: string;
   projects: Project[];
+  sparkle?: boolean; // render this person's bars/swatch with an animated shimmer
 };
 
 export type Phase = {
@@ -496,7 +497,8 @@ export const PEOPLE: Person[] = [
   },
   {
     name: "Erin",
-    color: "#6D4C41",
+    color: "#FB8C00",
+    sparkle: true,
     team: "Operations & GTM",
     projects: [
       {
