@@ -317,7 +317,7 @@ function barTextColor(hex: string, bgAlpha: number): string {
 // from the wrapper's on-screen rect intersected with the browser window, so
 // the carts ricochet off the *visible window* edges rather than escaping into
 // the off-screen part of a horizontally-scrolled row. Rendered behind the bars.
-const CART_SIZE = 28;
+const CART_SIZE = 56;
 const SIDEBAR_X = 160; // keep carts clear of the sticky person sidebar
 
 function DvdCarts({ count }: { count: number }) {
@@ -331,7 +331,7 @@ function DvdCarts({ count }: { count: number }) {
 
     const h0 = wrap.clientHeight || 200;
     const carts = els.map(() => {
-      const speed = 1.3 + Math.random() * 1.4;
+      const speed = 3.5 + Math.random() * 3;
       const angle = Math.random() * Math.PI * 2;
       return {
         x: 120 + Math.random() * 240,
