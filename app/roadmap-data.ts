@@ -26,6 +26,7 @@ export type Person = {
   sparkle?: boolean; // render this person's bars/swatch with an animated shimmer
   avatar?: string; // optional tiny avatar image shown next to the name (path under /public)
   dvdCart?: boolean; // bounce a shopping-cart emoji around this person's row, DVD-logo style
+  dachshund?: boolean; // hop a little dachshund around this person's row
   minRowHeight?: number; // floor for this person's row height (px), e.g. to give room to roam
 };
 
@@ -310,6 +311,8 @@ export const PEOPLE: Person[] = [
     name: "Cara",
     color: "#F9A825",
     team: "Product",
+    dachshund: true,
+    minRowHeight: 240,
     projects: [
       {
         id: "p018",

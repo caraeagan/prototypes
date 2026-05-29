@@ -466,6 +466,108 @@ function BouncingPearsons({ count }: { count: number }) {
   );
 }
 
+// ── Hopping dachshund ──────────────────────────────────────────────────────
+// A little sausage dog that hops along the bottom of a row, lands, pauses, then
+// springs into the next hop — reversing (and flipping to face the way it's
+// going) when it reaches the visible window edges. Bounds are recomputed every
+// frame like DvdCarts so it stays on-screen in a horizontally-scrolled row.
+const DOG_SIZE = 52;
+const DOG_GRAVITY = 0.9; // px/frame² pulling the dog back to the ground
+const DOG_HOP_V = -13; // initial upward velocity of each hop
+const DOG_FLOOR_PAUSE = 14; // frames spent on the ground between hops
+
+function Dachshund() {
+  const dogRef = useRef<HTMLDivElement>(null);
+  // Fall back to the dog emoji if /dachshund.png is missing.
+  const [useImg, setUseImg] = useState(true);
+
+  useEffect(() => {
+    const wrap = dogRef.current?.parentElement;
+    const dog = dogRef.current;
+    if (!wrap || !dog) return;
+
+    let x = SIDEBAR_X + 40;
+    let y = 0; // offset above the floor (negative while airborne)
+    let vy = 0;
+    let dir = 1; // 1 = facing/moving right, -1 = left
+    const hopSpeed = 2.6; // horizontal px/frame while airborne
+    let restTimer = DOG_FLOOR_PAUSE;
+    let airborne = false;
+
+    const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let raf = 0;
+    const tick = () => {
+      const rect = wrap.getBoundingClientRect();
+      const h = wrap.clientHeight;
+      const minX = Math.max(0, SIDEBAR_X - rect.left);
+      const maxX = Math.max(minX + DOG_SIZE, window.innerWidth - rect.left - DOG_SIZE);
+      const floorY = Math.max(0, h - DOG_SIZE - 6);
+
+      if (airborne) {
+        vy += DOG_GRAVITY;
+        y += vy;
+        x += hopSpeed * dir;
+        if (x <= minX) { x = minX; dir = 1; }
+        else if (x >= maxX) { x = maxX; dir = -1; }
+        if (y >= 0) { y = 0; vy = 0; airborne = false; restTimer = DOG_FLOOR_PAUSE; }
+      } else {
+        // Brief crouch on the ground, then launch the next hop.
+        restTimer -= 1;
+        if (restTimer <= 0) { airborne = true; vy = DOG_HOP_V; }
+      }
+
+      // Squash a touch while crouched, stretch a touch at hop apex.
+      const stretch = airborne ? 1 + Math.min(0.18, -y / 240) : 0.9;
+      // Sprite faces left by default, so mirror (scaleX = -dir) to face travel.
+      dog.style.transform =
+        `translate(${x}px, ${floorY + y}px) scaleX(${-dir}) scaleY(${stretch})`;
+      if (!prefersReduced) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, []);
+
+  return (
+    <div
+      aria-hidden
+      style={{
+        position: "absolute",
+        inset: 0,
+        overflow: "hidden",
+        pointerEvents: "none",
+        zIndex: 0,
+      }}
+    >
+      <div
+        ref={dogRef}
+        style={{
+          position: "absolute",
+          left: 0,
+          top: 0,
+          width: DOG_SIZE,
+          height: DOG_SIZE,
+          fontSize: DOG_SIZE - 4,
+          lineHeight: 1,
+          transformOrigin: "center bottom",
+          willChange: "transform",
+        }}
+      >
+        {useImg ? (
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img
+            src="/dachshund.png"
+            alt=""
+            onError={() => setUseImg(false)}
+            style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }}
+          />
+        ) : (
+          "🐕"
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── Linear API client helper ──────────────────────────────────────────────
 
 async function linearQuery<T = unknown>(
@@ -5462,6 +5564,7 @@ function ProductRoadmapView({
         )}
         <div style={{ flex: 1, position: "relative", height: rowHeight }}>
           {person.dvdCart && <DvdCarts count={10} />}
+          {person.dachshund && <Dachshund />}
           {columns.map((_, i) => (
             <div
               key={`vline-${i}`}
