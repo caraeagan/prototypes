@@ -397,6 +397,75 @@ function DvdCarts({ count }: { count: number }) {
   );
 }
 
+// ── DVD-screensaver "no Pearson" badges ────────────────────────────────────
+// Bounces `count` crossed-out Pearson logos around the whole viewport, behind
+// page content. Bounds are the browser window; rendered fixed at zIndex 0 so
+// opaque cards (zIndex 1) sit on top and the badges peek through the gaps.
+const PEARSON_SIZE = 72;
+
+function BouncingPearsons({ count }: { count: number }) {
+  const wrapRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const wrap = wrapRef.current;
+    if (!wrap) return;
+    const els = Array.from(wrap.children) as HTMLElement[];
+    if (els.length === 0) return;
+
+    const sprites = els.map(() => {
+      const speed = 4.5 + Math.random() * 3;
+      const angle = Math.random() * Math.PI * 2;
+      return {
+        x: Math.random() * Math.max(1, window.innerWidth - PEARSON_SIZE),
+        y: Math.random() * Math.max(1, window.innerHeight - PEARSON_SIZE),
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+      };
+    });
+
+    const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let raf = 0;
+    const tick = () => {
+      const maxX = Math.max(1, window.innerWidth - PEARSON_SIZE);
+      const maxY = Math.max(1, window.innerHeight - PEARSON_SIZE);
+      for (let i = 0; i < sprites.length; i++) {
+        const s = sprites[i];
+        s.x += s.vx;
+        s.y += s.vy;
+        if (s.x <= 0) { s.x = 0; s.vx = Math.abs(s.vx); }
+        else if (s.x >= maxX) { s.x = maxX; s.vx = -Math.abs(s.vx); }
+        if (s.y <= 0) { s.y = 0; s.vy = Math.abs(s.vy); }
+        else if (s.y >= maxY) { s.y = maxY; s.vy = -Math.abs(s.vy); }
+        els[i].style.transform = `translate(${s.x}px, ${s.y}px)`;
+      }
+      if (!prefersReduced) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [count]);
+
+  return (
+    <div
+      ref={wrapRef}
+      aria-hidden
+      style={{ position: "fixed", inset: 0, overflow: "hidden", pointerEvents: "none", zIndex: 0 }}
+    >
+      {Array.from({ length: count }).map((_, i) => (
+        <div
+          key={i}
+          style={{ position: "absolute", left: 0, top: 0, width: PEARSON_SIZE, height: PEARSON_SIZE, willChange: "transform" }}
+        >
+          <img src="/pearson.png" alt="" style={{ width: "100%", height: "100%", objectFit: "contain", opacity: 0.85 }} />
+          <svg viewBox="0 0 100 100" style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }} aria-hidden>
+            <circle cx="50" cy="50" r="44" fill="none" stroke="#dc2626" strokeWidth="9" />
+            <line x1="19" y1="19" x2="81" y2="81" stroke="#dc2626" strokeWidth="9" strokeLinecap="round" />
+          </svg>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // ── Linear API client helper ──────────────────────────────────────────────
 
 async function linearQuery<T = unknown>(
@@ -2588,8 +2657,8 @@ function FilterBar({
   onPrint: () => void;
   onUndo: () => void;
   canUndo: boolean;
-  viewMode: "projects" | "subtestEdits" | "cycles" | "futureProjects" | "weeklyPlanning";
-  onViewMode: (m: "projects" | "subtestEdits" | "cycles" | "futureProjects" | "weeklyPlanning") => void;
+  viewMode: "projects" | "subtestEdits" | "cycles" | "futureProjects" | "weeklyPlanning" | "normingCountdown";
+  onViewMode: (m: "projects" | "subtestEdits" | "cycles" | "futureProjects" | "weeklyPlanning" | "normingCountdown") => void;
   teams: Team[];
   people: Person[];
   filterTeams: Set<string>;
@@ -2611,6 +2680,7 @@ function FilterBar({
               ["subtestEdits", "Tasks"],
               ["futureProjects", "Future Projects"],
               ["weeklyPlanning", "Weekly Planning"],
+              ["normingCountdown", "Norming Countdown"],
             ] as const).map(([mode, label]) => {
               const active = viewMode === mode;
               return (
@@ -5844,6 +5914,278 @@ function ProductRoadmapView({
   );
 }
 
+// ── Norming Countdown View ──────────────────────────────────────────────
+
+type NormingItem = { id: string; text: string; done: boolean };
+
+// The deadline everything counts down to.
+const NORMING_TARGET = new Date("2026-09-01T00:00:00");
+
+// Teams shown on the norming checklist (independent of the roadmap's TEAMS).
+const NORMING_TEAMS: { name: string; color: string }[] = [
+  { name: "Engineering", color: "#2563EB" },
+  { name: "Product", color: "#EAB308" },
+  { name: "Psychometrics", color: "#D97706" },
+  { name: "Operations", color: "#1D4ED8" },
+  { name: "Recruiting", color: "#7C3AED" },
+];
+
+function newNormingItemId(): string {
+  return `norm-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function NormingCountdownView() {
+  const [checklist, setChecklist] = useState<Record<string, NormingItem[]>>({});
+  const [loading, setLoading] = useState(true);
+  const [saveState, setSaveState] = useState<"saving" | "saved" | "error" | "idle">("idle");
+  // Re-render the countdown roughly once a minute so it stays live.
+  const [now, setNow] = useState<Date>(() => new Date());
+
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 60_000);
+    return () => clearInterval(t);
+  }, []);
+
+  useEffect(() => {
+    fetchOverrides().then((ov) => {
+      setChecklist(ov.normingChecklist ?? {});
+      setLoading(false);
+    });
+  }, []);
+
+  useEffect(() => {
+    const onSaved = () => {
+      fetchOverrides().then((ov) => setChecklist(ov.normingChecklist ?? {}));
+    };
+    window.addEventListener("roadmap-saved", onSaved);
+    return () => window.removeEventListener("roadmap-saved", onSaved);
+  }, []);
+
+  const persist = (team: string, items: NormingItem[]) => {
+    setChecklist((prev) => ({ ...prev, [team]: items }));
+    setSaveState("saving");
+    saveOverride("saveNormingChecklist", { team, items })
+      .then(() => setSaveState("saved"))
+      .catch(() => setSaveState("error"));
+  };
+
+  const addItem = (team: string, text: string) => {
+    const trimmed = text.trim();
+    if (!trimmed) return;
+    const items = [...(checklist[team] ?? []), { id: newNormingItemId(), text: trimmed, done: false }];
+    persist(team, items);
+  };
+
+  const toggleItem = (team: string, id: string) => {
+    const items = (checklist[team] ?? []).map((it) => (it.id === id ? { ...it, done: !it.done } : it));
+    persist(team, items);
+  };
+
+  const removeItem = (team: string, id: string) => {
+    const items = (checklist[team] ?? []).filter((it) => it.id !== id);
+    persist(team, items);
+  };
+
+  // ── Countdown math ──
+  const msPerDay = 24 * 60 * 60 * 1000;
+  const daysRemaining = Math.max(0, Math.ceil((NORMING_TARGET.getTime() - now.getTime()) / msPerDay));
+  const targetLabel = NORMING_TARGET.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+
+  // Progress reflects checklist completion across all teams.
+  const allItems = Object.values(checklist).flat();
+  const doneCount = allItems.filter((it) => it.done).length;
+  const progress = allItems.length > 0 ? doneCount / allItems.length : 0;
+  const progressPct = Math.round(progress * 100);
+
+  const saveStateLabel = saveState === "saving" ? "Saving…" : saveState === "saved" ? "Saved" : saveState === "error" ? "Save failed" : "";
+  const saveStateColor = saveState === "error" ? "#dc2626" : saveState === "saving" ? "#94a3b8" : "#22c55e";
+
+  return (
+    <div style={{ fontFamily: "var(--font-sans)", height: "calc(100vh - 80px)", overflow: "auto", background: "#fef9c3", position: "relative" }}>
+      <BouncingPearsons count={1} />
+      <div style={{ maxWidth: 820, margin: "0 auto", padding: "32px 32px 80px", position: "relative", zIndex: 1 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24, flexWrap: "wrap", gap: 12 }}>
+          <h1 style={{ margin: 0, fontSize: 24, fontWeight: 800, color: "#0f172a", letterSpacing: "-0.01em" }}>Norming Countdown</h1>
+          {saveStateLabel && (
+            <span style={{ fontSize: 12, color: saveStateColor, fontWeight: 500 }}>{saveStateLabel}</span>
+          )}
+        </div>
+
+        {/* Countdown + progress */}
+        <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 16, padding: "28px 28px 24px", marginBottom: 36, boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
+          <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", flexWrap: "wrap", gap: 8, marginBottom: 18 }}>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
+              <span style={{ fontSize: 56, fontWeight: 900, color: "#eab308", lineHeight: 1, letterSpacing: "-0.03em" }}>{daysRemaining}</span>
+              <span style={{ fontSize: 18, fontWeight: 700, color: "#334155" }}>{daysRemaining === 1 ? "day" : "days"} until norming</span>
+            </div>
+            <span style={{ fontSize: 14, fontWeight: 600, color: "#64748b" }}>Target: {targetLabel}</span>
+          </div>
+          <div style={{ position: "relative", height: 16, borderRadius: 999, background: "#e2e8f0", overflow: "hidden" }}>
+            <div
+              style={{
+                position: "absolute", inset: 0, width: `${progressPct}%`,
+                background: "linear-gradient(90deg, #facc15, #eab308)",
+                borderRadius: 999, transition: "width 0.4s ease",
+              }}
+            />
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8, fontSize: 12, fontWeight: 600, color: "#64748b" }}>
+            <span>{doneCount} / {allItems.length} items complete</span>
+            <span>{progressPct}% done</span>
+          </div>
+        </div>
+
+        {/* Per-team breakdown */}
+        {!loading && (
+          <div style={{ marginBottom: 36 }}>
+            <h2 style={{ margin: "0 0 16px", fontSize: 16, fontWeight: 800, color: "#0f172a" }}>By team</h2>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 12 }}>
+              {NORMING_TEAMS.map((team) => {
+                const teamItems = checklist[team.name] ?? [];
+                const done = teamItems.filter((it) => it.done).length;
+                const notDone = teamItems.length - done;
+                return (
+                  <div key={team.name} style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, padding: "14px 16px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                      <span style={{ width: 10, height: 10, borderRadius: 3, background: team.color, display: "inline-block" }} />
+                      <span style={{ fontSize: 13, fontWeight: 700, color: "#334155" }}>{team.name}</span>
+                    </div>
+                    <div style={{ display: "flex", gap: 16 }}>
+                      <div>
+                        <div style={{ fontSize: 28, fontWeight: 900, color: "#16a34a", lineHeight: 1 }}>{done}</div>
+                        <div style={{ fontSize: 11, fontWeight: 600, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.04em", marginTop: 4 }}>Completed</div>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 28, fontWeight: 900, color: "#dc2626", lineHeight: 1 }}>{notDone}</div>
+                        <div style={{ fontSize: 11, fontWeight: 600, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.04em", marginTop: 4 }}>Remaining</div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Per-team checklists */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+          <h2 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: "#0f172a" }}>Checklist</h2>
+          {allItems.length > 0 && (
+            <span style={{ fontSize: 13, fontWeight: 600, color: "#64748b" }}>{doneCount} / {allItems.length} done</span>
+          )}
+        </div>
+
+        {loading ? (
+          <div style={{ color: "#94a3b8", padding: "40px 0", textAlign: "center" }}>Loading...</div>
+        ) : (
+          NORMING_TEAMS.map((team) => (
+            <TeamChecklist
+              key={team.name}
+              team={team}
+              items={checklist[team.name] ?? []}
+              onAdd={(text) => addItem(team.name, text)}
+              onToggle={(id) => toggleItem(team.name, id)}
+              onRemove={(id) => removeItem(team.name, id)}
+            />
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
+function TeamChecklist({
+  team,
+  items,
+  onAdd,
+  onToggle,
+  onRemove,
+}: {
+  team: { name: string; color: string };
+  items: NormingItem[];
+  onAdd: (text: string) => void;
+  onToggle: (id: string) => void;
+  onRemove: (id: string) => void;
+}) {
+  const [draft, setDraft] = useState("");
+  const doneCount = items.filter((it) => it.done).length;
+
+  const submit = () => {
+    if (!draft.trim()) return;
+    onAdd(draft);
+    setDraft("");
+  };
+
+  return (
+    <div style={{ marginBottom: 28 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+        <span style={{ width: 10, height: 10, borderRadius: 3, background: team.color, display: "inline-block" }} />
+        <h3 style={{ margin: 0, fontSize: 13, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+          {team.name}
+        </h3>
+        <span style={{ fontSize: 12, fontWeight: 600, color: "#94a3b8" }}>{doneCount}/{items.length}</span>
+      </div>
+      <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, padding: "8px 12px" }}>
+        {items.length === 0 && (
+          <div style={{ color: "#cbd5e1", fontSize: 13, padding: "10px 4px" }}>No items yet.</div>
+        )}
+        {items.map((it) => (
+          <div
+            key={it.id}
+            style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 4px", borderBottom: "1px solid #f1f5f9" }}
+          >
+            <input
+              type="checkbox"
+              checked={it.done}
+              onChange={() => onToggle(it.id)}
+              style={{ width: 16, height: 16, cursor: "pointer", accentColor: team.color }}
+            />
+            <span
+              style={{
+                flex: 1, fontSize: 14, color: it.done ? "#94a3b8" : "#1e293b",
+                textDecoration: it.done ? "line-through" : "none",
+              }}
+            >
+              {it.text}
+            </span>
+            <button
+              onClick={() => onRemove(it.id)}
+              title="Remove"
+              style={{ border: "none", background: "transparent", color: "#cbd5e1", cursor: "pointer", fontSize: 16, lineHeight: 1, padding: "2px 6px" }}
+            >
+              ×
+            </button>
+          </div>
+        ))}
+        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 4px 6px" }}>
+          <input
+            type="text"
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") submit(); }}
+            placeholder={`Add an item for ${team.name}…`}
+            style={{
+              flex: 1, fontFamily: "var(--font-sans)", fontSize: 14, padding: "8px 10px",
+              border: "1px solid #e2e8f0", borderRadius: 8, outline: "none", color: "#1e293b",
+            }}
+          />
+          <button
+            onClick={submit}
+            disabled={!draft.trim()}
+            style={{
+              fontSize: 13, fontWeight: 600, padding: "8px 14px", border: "none", borderRadius: 8,
+              background: draft.trim() ? "#ea580c" : "#fed7aa", color: "white",
+              cursor: draft.trim() ? "pointer" : "default", whiteSpace: "nowrap",
+            }}
+          >
+            + Add
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Weekly Planning View ────────────────────────────────────────────────
 
 const WEEKLY_PLANNING_TEAMS = ["Engineering", "Product", "Psychometrics"];
@@ -7923,7 +8265,7 @@ function CyclesView({ cycles, people }: { cycles: LinearCycle[]; people: Person[
 
 export function RoadmapView({ people, months, phases, teams, initialOverrides }: RoadmapViewProps) {
   const [search, setSearch] = useState("");
-  const [viewMode, setViewMode] = useState<"projects" | "subtestEdits" | "cycles" | "futureProjects" | "weeklyPlanning">("projects");
+  const [viewMode, setViewMode] = useState<"projects" | "subtestEdits" | "cycles" | "futureProjects" | "weeklyPlanning" | "normingCountdown">("projects");
   const [filterTeams, setFilterTeams] = useState<Set<string>>(new Set());
   const [filterPeople, setFilterPeople] = useState<Set<string>>(new Set());
   const [selected, setSelected] = useState<{
@@ -9463,6 +9805,8 @@ export function RoadmapView({ people, months, phases, teams, initialOverrides }:
         <TasksView people={localPeople} onIssueClick={setSelectedLinearIssueId} />
       ) : viewMode === "weeklyPlanning" ? (
         <WeeklyPlanningView people={localPeople} />
+      ) : viewMode === "normingCountdown" ? (
+        <NormingCountdownView />
       ) : viewMode === "futureProjects" ? (
         <FutureProjectsView
           people={localPeople}

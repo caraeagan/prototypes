@@ -52,6 +52,7 @@ export async function POST(request: NextRequest) {
       "saveProjectOrder",
       "saveWeeklyPersonNote",
       "saveWeeklyTicketOrder",
+      "saveNormingChecklist",
     ]);
     if (!knownActions.has(action)) {
       return NextResponse.json(
@@ -314,6 +315,19 @@ export async function POST(request: NextRequest) {
             }
           } else {
             overrides.weeklyTicketOrders[weekKey][personName][projectId] = order;
+          }
+          break;
+        }
+        case "saveNormingChecklist": {
+          const { team, items } = payload as {
+            team: string;
+            items: { id: string; text: string; done: boolean }[];
+          };
+          if (!overrides.normingChecklist) overrides.normingChecklist = {};
+          if (!items || items.length === 0) {
+            delete overrides.normingChecklist[team];
+          } else {
+            overrides.normingChecklist[team] = items;
           }
           break;
         }

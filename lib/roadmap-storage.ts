@@ -9,6 +9,12 @@ export type CycleBuckets = {
   backlog: string[];
 };
 
+export type NormingChecklistItem = {
+  id: string;
+  text: string;
+  done: boolean;
+};
+
 export type RoadmapOverrides = {
   positions?: Record<string, { startMonth: number; duration: number; order?: number }>;
   additions?: Record<
@@ -55,6 +61,9 @@ export type RoadmapOverrides = {
   // IDs for the auto-grouped weekly view. Tickets not in this list render
   // after the ordered ones, sorted by Linear priority.
   weeklyTicketOrders?: Record<string, Record<string, Record<string, string[]>>>;
+  // normingChecklist[teamName] = ordered checklist items for that team's
+  // run-up to the Sept 1 norming deadline.
+  normingChecklist?: Record<string, NormingChecklistItem[]>;
 };
 
 function sleep(ms: number) {
