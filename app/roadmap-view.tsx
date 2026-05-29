@@ -2925,7 +2925,6 @@ function normalizeAssigneeName(displayName: string): string | null {
     luida: "Luida",
     ak: "AK",
     maria: "Maria",
-    carlos: "Carlos",
     erica: "Erica",
     david: "David",
     eleanor: "Eleanor",

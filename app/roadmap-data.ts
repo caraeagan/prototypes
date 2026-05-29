@@ -85,7 +85,7 @@ export const PHASES: Phase[] = [
 export const TEAMS: Team[] = [
   { name: "Engineering", color: "#2563EB", members: ["Oleksii", "John", "Luida", "AK", "Hlib", "Lucie", "Alex"] },
   { name: "Product", color: "#EAB308", members: ["Cara"] },
-  { name: "Design", color: "#A16207", members: ["Maria", "Carlos"] },
+  { name: "Design", color: "#A16207", members: ["Maria"] },
   { name: "Psychometrics", color: "#D97706", members: ["Erica", "David"] },
   { name: "Operations & GTM", color: "#1D4ED8", members: ["Eleanor", "Erin", "Stef", "Sam", "Molly", "Audrey"] },
 ];
@@ -369,37 +369,6 @@ export const PEOPLE: Person[] = [
         name: "PP2 Instructions",
         linearProjectName: null,
         startMonth: 2,
-        duration: 3,
-        tasks: [],
-      },
-    ],
-  },
-  {
-    name: "Carlos",
-    color: "#FF8F00",
-    team: "Design",
-    projects: [
-      {
-        id: "p024",
-        name: "PP3 Bilingual Instructions",
-        linearProjectName: null,
-        startMonth: 0,
-        duration: 3,
-        tasks: [],
-      },
-      {
-        id: "p025",
-        name: "PP1 Bilingual Instructions",
-        linearProjectName: null,
-        startMonth: 2,
-        duration: 3,
-        tasks: [],
-      },
-      {
-        id: "p026",
-        name: "PP2 Bilingual Instructions",
-        linearProjectName: null,
-        startMonth: 3,
         duration: 3,
         tasks: [],
       },
