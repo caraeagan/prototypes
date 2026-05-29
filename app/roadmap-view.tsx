@@ -331,7 +331,7 @@ function DvdCarts({ count }: { count: number }) {
 
     const h0 = wrap.clientHeight || 200;
     const carts = els.map(() => {
-      const speed = 7 + Math.random() * 4;
+      const speed = 3 + Math.random() * 2;
       const angle = Math.random() * Math.PI * 2;
       return {
         x: 120 + Math.random() * 240,
@@ -413,7 +413,7 @@ function BouncingPearsons({ count }: { count: number }) {
     if (els.length === 0) return;
 
     const sprites = els.map(() => {
-      const speed = 4.5 + Math.random() * 3;
+      const speed = 1.8 + Math.random() * 1.2;
       const angle = Math.random() * Math.PI * 2;
       return {
         x: Math.random() * Math.max(1, window.innerWidth - PEARSON_SIZE),
