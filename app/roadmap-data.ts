@@ -311,8 +311,9 @@ export const PEOPLE: Person[] = [
     name: "Cara",
     color: "#F9A825",
     team: "Product",
+    avatar: "/cara.jpg",
     dachshund: true,
-    minRowHeight: 240,
+    minRowHeight: 320,
     projects: [
       {
         id: "p018",

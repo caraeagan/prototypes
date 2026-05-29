@@ -317,7 +317,7 @@ function barTextColor(hex: string, bgAlpha: number): string {
 // from the wrapper's on-screen rect intersected with the browser window, so
 // the carts ricochet off the *visible window* edges rather than escaping into
 // the off-screen part of a horizontally-scrolled row. Rendered behind the bars.
-const CART_SIZE = 56;
+const CART_SIZE = 32;
 const SIDEBAR_X = 160; // keep carts clear of the sticky person sidebar
 
 function DvdCarts({ count }: { count: number }) {
@@ -331,7 +331,7 @@ function DvdCarts({ count }: { count: number }) {
 
     const h0 = wrap.clientHeight || 200;
     const carts = els.map(() => {
-      const speed = 3.5 + Math.random() * 3;
+      const speed = 30 + Math.random() * 15;
       const angle = Math.random() * Math.PI * 2;
       return {
         x: 120 + Math.random() * 240,
@@ -6171,10 +6171,13 @@ function NormingCountdownView() {
         )}
 
         {/* Per-team checklists */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-          <h2 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: "#0f172a" }}>Checklist</h2>
+        <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 18, paddingBottom: 12, borderBottom: "2px solid #1e293b" }}>
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 4 }}>Readiness Checklist</div>
+            <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: "#0f172a", letterSpacing: "-0.01em" }}>Norming Requirements by Team</h2>
+          </div>
           {allItems.length > 0 && (
-            <span style={{ fontSize: 13, fontWeight: 600, color: "#64748b" }}>{doneCount} / {allItems.length} done</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: "#334155" }}>{doneCount} of {allItems.length} complete</span>
           )}
         </div>
 
@@ -6212,6 +6215,7 @@ function TeamChecklist({
 }) {
   const [draft, setDraft] = useState("");
   const doneCount = items.filter((it) => it.done).length;
+  const pct = items.length > 0 ? Math.round((doneCount / items.length) * 100) : 0;
 
   const submit = () => {
     if (!draft.trim()) return;
@@ -6220,23 +6224,39 @@ function TeamChecklist({
   };
 
   return (
-    <div style={{ marginBottom: 28 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-        <span style={{ width: 10, height: 10, borderRadius: 3, background: team.color, display: "inline-block" }} />
-        <h3 style={{ margin: 0, fontSize: 13, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+    <section style={{ marginBottom: 24, background: "#fff", border: "1px solid #e2e8f0", borderRadius: 10, overflow: "hidden", boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
+      {/* Section header */}
+      <header style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 18px", borderBottom: "1px solid #e2e8f0", borderLeft: `4px solid ${team.color}`, background: "#f8fafc" }}>
+        <h3 style={{ margin: 0, fontSize: 13, fontWeight: 800, color: "#1e293b", textTransform: "uppercase", letterSpacing: "0.08em", flex: 1 }}>
           {team.name}
         </h3>
-        <span style={{ fontSize: 12, fontWeight: 600, color: "#94a3b8" }}>{doneCount}/{items.length}</span>
-      </div>
-      <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, padding: "8px 12px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{ width: 88, height: 6, borderRadius: 999, background: "#e2e8f0", overflow: "hidden" }}>
+            <div style={{ width: `${pct}%`, height: "100%", background: team.color, transition: "width 0.3s ease" }} />
+          </div>
+          <span style={{ fontSize: 12, fontWeight: 700, color: "#475569", fontVariantNumeric: "tabular-nums", minWidth: 42, textAlign: "right" }}>
+            {doneCount} / {items.length}
+          </span>
+        </div>
+      </header>
+
+      {/* Line items */}
+      <div>
         {items.length === 0 && (
-          <div style={{ color: "#cbd5e1", fontSize: 13, padding: "10px 4px" }}>No items yet.</div>
+          <div style={{ color: "#94a3b8", fontSize: 13, fontStyle: "italic", padding: "16px 18px" }}>No requirements recorded.</div>
         )}
-        {items.map((it) => (
-          <div
+        {items.map((it, idx) => (
+          <label
             key={it.id}
-            style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 4px", borderBottom: "1px solid #f1f5f9" }}
+            style={{
+              display: "flex", alignItems: "center", gap: 12, padding: "11px 18px", cursor: "pointer",
+              borderBottom: "1px solid #f1f5f9",
+              background: it.done ? "#fafdfb" : "#fff",
+            }}
           >
+            <span style={{ fontSize: 12, fontWeight: 700, color: "#cbd5e1", fontVariantNumeric: "tabular-nums", minWidth: 22 }}>
+              {String(idx + 1).padStart(2, "0")}
+            </span>
             <input
               type="checkbox"
               checked={it.done}
@@ -6245,47 +6265,60 @@ function TeamChecklist({
             />
             <span
               style={{
-                flex: 1, fontSize: 14, color: it.done ? "#94a3b8" : "#1e293b",
+                flex: 1, fontSize: 14, lineHeight: 1.4, color: it.done ? "#94a3b8" : "#1e293b",
                 textDecoration: it.done ? "line-through" : "none",
               }}
             >
               {it.text}
             </span>
+            <span
+              style={{
+                fontSize: 10, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase",
+                padding: "3px 8px", borderRadius: 999,
+                color: it.done ? "#15803d" : "#b45309",
+                background: it.done ? "#dcfce7" : "#fef3c7",
+              }}
+            >
+              {it.done ? "Complete" : "Pending"}
+            </span>
             <button
-              onClick={() => onRemove(it.id)}
-              title="Remove"
-              style={{ border: "none", background: "transparent", color: "#cbd5e1", cursor: "pointer", fontSize: 16, lineHeight: 1, padding: "2px 6px" }}
+              onClick={(e) => { e.preventDefault(); onRemove(it.id); }}
+              title="Remove requirement"
+              style={{ border: "none", background: "transparent", color: "#cbd5e1", cursor: "pointer", fontSize: 16, lineHeight: 1, padding: "2px 4px" }}
             >
               ×
             </button>
-          </div>
+          </label>
         ))}
-        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 4px 6px" }}>
-          <input
-            type="text"
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter") submit(); }}
-            placeholder={`Add an item for ${team.name}…`}
-            style={{
-              flex: 1, fontFamily: "var(--font-sans)", fontSize: 14, padding: "8px 10px",
-              border: "1px solid #e2e8f0", borderRadius: 8, outline: "none", color: "#1e293b",
-            }}
-          />
-          <button
-            onClick={submit}
-            disabled={!draft.trim()}
-            style={{
-              fontSize: 13, fontWeight: 600, padding: "8px 14px", border: "none", borderRadius: 8,
-              background: draft.trim() ? "#ea580c" : "#fed7aa", color: "white",
-              cursor: draft.trim() ? "pointer" : "default", whiteSpace: "nowrap",
-            }}
-          >
-            + Add
-          </button>
-        </div>
       </div>
-    </div>
+
+      {/* Add row */}
+      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "12px 18px", background: "#f8fafc", borderTop: "1px solid #e2e8f0" }}>
+        <input
+          type="text"
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") submit(); }}
+          placeholder={`Add a requirement for ${team.name}…`}
+          style={{
+            flex: 1, fontFamily: "var(--font-sans)", fontSize: 14, padding: "9px 12px",
+            border: "1px solid #cbd5e1", borderRadius: 6, outline: "none", color: "#1e293b", background: "#fff",
+          }}
+        />
+        <button
+          onClick={submit}
+          disabled={!draft.trim()}
+          style={{
+            fontSize: 13, fontWeight: 700, padding: "9px 16px", border: "none", borderRadius: 6,
+            background: draft.trim() ? "#1e293b" : "#cbd5e1", color: "white",
+            cursor: draft.trim() ? "pointer" : "default", whiteSpace: "nowrap",
+            letterSpacing: "0.02em",
+          }}
+        >
+          Add
+        </button>
+      </div>
+    </section>
   );
 }
 
