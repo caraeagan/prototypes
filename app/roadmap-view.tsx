@@ -331,7 +331,7 @@ function DvdCarts({ count }: { count: number }) {
 
     const h0 = wrap.clientHeight || 200;
     const carts = els.map(() => {
-      const speed = 30 + Math.random() * 15;
+      const speed = 7 + Math.random() * 4;
       const angle = Math.random() * Math.PI * 2;
       return {
         x: 120 + Math.random() * 240,
