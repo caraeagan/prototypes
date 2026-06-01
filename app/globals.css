@@ -1564,13 +1564,13 @@ body.dragging * {
     #fb8c00 100%
   );
   background-size: 200% 100%;
-  animation: sparkle-shimmer 2.6s linear infinite, sparkle-glow 2.6s ease-in-out infinite;
+  animation: sparkle-shimmer 4.8s linear infinite, sparkle-glow 4.8s ease-in-out infinite;
 }
 
 .sparkle-swatch {
   background-image: linear-gradient(180deg, #fb8c00 0%, #ffd180 50%, #fb8c00 100%);
   background-size: 100% 200%;
-  animation: sparkle-shimmer 2.6s linear infinite;
+  animation: sparkle-shimmer 4.8s linear infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -5562,7 +5562,7 @@ function ProductRoadmapView({
           </div>
         )}
         <div style={{ flex: 1, position: "relative", height: rowHeight }}>
-          {person.dvdCart && <DvdCarts count={10} />}
+          {person.dvdCart && <DvdCarts count={2} />}
           {person.dachshund && <Dachshund />}
           {columns.map((_, i) => (
             <div
