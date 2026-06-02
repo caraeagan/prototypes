@@ -466,80 +466,234 @@ function BouncingPearsons({ count }: { count: number }) {
   );
 }
 
-// ── Hopping dachshund ──────────────────────────────────────────────────────
-// A little sausage dog that hops along the bottom of a row, lands, pauses, then
-// springs into the next hop — reversing (and flipping to face the way it's
-// going) when it reaches the visible window edges. Bounds are recomputed every
-// frame like DvdCarts so it stays on-screen in a horizontally-scrolled row.
+// ── Roaming dachshund ──────────────────────────────────────────────────────
+// A little sausage dog with a three-act routine:
+//   1. It bounces in place five times on Cara's row.
+//   2. It hops straight down the person column, landing on each row in turn,
+//      until it reaches Lucie's row.
+//   3. It climbs into one of Lucie's shopping carts and the two go hopping
+//      together back and forth across her row.
+// It pins itself just right of the sticky person sidebar so it hugs the names
+// through horizontal scroll, and rides up/down with the rows on vertical
+// scroll. Row floors and bounds are read from the live DOM each frame so it
+// tracks layout/scroll changes.
 const DOG_SIZE = 52;
-const DOG_GRAVITY = 0.9; // px/frame² pulling the dog back to the ground
-const DOG_HOP_V = -13; // initial upward velocity of each hop
-const DOG_FLOOR_PAUSE = 14; // frames spent on the ground between hops
+const DOG_HOP_ARC = 34; // px the dog pops upward at the top of each hop
+const DOG_HOP_FRAMES = 24; // frames spent mid-air per hop
+const DOG_REST_FRAMES = 16; // frames perched on each row before the next hop
+const DOG_INTRO_HOPS = 5; // bounces in place on Cara's row before setting off
+const DOG_CART_W = 60; // size of the cart the dog rides at the finale
+const DOG_CART_HOP_V = -11; // initial upward velocity of each cart hop
+const DOG_CART_GRAV = 0.8; // gravity pulling the cart back down
+const DOG_CART_SPEED = 2.6; // horizontal px/frame while the cart is airborne
+const DOG_CART_PAUSE = 10; // frames the cart rests on the floor between hops
 
-function Dachshund() {
+function RoamingDachshund({
+  scrollRef,
+  fromName,
+  toName,
+}: {
+  scrollRef: React.RefObject<HTMLDivElement | null>;
+  fromName: string;
+  toName: string;
+}) {
   const dogRef = useRef<HTMLDivElement>(null);
+  const cartRef = useRef<HTMLSpanElement>(null);
   // Fall back to the dog emoji if /dachshund.png is missing.
   const [useImg, setUseImg] = useState(true);
 
   useEffect(() => {
-    const wrap = dogRef.current?.parentElement;
     const dog = dogRef.current;
-    if (!wrap || !dog) return;
-
-    let x = SIDEBAR_X + 40;
-    let y = 0; // offset above the floor (negative while airborne)
-    let vy = 0;
-    let dir = 1; // 1 = facing/moving right, -1 = left
-    const hopSpeed = 2.6; // horizontal px/frame while airborne
-    let restTimer = DOG_FLOOR_PAUSE;
-    let airborne = false;
+    const cart = cartRef.current;
+    const container = dog?.offsetParent as HTMLElement | null;
+    if (!dog || !cart || !container) return;
 
     const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    let raf = 0;
-    const tick = () => {
-      const rect = wrap.getBoundingClientRect();
-      const h = wrap.clientHeight;
-      const minX = Math.max(0, SIDEBAR_X - rect.left);
-      const maxX = Math.max(minX + DOG_SIZE, window.innerWidth - rect.left - DOG_SIZE);
-      const floorY = Math.max(0, h - DOG_SIZE - 6);
 
-      if (airborne) {
-        vy += DOG_GRAVITY;
-        y += vy;
-        x += hopSpeed * dir;
-        if (x <= minX) { x = minX; dir = 1; }
-        else if (x >= maxX) { x = maxX; dir = -1; }
-        if (y >= 0) { y = 0; vy = 0; airborne = false; restTimer = DOG_FLOOR_PAUSE; }
-      } else {
-        // Brief crouch on the ground, then launch the next hop.
-        restTimer -= 1;
-        if (restTimer <= 0) { airborne = true; vy = DOG_HOP_V; }
+    // The chain of rows the dog visits, from Cara down to Lucie. Resolved lazily
+    // once both rows are in the DOM (people can be filtered in/out at any time).
+    let path: HTMLElement[] = [];
+    const buildPath = () => {
+      const rows = Array.from(
+        container.querySelectorAll<HTMLElement>("[data-person-row]"),
+      );
+      const fromIdx = rows.findIndex((r) => r.dataset.personRow === fromName);
+      const toIdx = rows.findIndex((r) => r.dataset.personRow === toName);
+      if (fromIdx === -1 || toIdx === -1) return false;
+      const step = fromIdx <= toIdx ? 1 : -1;
+      const next: HTMLElement[] = [];
+      for (let i = fromIdx; i !== toIdx + step; i += step) next.push(rows[i]);
+      path = next;
+      return true;
+    };
+
+    // Where a sprite of the given height rests on a row, in container coords.
+    const floorFor = (row: HTMLElement, size: number) =>
+      row.offsetTop + row.clientHeight - size - 8;
+
+    // The x just right of the sticky sidebar, in container coords (tracks scroll).
+    const nameX = () => (scrollRef.current?.scrollLeft ?? 0) + SIDEBAR_X + 6;
+
+    // Pin the dog beside the name at vertical offset y, with a squash/stretch.
+    const pinDog = (y: number, stretch: number) => {
+      // The sprite faces left by default — no scaleX flip, so it faces the name.
+      dog.style.transform = `translate(${nameX()}px, ${y}px) scaleY(${stretch})`;
+    };
+
+    let seg = 0; // index of the row the dog is on within `path`
+    let phase: "introHop" | "rest" | "hop" | "cartHop" = "introHop";
+    let started = false; // flips once Cara's row scrolls into view (one-way)
+    let introLeft = DOG_INTRO_HOPS;
+    let hopT = 0; // 0→1 progress through the current hop
+    let restTimer = 0;
+    let raf = 0;
+
+    // Cart-ride state for the finale (container coords).
+    let ux = 0; // cart x
+    let uy = 0; // cart vertical offset above the floor (≤ 0 while airborne)
+    let uvx = DOG_CART_SPEED;
+    let uvy = 0;
+    let cartAirborne = false;
+    let cartPause = DOG_CART_PAUSE;
+    let cartInit = false;
+
+    const tick = () => {
+      if (path.length === 0 && !buildPath()) {
+        raf = requestAnimationFrame(tick);
+        return;
       }
 
-      // Squash a touch while crouched, stretch a touch at hop apex.
-      const stretch = airborne ? 1 + Math.min(0.18, -y / 240) : 0.9;
-      // Sprite faces left by default, so mirror (scaleX = -dir) to face travel.
-      dog.style.transform =
-        `translate(${x}px, ${floorY + y}px) scaleX(${-dir}) scaleY(${stretch})`;
+      // Hold the dog sitting on Cara's row until that row is scrolled into
+      // view, so the journey kicks off where someone can actually watch it.
+      if (!started) {
+        pinDog(floorFor(path[0], DOG_SIZE), 0.92);
+        const scroller = scrollRef.current;
+        if (scroller) {
+          const rowRect = path[0].getBoundingClientRect();
+          const scRect = scroller.getBoundingClientRect();
+          const visible = rowRect.top < scRect.bottom && rowRect.bottom > scRect.top;
+          if (!visible) {
+            raf = requestAnimationFrame(tick);
+            return;
+          }
+        }
+        started = true;
+      }
+
+      if (phase === "introHop") {
+        // Bounce in place on Cara's row a handful of times.
+        const floor = floorFor(path[0], DOG_SIZE);
+        if (restTimer > 0) {
+          restTimer -= 1;
+          pinDog(floor, 0.92);
+        } else {
+          hopT = Math.min(1, hopT + 1 / DOG_HOP_FRAMES);
+          pinDog(floor - DOG_HOP_ARC * Math.sin(Math.PI * hopT), 1 + 0.16 * Math.sin(Math.PI * hopT));
+          if (hopT >= 1) {
+            hopT = 0;
+            introLeft -= 1;
+            restTimer = 8;
+            if (introLeft <= 0) {
+              if (path.length > 1) { phase = "rest"; restTimer = DOG_REST_FRAMES; }
+              else phase = "cartHop";
+            }
+          }
+        }
+      } else if (phase === "rest") {
+        pinDog(floorFor(path[seg], DOG_SIZE), 0.92);
+        restTimer -= 1;
+        if (restTimer <= 0) {
+          if (seg >= path.length - 1) phase = "cartHop";
+          else { phase = "hop"; hopT = 0; }
+        }
+      } else if (phase === "hop") {
+        hopT = Math.min(1, hopT + 1 / DOG_HOP_FRAMES);
+        const fromY = floorFor(path[seg], DOG_SIZE);
+        const toY = floorFor(path[seg + 1], DOG_SIZE);
+        const y = fromY + (toY - fromY) * hopT - DOG_HOP_ARC * Math.sin(Math.PI * hopT);
+        pinDog(y, 1 + 0.16 * Math.sin(Math.PI * hopT));
+        if (hopT >= 1) { seg += 1; phase = "rest"; restTimer = DOG_REST_FRAMES; }
+      } else {
+        // Finale: the dog rides a shopping cart hopping along Lucie's row.
+        const cartRow = path[path.length - 1];
+        const scroller = scrollRef.current;
+        const sl = scroller?.scrollLeft ?? 0;
+        const viewW = scroller?.clientWidth ?? window.innerWidth;
+        const leftB = sl + SIDEBAR_X + 6;
+        const rightB = Math.max(leftB + 1, sl + viewW - DOG_CART_W - 6);
+        const cartFloor = floorFor(cartRow, DOG_CART_W);
+
+        if (!cartInit) {
+          // Hop into the cart right where the dog arrived, beside the name.
+          ux = leftB;
+          uy = 0; uvy = 0; uvx = DOG_CART_SPEED;
+          cartAirborne = false; cartPause = DOG_CART_PAUSE;
+          cart.style.opacity = "1";
+          cartInit = true;
+        }
+
+        if (cartAirborne) {
+          uvy += DOG_CART_GRAV;
+          uy += uvy;
+          ux += uvx;
+          if (ux <= leftB) { ux = leftB; uvx = Math.abs(uvx); }
+          else if (ux >= rightB) { ux = rightB; uvx = -Math.abs(uvx); }
+          if (uy >= 0) { uy = 0; uvy = 0; cartAirborne = false; cartPause = DOG_CART_PAUSE; }
+        } else {
+          cartPause -= 1;
+          if (cartPause <= 0) { cartAirborne = true; uvy = DOG_CART_HOP_V; }
+        }
+
+        const cartTop = cartFloor + uy;
+        const cartStretch = cartAirborne ? 1 + Math.min(0.14, -uy / 260) : 0.96;
+        cart.style.transform = `translate(${ux}px, ${cartTop}px) scaleY(${cartStretch})`;
+
+        // The dog rides in the basket, facing the way the cart is rolling.
+        const ride = 0.66;
+        const faceX = uvx >= 0 ? -ride : ride; // sprite faces left by default
+        const dogX = ux + (DOG_CART_W - DOG_SIZE * ride) / 2 - 2;
+        const dogY = cartTop - DOG_SIZE * ride * 0.42;
+        dog.style.transform = `translate(${dogX}px, ${dogY}px) scale(${faceX}, ${ride * cartStretch})`;
+      }
+
       if (!prefersReduced) raf = requestAnimationFrame(tick);
     };
-    raf = requestAnimationFrame(tick);
+
+    if (prefersReduced) {
+      // No journey for reduced-motion: just plant the dog on the destination.
+      if (buildPath()) pinDog(floorFor(path[path.length - 1], DOG_SIZE), 0.92);
+    } else {
+      raf = requestAnimationFrame(tick);
+    }
     return () => cancelAnimationFrame(raf);
-  }, []);
+  }, [scrollRef, fromName, toName]);
 
   return (
-    <div
-      aria-hidden
-      style={{
-        position: "absolute",
-        inset: 0,
-        overflow: "hidden",
-        pointerEvents: "none",
-        zIndex: 0,
-      }}
-    >
+    <>
+      <span
+        ref={cartRef}
+        aria-hidden
+        style={{
+          position: "absolute",
+          left: 0,
+          top: 0,
+          width: DOG_CART_W,
+          height: DOG_CART_W,
+          fontSize: DOG_CART_W - 6,
+          lineHeight: 1,
+          textAlign: "center",
+          transformOrigin: "center bottom",
+          willChange: "transform",
+          pointerEvents: "none",
+          zIndex: 3,
+          opacity: 0,
+        }}
+      >
+        🛒
+      </span>
       <div
         ref={dogRef}
+        aria-hidden
         style={{
           position: "absolute",
           left: 0,
@@ -550,6 +704,8 @@ function Dachshund() {
           lineHeight: 1,
           transformOrigin: "center bottom",
           willChange: "transform",
+          pointerEvents: "none",
+          zIndex: 3,
         }}
       >
         {useImg ? (
@@ -564,7 +720,7 @@ function Dachshund() {
           "🐕"
         )}
       </div>
-    </div>
+    </>
   );
 }
 
@@ -5489,6 +5645,7 @@ function ProductRoadmapView({
     return (
       <div
         key={person.name}
+        data-person-row={person.name}
         style={{
           display: "flex",
           minHeight: rowHeight,
@@ -5562,8 +5719,9 @@ function ProductRoadmapView({
           </div>
         )}
         <div style={{ flex: 1, position: "relative", height: rowHeight }}>
-          {person.dvdCart && <DvdCarts count={2} />}
-          {person.dachshund && <Dachshund />}
+          {/* One of Lucie's two carts becomes the dog's hopping cart (the
+              RoamingDachshund overlay), so the DVD-bouncing pack is one short. */}
+          {person.dvdCart && <DvdCarts count={1} />}
           {columns.map((_, i) => (
             <div
               key={`vline-${i}`}
@@ -5876,7 +6034,7 @@ function ProductRoadmapView({
         </div>
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", minWidth: SIDEBAR + columns.length * colWidth }}>
+      <div style={{ display: "flex", flexDirection: "column", position: "relative", minWidth: SIDEBAR + columns.length * colWidth }}>
         {phases && phases.length > 0 && visibleRange && (() => {
           const PHASE_HEIGHT_LOCAL = 32;
           const visiblePhases = phases
@@ -6011,6 +6169,11 @@ function ProductRoadmapView({
         </div>
 
         {visiblePeople.map((p, i) => renderRow(p, i))}
+
+        {visiblePeople.some((p) => p.name === "Cara") &&
+          visiblePeople.some((p) => p.name === "Lucie") && (
+            <RoamingDachshund scrollRef={containerRef} fromName="Cara" toName="Lucie" />
+          )}
       </div>
     </div>
   );
