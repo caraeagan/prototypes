@@ -15,6 +15,12 @@ export type NormingChecklistItem = {
   done: boolean;
 };
 
+export type ProjectResource = {
+  id: string;
+  label: string;
+  url: string;
+};
+
 export type RoadmapOverrides = {
   positions?: Record<string, { startMonth: number; duration: number; order?: number }>;
   additions?: Record<
@@ -26,6 +32,9 @@ export type RoadmapOverrides = {
   dependencies?: { from: string; to: string }[];
   cycleBuckets?: Record<string, CycleBuckets>;
   descriptions?: Record<string, string>;
+  // resources[`${personName}:${projectId}`] = ordered list of linked documents
+  // (label + URL) shown in the project detail slideout.
+  resources?: Record<string, ProjectResource[]>;
   // linearLinks[`${personName}:${projectId}`] = Linear project name. Lets users
   // attach a Linear project to a roadmap project that was seeded without one.
   linearLinks?: Record<string, string>;

@@ -44,6 +44,7 @@ export async function POST(request: NextRequest) {
       "removeFutureProject",
       "updateFutureProject",
       "saveDescription",
+      "saveResources",
       "linkLinearProject",
       "saveWeeklyPlan",
       "saveWeekNote",
@@ -197,6 +198,19 @@ export async function POST(request: NextRequest) {
             overrides.descriptions[key] = description;
           } else {
             delete overrides.descriptions[key];
+          }
+          break;
+        }
+        case "saveResources": {
+          const { key, resources } = payload as {
+            key: string;
+            resources: { id: string; label: string; url: string }[];
+          };
+          if (!overrides.resources) overrides.resources = {};
+          if (resources && resources.length > 0) {
+            overrides.resources[key] = resources;
+          } else {
+            delete overrides.resources[key];
           }
           break;
         }

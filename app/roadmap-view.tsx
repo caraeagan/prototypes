@@ -816,6 +816,139 @@ async function saveOverride(
     });
 }
 
+// ── Project resources (linked documents) ──────────────────────────────────
+
+type ProjectResource = { id: string; label: string; url: string };
+
+function newResourceId(): string {
+  return `res-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
+}
+
+// Normalize a user-entered URL so links are clickable even without a scheme.
+function normalizeResourceUrl(url: string): string {
+  const trimmed = url.trim();
+  if (!trimmed) return "";
+  if (/^https?:\/\//i.test(trimmed) || /^mailto:/i.test(trimmed)) return trimmed;
+  return `https://${trimmed}`;
+}
+
+// Resources section for a project detail slideout. Loads the saved list for the
+// given projectKey (`${personName}:${projectId}`), and lets the user add, edit,
+// and remove an unlimited number of document links. Persists on each change.
+function ProjectResources({ projectKey }: { projectKey: string }) {
+  const [resources, setResources] = useState<ProjectResource[]>([]);
+  const [loaded, setLoaded] = useState(false);
+  const [adding, setAdding] = useState(false);
+  const [newLabel, setNewLabel] = useState("");
+  const [newUrl, setNewUrl] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchOverrides().then((ov) => {
+      if (cancelled) return;
+      setResources(ov.resources?.[projectKey] ?? []);
+      setLoaded(true);
+    });
+    return () => { cancelled = true; };
+  }, [projectKey]);
+
+  const persist = (next: ProjectResource[]) => {
+    setResources(next);
+    saveOverride("saveResources", { key: projectKey, resources: next }).catch(() => {});
+  };
+
+  const addResource = () => {
+    const url = normalizeResourceUrl(newUrl);
+    if (!url) return;
+    const label = newLabel.trim() || url.replace(/^https?:\/\//i, "");
+    persist([...resources, { id: newResourceId(), label, url }]);
+    setNewLabel("");
+    setNewUrl("");
+    setAdding(false);
+  };
+
+  const removeResource = (id: string) => {
+    persist(resources.filter((r) => r.id !== id));
+  };
+
+  return (
+    <div style={{ padding: "12px 16px", borderBottom: "1px solid #f1f5f9" }}>
+      <label style={{ fontSize: 11, fontWeight: 600, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 8 }}>Resources</label>
+
+      {loaded && resources.length === 0 && !adding && (
+        <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 8 }}>No documents linked yet.</div>
+      )}
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: resources.length > 0 ? 10 : 0 }}>
+        {resources.map((r) => (
+          <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ fontSize: 13, flexShrink: 0 }}>🔗</span>
+            <a
+              href={r.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              title={r.url}
+              style={{ fontSize: 13, color: "#2563eb", textDecoration: "none", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+            >
+              {r.label}
+            </a>
+            <button
+              onClick={() => removeResource(r.id)}
+              aria-label="Remove resource"
+              style={{ fontFamily: "var(--font-sans)", fontSize: 14, lineHeight: 1, background: "transparent", border: "none", color: "#cbd5e1", cursor: "pointer", padding: "0 2px" }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#dc2626"; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#cbd5e1"; }}
+            >
+              &times;
+            </button>
+          </div>
+        ))}
+      </div>
+
+      {adding ? (
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <input
+            autoFocus
+            value={newLabel}
+            onChange={(e) => setNewLabel(e.target.value)}
+            placeholder="Label (e.g. Design doc)"
+            style={{ fontFamily: "var(--font-sans)", fontSize: 13, width: "100%", padding: "6px 8px", borderRadius: 6, border: "1px solid #e2e8f0", background: "#fafbfc", color: "#1e293b", boxSizing: "border-box" }}
+          />
+          <input
+            value={newUrl}
+            onChange={(e) => setNewUrl(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") addResource(); }}
+            placeholder="Paste a link…"
+            style={{ fontFamily: "var(--font-sans)", fontSize: 13, width: "100%", padding: "6px 8px", borderRadius: 6, border: "1px solid #e2e8f0", background: "#fafbfc", color: "#1e293b", boxSizing: "border-box" }}
+          />
+          <div style={{ display: "flex", gap: 6 }}>
+            <button
+              onClick={addResource}
+              disabled={!newUrl.trim()}
+              style={{ fontFamily: "var(--font-sans)", fontSize: 12, fontWeight: 600, padding: "6px 14px", borderRadius: 6, border: "1px solid #2563eb", background: newUrl.trim() ? "#2563eb" : "#cbd5e1", color: "white", cursor: newUrl.trim() ? "pointer" : "default" }}
+            >
+              Add
+            </button>
+            <button
+              onClick={() => { setAdding(false); setNewLabel(""); setNewUrl(""); }}
+              style={{ fontFamily: "var(--font-sans)", fontSize: 12, fontWeight: 600, padding: "6px 14px", borderRadius: 6, border: "1px solid #e2e8f0", background: "white", color: "#64748b", cursor: "pointer" }}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : (
+        <button
+          onClick={() => setAdding(true)}
+          style={{ fontFamily: "var(--font-sans)", fontSize: 12, fontWeight: 600, padding: "6px 12px", borderRadius: 6, border: "1px dashed #cbd5e1", background: "white", color: "#2563eb", cursor: "pointer" }}
+        >
+          + Add link
+        </button>
+      )}
+    </div>
+  );
+}
+
 // ── Priority helpers ──────────────────────────────────────────────────────
 
 function priorityIcon(priority: number): string {
@@ -1593,6 +1726,9 @@ function LinearProjectDetailPanel({
           />
           {descSaving && <span style={{ fontSize: 10, color: "#94a3b8" }}>Saving...</span>}
         </div>
+
+        {/* Resources — linked documents */}
+        <ProjectResources projectKey={`${personName}:${project.id}`} />
 
         {loading && (
           <div className="linear-detail-loading">
@@ -2580,6 +2716,9 @@ function DetailPanel({
             // Task is created in Linear, no local state update needed for static DetailPanel
           }} />
         </div>
+
+        {/* Resources — linked documents */}
+        <ProjectResources projectKey={`${personName}:${project.id}`} />
 
         {/* Notes section */}
         <div className="detail-bottom-section">
