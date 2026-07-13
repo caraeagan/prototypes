@@ -308,13 +308,41 @@ export const PEOPLE: Person[] = [
     name: "Patrick",
     color: "#3949AB",
     team: "Engineering",
-    projects: [],
+    projects: [
+      {
+        id: "p055",
+        name: "Participant Intake Survey",
+        linearProjectName: null,
+        startMonth: 4,
+        duration: 2,
+        order: 0,
+        tasks: [],
+      },
+      {
+        id: "p056",
+        name: "Internal App",
+        linearProjectName: "Internal App",
+        startMonth: 4,
+        duration: 3,
+        order: 1,
+        tasks: [],
+      },
+    ],
   },
   {
     name: "Daryl",
     color: "#C0392B",
     team: "Engineering",
-    projects: [],
+    projects: [
+      {
+        id: "p057",
+        name: "AI Scoring",
+        linearProjectName: "AI Scoring",
+        startMonth: 4,
+        duration: 4,
+        tasks: [],
+      },
+    ],
   },
 
   // ── Product ──────────────────────────────────────────────────────────────

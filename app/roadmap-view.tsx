@@ -3284,6 +3284,10 @@ function normalizeAssigneeName(displayName: string): string | null {
     lucie: "Lucie",
     alex: "Alex",
     "alex.morse": "Alex",
+    patrick: "Patrick",
+    "patrick.tone": "Patrick",
+    daryl: "Daryl",
+    darylkang: "Daryl",
   };
   return map[lower] ?? null;
 }
