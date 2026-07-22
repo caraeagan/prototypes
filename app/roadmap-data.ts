@@ -72,8 +72,8 @@ export const MONTHS = [
 
 export const PHASES: Phase[] = [
   { name: "PP3", startMonth: 0, duration: 4, color: "#E8F0FE" },
-  { name: "Pre-Norming", startMonth: 4, duration: 2, color: "#FEF3E8" },
-  { name: "Norming", startMonth: 6, duration: 7, color: "#E8FEF0" },
+  { name: "Pre-Norming", startMonth: 4, duration: 2.887, color: "#FEF3E8" },
+  { name: "Norming", startMonth: 6.887, duration: 6.113, color: "#E8FEF0" },
   { name: "Post Norming", startMonth: 13, duration: 4, color: "#FEE8F0" },
   { name: "BETA", startMonth: 17, duration: 5, color: "#F0E8FE" },
   { name: "GA", startMonth: 22, duration: 1, color: "#E8FEFE" },

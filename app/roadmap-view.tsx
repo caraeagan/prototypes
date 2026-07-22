@@ -6392,7 +6392,7 @@ function ProductRoadmapView({
 type NormingItem = { id: string; text: string; done: boolean };
 
 // The deadline everything counts down to.
-const NORMING_TARGET = new Date("2026-09-01T00:00:00");
+const NORMING_TARGET = new Date("2026-09-28T00:00:00");
 
 // Teams shown on the norming checklist (independent of the roadmap's TEAMS).
 const NORMING_TEAMS: { name: string; color: string }[] = [
