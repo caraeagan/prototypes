@@ -84,9 +84,8 @@ export const PHASES: Phase[] = [
 export const TEAMS: Team[] = [
   { name: "Engineering", color: "#2563EB", members: ["Oleksii", "John", "Luida", "AK", "Hlib", "Lucie", "Alex", "Patrick", "Daryl"] },
   { name: "Product", color: "#EAB308", members: ["Cara"] },
-  { name: "Design", color: "#A16207", members: ["Maria"] },
   { name: "Psychometrics", color: "#D97706", members: ["Erica", "David"] },
-  { name: "Operations & GTM", color: "#1D4ED8", members: ["Eleanor", "Erin", "Stef", "Sam", "Molly", "Audrey"] },
+  { name: "Operations & GTM", color: "#1D4ED8", members: ["Eleanor", "Erin", "Stef", "Sam", "Molly"] },
 ];
 
 // ── Helper to generate task IDs ────────────────────────────────────────────
@@ -388,31 +387,6 @@ export const PEOPLE: Person[] = [
     ],
   },
 
-  // ── Design ───────────────────────────────────────────────────────────────
-  {
-    name: "Maria",
-    color: "#8D6E63",
-    team: "Design",
-    projects: [
-      {
-        id: "p022",
-        name: "PP1 Instructions",
-        linearProjectName: null,
-        startMonth: 0,
-        duration: 3,
-        tasks: [],
-      },
-      {
-        id: "p023",
-        name: "PP2 Instructions",
-        linearProjectName: null,
-        startMonth: 2,
-        duration: 3,
-        tasks: [],
-      },
-    ],
-  },
-
   // ── Psychometrics ────────────────────────────────────────────────────────
   {
     name: "Erica",
@@ -592,12 +566,6 @@ export const PEOPLE: Person[] = [
   {
     name: "Sam",
     color: "#7CB342",
-    team: "Operations & GTM",
-    projects: [],
-  },
-  {
-    name: "Audrey",
-    color: "#0277BD",
     team: "Operations & GTM",
     projects: [],
   },
