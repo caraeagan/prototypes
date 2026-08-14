@@ -10008,7 +10008,7 @@ export function RoadmapView({ people, months, phases, teams, initialOverrides }:
       setAddingForPerson(null);
       addToast("success", `Added "${data.name}" (created in Linear)`);
     },
-    [addToast],
+    [addToast, localPeople],
   );
 
   // ── Delete project handler ─────────────────────────────────────────────
@@ -10071,11 +10071,13 @@ export function RoadmapView({ people, months, phases, teams, initialOverrides }:
         console.error("Failed to save deletion:", err),
       );
 
-      // If no other owners remain, delete the project from Linear too
+      // If no other owners remain, delete the project from Linear too.
+      // Look it up by the explicit link when present — the Linear project's
+      // name can differ from the bar's display name.
       if (otherOwners.length === 0) {
         linearQuery<{ projects: { nodes: { id: string }[] } }>(
           `query FindProject($name: String!) { projects(filter: { name: { eq: $name } }) { nodes { id } } }`,
-          { name: projectName },
+          { name: deletedProject?.linearProjectName ?? projectName },
         ).then((data) => {
           const linearProjectId = data.projects.nodes[0]?.id;
           if (linearProjectId) {
@@ -10093,7 +10095,7 @@ export function RoadmapView({ people, months, phases, teams, initialOverrides }:
 
       addToast("success", `Removed "${projectName}"`);
     },
-    [addToast],
+    [addToast, pushUndo, localPeople],
   );
 
   // ── Rename project handler ────────────────────────────────────────────
@@ -10109,23 +10111,36 @@ export function RoadmapView({ people, months, phases, teams, initialOverrides }:
         ?.projects.find((p) => p.id === projectId);
       const linkedLinearName = proj?.linearProjectName ?? null;
 
+      // A project can sit on several people's rows (matched by name). Rename
+      // every copy so owners don't diverge and their Linear links stay valid.
+      const owners: { personName: string; projectId: string; linked: boolean }[] = [];
+      for (const person of localPeople) {
+        for (const p of person.projects) {
+          if (p.name === oldName) {
+            owners.push({
+              personName: person.name,
+              projectId: p.id,
+              linked: !!p.linearProjectName && p.linearProjectName === linkedLinearName,
+            });
+          }
+        }
+      }
+
       setLocalPeople((prev) =>
-        prev.map((person) => {
-          if (person.name !== personName) return person;
-          return {
-            ...person,
-            projects: person.projects.map((p) => {
-              if (p.id !== projectId) return p;
-              return { ...p, name: newName };
-            }),
-          };
-        }),
+        prev.map((person) => ({
+          ...person,
+          projects: person.projects.map((p) =>
+            p.name === oldName ? { ...p, name: newName } : p,
+          ),
+        })),
       );
 
-      const key = `${personName}:${oldName}`;
-      saveOverride("renameProject", { key, newName }).catch((err) =>
-        console.error("Failed to save rename:", err),
-      );
+      for (const o of owners) {
+        saveOverride("renameProject", {
+          key: `${o.personName}:${oldName}`,
+          newName,
+        }).catch((err) => console.error("Failed to save rename:", err));
+      }
 
       // Rename the Linear project too — matched by explicit link, else by name
       // (same convention as handleDeleteProject).
@@ -10140,20 +10155,25 @@ export function RoadmapView({ people, months, phases, teams, initialOverrides }:
             `mutation RenameProject($id: String!, $input: ProjectUpdateInput!) { projectUpdate(id: $id, input: $input) { success } }`,
             { id: linearProjectId, input: { name: newName } },
           );
-          // The Linear link is by name — repoint it at the renamed project.
+          // Links are by name — repoint every owner's link at the renamed project.
           if (linkedLinearName) {
             setLocalPeople((prev) =>
               prev.map((person) => ({
                 ...person,
                 projects: person.projects.map((p) =>
-                  p.id === projectId ? { ...p, linearProjectName: newName } : p,
+                  p.linearProjectName === linkedLinearName
+                    ? { ...p, linearProjectName: newName }
+                    : p,
                 ),
               })),
             );
-            saveOverride("linkLinearProject", {
-              key: `${personName}:${projectId}`,
-              linearProjectName: newName,
-            }).catch(() => {});
+            for (const o of owners) {
+              if (!o.linked) continue;
+              saveOverride("linkLinearProject", {
+                key: `${o.personName}:${o.projectId}`,
+                linearProjectName: newName,
+              }).catch(() => {});
+            }
           }
         })
         .catch((err) => console.error("Failed to rename Linear project:", err));
