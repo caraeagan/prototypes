@@ -36,6 +36,7 @@ export async function POST(request: NextRequest) {
       "addProject",
       "removeAddition",
       "deleteProject",
+      "undeleteProject",
       "renameProject",
       "addDependency",
       "removeDependency",
@@ -79,7 +80,21 @@ export async function POST(request: NextRequest) {
           if (!overrides.additions) overrides.additions = {};
           if (!overrides.additions[personName])
             overrides.additions[personName] = [];
+          // Replace rather than duplicate: two same-name additions would get
+          // the same derived project id and collide in the UI.
+          overrides.additions[personName] = overrides.additions[personName]
+            .filter((a) => a.name !== project.name);
           overrides.additions[personName].push(project);
+          // A previously deleted or renamed project with the same name must
+          // not leak onto the fresh one: the deletion would hide it at load
+          // and the stale rename would relabel it.
+          const nameKey = `${personName}:${project.name}`;
+          if (overrides.deletions) {
+            overrides.deletions = overrides.deletions.filter((k) => k !== nameKey);
+          }
+          if (overrides.renames?.[nameKey] !== undefined) {
+            delete overrides.renames[nameKey];
+          }
           break;
         }
         case "removeAddition": {
@@ -121,6 +136,26 @@ export async function POST(request: NextRequest) {
           if (overrides.positions && overrides.positions[key]) {
             delete overrides.positions[key];
           }
+          break;
+        }
+        case "undeleteProject": {
+          // Reverse of deleteProject: the stored deletion may be keyed by the
+          // seed name (when the project was renamed), so resolve both forms.
+          const { key } = payload as { key: string };
+          if (!overrides.deletions) break;
+          let resolvedKey = key;
+          if (overrides.renames) {
+            const colonIdx = key.indexOf(":");
+            const personName = colonIdx >= 0 ? key.slice(0, colonIdx) : "";
+            const currentName = colonIdx >= 0 ? key.slice(colonIdx + 1) : key;
+            const seedEntry = Object.entries(overrides.renames).find(
+              ([k, v]) => k.startsWith(`${personName}:`) && v === currentName,
+            );
+            if (seedEntry) resolvedKey = seedEntry[0];
+          }
+          overrides.deletions = overrides.deletions.filter(
+            (k) => k !== key && k !== resolvedKey,
+          );
           break;
         }
         case "renameProject": {

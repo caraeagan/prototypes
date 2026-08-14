@@ -917,15 +917,24 @@ function ProjectResources({ projectKey }: { projectKey: string }) {
 
   useEffect(() => {
     let cancelled = false;
-    fetchOverrides().then((ov) => {
-      if (cancelled) return;
-      setResources(ov.resources?.[projectKey] ?? []);
-      setLoaded(true);
-    });
+    fetch(`/api/roadmap?t=${Date.now()}`, { cache: "no-store" })
+      .then((res) => {
+        if (!res.ok) throw new Error(`overrides load failed: ${res.status}`);
+        return res.json();
+      })
+      .then((ov: RoadmapOverrides) => {
+        if (cancelled) return;
+        setResources(ov.resources?.[projectKey] ?? []);
+        setLoaded(true);
+      })
+      // Stay unloaded on failure: persisting over an unloaded list would
+      // overwrite the project's saved resources with a partial one.
+      .catch(() => {});
     return () => { cancelled = true; };
   }, [projectKey]);
 
   const persist = (next: ProjectResource[]) => {
+    if (!loaded) return;
     setResources(next);
     saveOverride("saveResources", { key: projectKey, resources: next }).catch(() => {});
   };
@@ -1055,8 +1064,13 @@ function cleanTitle(title: string): string {
 
 // ── Format date helpers ───────────────────────────────────────────────────
 
+/** Date-only strings parse as UTC midnight; anchor them to local time. */
+function parseDateLocal(dateStr: string): Date {
+  return new Date(/^\d{4}-\d{2}-\d{2}$/.test(dateStr) ? dateStr + "T00:00:00" : dateStr);
+}
+
 function formatDate(dateStr: string): string {
-  const d = new Date(dateStr);
+  const d = parseDateLocal(dateStr);
   return d.toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
@@ -1066,8 +1080,11 @@ function formatDate(dateStr: string): string {
 
 /** Convert a month index (0 = Mar 2026) to a formatted date like "Apr 14, 2026" */
 function formatMonthIndex(monthIndex: number): string {
-  // Month index 0 = Mar 2026 (month 2 in JS Date)
-  const d = new Date(2026, 2 + monthIndex, 1);
+  // Month index 0 = Mar 2026 (month 2 in JS Date). Fractional indices carry
+  // mid-month day precision — JS Date's month arg would truncate them.
+  const wholeMonths = Math.floor(monthIndex);
+  const fractionalDays = Math.round((monthIndex - wholeMonths) * 30.44);
+  const d = monthIndexDate(wholeMonths, fractionalDays);
   return d.toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
@@ -1081,9 +1098,17 @@ function monthIndexToDate(idx: number): string {
   // arg is truncated, so split whole-months + fractional-days explicitly.
   const wholeMonths = Math.floor(idx);
   const fractionalDays = Math.round((idx - wholeMonths) * 30.44);
-  const d = new Date(2026, 2 + wholeMonths, 1 + fractionalDays);
+  const d = monthIndexDate(wholeMonths, fractionalDays);
   // Format in local time — toISOString() is UTC and can shift the day.
   return toIsoDate(d); // "2026-03-01" format
+}
+
+/** Day-of-month clamped date for a whole month index + day offset, so short
+ * months (Feb) don't roll the date into the next month. */
+function monthIndexDate(wholeMonths: number, fractionalDays: number): Date {
+  const base = new Date(2026, 2 + wholeMonths, 1);
+  const maxDay = new Date(base.getFullYear(), base.getMonth() + 1, 0).getDate();
+  return new Date(base.getFullYear(), base.getMonth(), Math.min(1 + fractionalDays, maxDay));
 }
 
 /** Convert a date string from input[type=date] to a fractional month index (Mar 2026 = 0) */
@@ -1501,11 +1526,15 @@ function LinearProjectDetailPanel({
 
   // Load project description from overrides
   useEffect(() => {
+    let cancelled = false;
     fetchOverrides().then((ov) => {
+      if (cancelled) return;
       const key = `${personName}:${project.id}`;
       const desc = ov.descriptions?.[key];
-      if (desc) setDescription(desc);
+      // Keep whatever the user already typed while the fetch was in flight.
+      if (desc) setDescription((cur) => (cur ? cur : desc));
     });
+    return () => { cancelled = true; };
   }, [personName, project.id]);
 
   const saveDescription = () => {
@@ -1630,7 +1659,7 @@ function LinearProjectDetailPanel({
     finally { setPanelSaving(null); setPanelEditField(null); }
   };
 
-  const fmtIssueDate = (d: string) => new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  const fmtIssueDate = (d: string) => parseDateLocal(d).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 
   return (
     <div className="detail-overlay" onClick={onClose}>
@@ -1651,7 +1680,7 @@ function LinearProjectDetailPanel({
                   setEditStartDate(monthIndexToDate(project.startMonth));
                   setEditEndDate(monthIndexToDate(project.startMonth + project.duration));
                   setEditName(project.name);
-                  /* owner reset handled by setEditOwners or kept as-is */
+                  setEditOwners(new Set(people.filter((p) => p.projects.some((proj) => proj.name === project.name)).map((p) => p.name)));
                   setIsEditing(true);
                 }
               }}
@@ -1769,7 +1798,7 @@ function LinearProjectDetailPanel({
               <div className="detail-info-row">
                 <span className="detail-info-label">Duration</span>
                 <span className="detail-info-value">
-                  {project.duration} month{project.duration > 1 ? "s" : ""}
+                  {Math.round(project.duration * 10) / 10} month{project.duration > 1 ? "s" : ""}
                 </span>
               </div>
             )}
@@ -2453,7 +2482,7 @@ function DetailPanel({
               <div className="detail-info-row">
                 <span className="detail-info-label">Duration</span>
                 <span className="detail-info-value">
-                  {project.duration} month{project.duration > 1 ? "s" : ""}
+                  {Math.round(project.duration * 10) / 10} month{project.duration > 1 ? "s" : ""}
                 </span>
               </div>
             )}
@@ -2952,8 +2981,8 @@ function AddProjectForm({
 }) {
   const [name, setName] = useState("");
   const [owner, setOwner] = useState(defaultOwner);
-  const today = new Date().toISOString().split("T")[0];
-  const threeMonths = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+  const today = toIsoDate(new Date());
+  const threeMonths = toIsoDate(new Date(Date.now() + 90 * 24 * 60 * 60 * 1000));
   const [startDate, setStartDate] = useState(today);
   const [endDate, setEndDate] = useState(threeMonths);
   const [notes, setNotes] = useState("");
@@ -3316,11 +3345,7 @@ function normalizeAssigneeName(displayName: string): string | null {
 
 // ── Unique project ID for new projects ─────────────────────────────────
 
-let _addedProjectCounter = 1000;
-function newProjId(): string {
-  _addedProjectCounter += 1;
-  return `proj-added-${_addedProjectCounter}`;
-}
+
 
 // ── Main component ─────────────────────────────────────────────────────────
 
@@ -3471,7 +3496,7 @@ function TasksView({
     return groups;
   }, [filtered, sortField]);
 
-  const fmtDate = (d: string) => new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  const fmtDate = (d: string) => parseDateLocal(d).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 
   const updateField = async (issueId: string, field: string, value: string) => {
     setSaving(issueId);
@@ -3765,7 +3790,9 @@ function FutureProjectsView({
 
   const today = new Date();
   const [granularity, setGranularity] = useState<PRGranularity>("year");
-  const [year, setYear] = useState(today.getFullYear());
+  // The Year window runs Aug(year)-Jul(year+2), so Jan-Jul dates belong to
+  // the window that started the PREVIOUS August.
+  const [year, setYear] = useState(today.getMonth() >= 7 ? today.getFullYear() : today.getFullYear() - 1);
   const [month, setMonth] = useState(today.getMonth());
   const [weekStartIso, setWeekStartIso] = useState(() => {
     const d = new Date(today);
@@ -3859,7 +3886,12 @@ function FutureProjectsView({
   };
   const navigateToday = () => {
     const t = new Date();
-    setYear(t.getFullYear());
+    // Year view anchors its Aug-start window; Month/Week use the calendar year.
+    if (granularity === "year") {
+      setYear(t.getMonth() >= 7 ? t.getFullYear() : t.getFullYear() - 1);
+    } else {
+      setYear(t.getFullYear());
+    }
     setMonth(t.getMonth());
     const d = new Date(t);
     d.setHours(0, 0, 0, 0);
@@ -4283,7 +4315,8 @@ function FutureProjectsView({
                   key={`col-${i}`}
                   onClick={() => {
                     if (!drillable) return;
-                    if (granularity === "year") { setMonth(i); setGranularity("month"); }
+                    // Columns start at August, so index i is not calendar month i.
+                    if (granularity === "year") { setYear(c.start.getFullYear()); setMonth(c.start.getMonth()); setGranularity("month"); }
                     else if (granularity === "month") {
                       const w = columns[i];
                       setWeekStartIso(toIsoDate(w.start));
@@ -4872,10 +4905,12 @@ function ghostDimensionsFor(p: { startDate: string | null; targetDate: string | 
     end.setDate(end.getDate() + 28);
   }
   const toIso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-  const startMonth = dateToMonthIndex(toIso(start!));
+  const startMonth = Math.max(0, dateToMonthIndex(toIso(start!)));
   const endMonth = dateToMonthIndex(toIso(end!));
   return {
-    startMonth: Math.max(0, startMonth),
+    startMonth,
+    // Duration from the clamped start, so a pre-timeline startDate doesn't
+    // stretch the bar's end date past the project's real target.
     duration: Math.max(0.25, endMonth - startMonth),
   };
 }
@@ -5177,7 +5212,9 @@ function ProductRoadmapView({
 }) {
   const today = new Date();
   const [granularity, setGranularity] = useState<PRGranularity>("year");
-  const [year, setYear] = useState(today.getFullYear());
+  // The Year window runs Aug(year)-Jul(year+2), so Jan-Jul dates belong to
+  // the window that started the PREVIOUS August.
+  const [year, setYear] = useState(today.getMonth() >= 7 ? today.getFullYear() : today.getFullYear() - 1);
   const [month, setMonth] = useState(today.getMonth());
   const [weekStartIso, setWeekStartIso] = useState(() => {
     const d = new Date(today);
@@ -5568,7 +5605,12 @@ function ProductRoadmapView({
   };
   const navigateToday = () => {
     const t = new Date();
-    setYear(t.getFullYear());
+    // Year view anchors its Aug-start window; Month/Week use the calendar year.
+    if (granularity === "year") {
+      setYear(t.getMonth() >= 7 ? t.getFullYear() : t.getFullYear() - 1);
+    } else {
+      setYear(t.getFullYear());
+    }
     setMonth(t.getMonth());
     const d = new Date(t);
     d.setHours(0, 0, 0, 0);
@@ -5743,7 +5785,9 @@ function ProductRoadmapView({
 
   const onColumnHeaderClick = (i: number) => {
     if (granularity === "year") {
-      setMonth(i);
+      // Columns start at August, so index i is not calendar month i.
+      setYear(columns[i].start.getFullYear());
+      setMonth(columns[i].start.getMonth());
       setGranularity("month");
     } else if (granularity === "month") {
       const w = columns[i];
@@ -7267,17 +7311,25 @@ function PersonWeekSection({
 }) {
   const [noteDraft, setNoteDraft] = useState(initialNote);
   const noteSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Holds a typed-but-not-yet-saved value so it can be flushed on unmount
+  // and so background refetches don't clobber in-progress typing.
+  const pendingNote = useRef<string | null>(null);
 
-  // Reset note when switching weeks/people.
+  // Reset note when switching weeks/people — but never while the user has
+  // unsaved typing: the post-save refetch fires `initialNote` updates that
+  // would otherwise overwrite newer keystrokes.
   useEffect(() => {
+    if (pendingNote.current !== null) return;
     setNoteDraft(initialNote);
   }, [weekKey, person.name, initialNote]);
 
   const onNoteChange = (value: string) => {
     setNoteDraft(value);
+    pendingNote.current = value;
     if (noteSaveTimer.current) clearTimeout(noteSaveTimer.current);
     onSavedStateChange("saving");
     noteSaveTimer.current = setTimeout(() => {
+      pendingNote.current = null;
       saveOverride("saveWeeklyPersonNote", { weekKey, personName: person.name, note: value })
         .then(() => onSavedStateChange("saved"))
         .catch(() => onSavedStateChange("error"));
@@ -7287,7 +7339,18 @@ function PersonWeekSection({
   useEffect(() => {
     return () => {
       if (noteSaveTimer.current) clearTimeout(noteSaveTimer.current);
+      // Flush instead of dropping: switching weeks within the debounce window
+      // must not lose the note. (Keyed by week+person, so these captures are
+      // correct for this instance's whole lifetime.)
+      if (pendingNote.current !== null) {
+        saveOverride("saveWeeklyPersonNote", {
+          weekKey,
+          personName: person.name,
+          note: pendingNote.current,
+        }).catch(() => {});
+      }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
@@ -7378,6 +7441,9 @@ function WeeklyPlanningView({ people }: { people: Person[] }) {
     const mondayUtc = new Date(`${weekKey}T00:00:00.000Z`);
     const windowStart = new Date(mondayUtc.getTime() - 24 * 3600 * 1000).toISOString();
     const windowEnd = new Date(mondayUtc.getTime() + 24 * 3600 * 1000).toISOString();
+    // Mon–Sun dueDate range for teams that don't use cycles.
+    const weekStartDate = weekKey;
+    const weekEndDate = toIsoDate(new Date(new Date(`${weekKey}T00:00:00`).getTime() + 6 * 24 * 3600 * 1000));
 
     setWeeklyIssuesLoading(true);
     linearQuery<{
@@ -7394,11 +7460,14 @@ function WeeklyPlanningView({ people }: { people: Person[] }) {
         }[];
       };
     }>(
-      `query WeeklyAssigneeIssues($windowStart: DateTimeOrDuration!, $windowEnd: DateTimeOrDuration!) {
+      `query WeeklyAssigneeIssues($windowStart: DateTimeOrDuration!, $windowEnd: DateTimeOrDuration!, $weekStart: TimelessDateOrDuration!, $weekEnd: TimelessDateOrDuration!) {
         issues(
           first: 100,
           filter: {
-            cycle: { startsAt: { gte: $windowStart, lt: $windowEnd } }
+            or: [
+              { cycle: { startsAt: { gte: $windowStart, lt: $windowEnd } } },
+              { dueDate: { gte: $weekStart, lte: $weekEnd } }
+            ]
           }
         ) {
           nodes {
@@ -7409,7 +7478,7 @@ function WeeklyPlanningView({ people }: { people: Person[] }) {
           }
         }
       }`,
-      { windowStart, windowEnd },
+      { windowStart, windowEnd, weekStart: weekStartDate, weekEnd: weekEndDate },
     )
       .then((data) => {
         if (cancelled) return;
@@ -7753,8 +7822,8 @@ function CycleIssueDetailPanel({
     return () => { cancelled = true; };
   }, [issueId]);
 
-  const updateIssue = async (field: string, value: string) => {
-    if (!issue) return;
+  const updateIssue = async (field: string, value: string): Promise<boolean> => {
+    if (!issue) return false;
     setSaving(field);
     try {
       const res = await fetch("/api/linear/update", {
@@ -7792,14 +7861,16 @@ function CycleIssueDetailPanel({
             : undefined,
         });
       }
+      return !!json.success;
     } catch (err) {
       console.error("Update failed:", err);
+      return false;
     } finally {
       setSaving(null);
     }
   };
 
-  const fmtDate = (d: string) => new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  const fmtDate = (d: string) => parseDateLocal(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 
   return (
     <div className="detail-overlay" onClick={onClose}>
@@ -7912,10 +7983,11 @@ function CycleIssueDetailPanel({
                   value={(issue.cycle as { id?: string } | null)?.id ?? ""}
                   onChange={(e) => {
                     const val = e.target.value || null;
-                    updateIssue("cycleId", val as string);
-                    if (!val && onRemovedFromCycle) {
-                      onRemovedFromCycle(issue.id);
-                    }
+                    updateIssue("cycleId", val as string).then((ok) => {
+                      if (ok && !val && onRemovedFromCycle) {
+                        onRemovedFromCycle(issue.id);
+                      }
+                    });
                   }}
                   style={{
                     fontFamily: "var(--font-sans)", fontSize: 13, padding: "6px 10px",
@@ -8064,10 +8136,13 @@ function CyclesView({ cycles, people }: { cycles: LinearCycle[]; people: Person[
     }
   }, [weeklyCycles, selectedCycleId]);
 
-  // Fetch issues when cycle changes
+  // Fetch issues when cycle changes. Cancelled on switch so a slow response
+  // for the previous cycle can't display under (and get bucketed into) the
+  // newly selected one.
   useEffect(() => {
     if (!selectedCycleId) return;
     setLoading(true);
+    let cancelled = false;
     linearQuery<{ cycle: { issues: { nodes: (CycleIssue & { team?: { id: string } })[] } } }>(
       `query CycleIssues($id: String!) {
         cycle(id: $id) {
@@ -8085,13 +8160,19 @@ function CyclesView({ cycles, people }: { cycles: LinearCycle[]; people: Person[
       { id: selectedCycleId },
     )
       .then((data) => {
-        setIssues(data.cycle.issues.nodes);
+        if (!cancelled) setIssues(data.cycle.issues.nodes);
       })
       .catch((err) => {
+        if (cancelled) return;
         console.error("[CYCLES] Fetch error:", err);
         setIssues([]);
       })
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [selectedCycleId]);
 
   // Fetch workflow states and team members on mount (from all teams)
@@ -8173,7 +8254,12 @@ function CyclesView({ cycles, people }: { cycles: LinearCycle[]; people: Person[
   useEffect(() => {
     if (!selectedCycleId) return;
     setBucketsLoaded(false);
+    // Cancellation matters: without it, a slow fetch for the PREVIOUS cycle
+    // can resolve after switching and its buckets get persisted under the
+    // newly selected cycle, corrupting that cycle's saved ordering.
+    let cancelled = false;
     fetchOverrides().then((ov) => {
+      if (cancelled) return;
       const saved = ov.cycleBuckets?.[selectedCycleId];
       if (saved) {
         setBuckets({ priority: saved.priority ?? [], secondary: saved.secondary ?? [], backlog: saved.backlog ?? [] });
@@ -8182,6 +8268,9 @@ function CyclesView({ cycles, people }: { cycles: LinearCycle[]; people: Person[
       }
       setBucketsLoaded(true);
     });
+    return () => {
+      cancelled = true;
+    };
   }, [selectedCycleId]);
 
   // Sync new projects into backlog (single setBuckets call to avoid duplication)
@@ -8208,7 +8297,7 @@ function CyclesView({ cycles, people }: { cycles: LinearCycle[]; people: Person[
   }, [buckets, selectedCycleId, bucketsLoaded]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const selectedCycleLabel = weeklyCycles.find((w) => w.cycle.id === selectedCycleId)?.label ?? "";
-  const fmtDate = (d: string) => new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  const fmtDate = (d: string) => parseDateLocal(d).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 
   // Dropdowns are closed via a backdrop overlay rendered below them
 
@@ -8842,7 +8931,7 @@ export function RoadmapView({ people, months, phases, teams, initialOverrides }:
   type UndoAction = { type: "move"; projectId: string; personName: string; prevStart: number; prevDuration: number; newStart: number; newDuration: number }
     | { type: "delete"; personName: string; project: Project }
     | { type: "rename"; personName: string; projectId: string; prevName: string; newName: string }
-    | { type: "add"; personName: string; projectId: string }
+    | { type: "add"; personName: string; projectId: string; projectName: string }
     | { type: "reorder"; personName: string; prevOrders: { id: string; order: number | undefined }[] };
   const [undoStack, setUndoStack] = useState<UndoAction[]>([]);
 
@@ -8980,7 +9069,7 @@ export function RoadmapView({ people, months, phases, teams, initialOverrides }:
           setLocalPeople((p) => p.map((person) =>
             person.name === action.personName ? { ...person, projects: [...person.projects, action.project] } : person
           ));
-          saveOverride("undoDelete", { key: `${action.personName}:${action.project.name}` });
+          saveOverride("undeleteProject", { key: `${action.personName}:${action.project.name}` });
           break;
         case "rename":
           setLocalPeople((p) => p.map((person) => ({
@@ -8989,14 +9078,16 @@ export function RoadmapView({ people, months, phases, teams, initialOverrides }:
               proj.id === action.projectId ? { ...proj, name: action.prevName } : proj
             ),
           })));
-          saveOverride("rename", { key: `${action.personName}:${action.prevName}`, newName: action.prevName });
+          // The rename map is keyed by the CURRENT name; renaming back to
+          // prevName makes the server collapse the chain.
+          saveOverride("renameProject", { key: `${action.personName}:${action.newName}`, newName: action.prevName });
           break;
         case "add":
           setLocalPeople((p) => p.map((person) => ({
             ...person,
             projects: person.projects.filter((proj) => proj.id !== action.projectId),
           })));
-          saveOverride("delete", { key: `${action.personName}:${action.projectId}` });
+          saveOverride("removeAddition", { personName: action.personName, name: action.projectName });
           break;
         case "reorder":
           setLocalPeople((p) => p.map((person) => {
@@ -9669,6 +9760,24 @@ export function RoadmapView({ people, months, phases, teams, initialOverrides }:
         newStart: ds.currentStartMonth,
         newDuration: ds.currentDuration,
       });
+      // Persist the move: hide it on the old owner, add it to the new one.
+      const movedProj = localPeople
+        .find((p) => p.name === ds.originalPersonName)
+        ?.projects.find((p) => p.id === ds.projectId);
+      if (movedProj) {
+        saveOverride("deleteProject", {
+          key: `${ds.originalPersonName}:${movedProj.name}`,
+        }).catch(() => {});
+        saveOverride("addProject", {
+          personName: ds.personName,
+          project: {
+            name: movedProj.name,
+            startMonth: ds.currentStartMonth,
+            duration: ds.currentDuration,
+            linearProjectName: movedProj.linearProjectName ?? null,
+          },
+        }).catch(() => {});
+      }
       addToast("success", `Moved to ${ds.personName}`);
       dragRef.current = null;
       setDragState(null);
@@ -9909,13 +10018,17 @@ export function RoadmapView({ people, months, phases, teams, initialOverrides }:
       const startMonth = dateToMonthIndex(data.startDate);
       const endMonth = dateToMonthIndex(data.endDate);
       const duration = Math.max(1, endMonth - startMonth);
-      const projectId = newProjId();
+      // Same id format mergeOverridesIntoPeople derives on reload, so
+      // id-keyed overrides (notes, positions, links) survive the session.
+      const projectId = `proj-added-${data.owner}-${data.name}`;
 
       // Only create in Linear for Engineering, Product teams
       const LINEAR_TEAMS = new Set(["Engineering", "Product"]);
       const ownerPerson = localPeople.find((p) => p.name === data.owner);
       const shouldCreateInLinear = ownerPerson && LINEAR_TEAMS.has(ownerPerson.team);
-      let linearName: string | null = shouldCreateInLinear ? data.name : null;
+      // Only set once Linear confirms the create — a bar must not claim a
+      // link to a Linear project that failed to come into existence.
+      let linearName: string | null = null;
       try {
         if (!shouldCreateInLinear) throw new Error("skip");
         // Get default team ID
@@ -10006,7 +10119,13 @@ export function RoadmapView({ people, months, phases, teams, initialOverrides }:
       }
 
       setAddingForPerson(null);
-      addToast("success", `Added "${data.name}" (created in Linear)`);
+      if (linearName) {
+        addToast("success", `Added "${data.name}" (created in Linear)`);
+      } else if (shouldCreateInLinear) {
+        addToast("error", `Added "${data.name}" locally, but creating it in Linear failed`);
+      } else {
+        addToast("success", `Added "${data.name}"`);
+      }
     },
     [addToast, localPeople],
   );
@@ -10051,9 +10170,17 @@ export function RoadmapView({ people, months, phases, teams, initialOverrides }:
         pushUndo({ type: "delete", personName, project: deletedProject });
       }
 
-      // Check if any OTHER person still has this project (by name)
+      // Check if any OTHER person still points at the same project — by
+      // display name, or by Linear link when the deleted bar is linked.
+      const linkName = deletedProject?.linearProjectName ?? null;
       const otherOwners = localPeople.filter(
-        (p) => p.name !== personName && p.projects.some((proj) => proj.name === projectName)
+        (p) =>
+          p.name !== personName &&
+          p.projects.some(
+            (proj) =>
+              proj.name === projectName ||
+              (linkName !== null && proj.linearProjectName === linkName),
+          ),
       );
 
       setLocalPeople((prev) =>
@@ -10071,13 +10198,13 @@ export function RoadmapView({ people, months, phases, teams, initialOverrides }:
         console.error("Failed to save deletion:", err),
       );
 
-      // If no other owners remain, delete the project from Linear too.
-      // Look it up by the explicit link when present — the Linear project's
-      // name can differ from the bar's display name.
-      if (otherOwners.length === 0) {
+      // If no other owners remain AND the bar is explicitly linked, delete
+      // the Linear project too. Unlinked bars never touch Linear — a name
+      // coincidence must not delete someone else's Linear project.
+      if (otherOwners.length === 0 && linkName) {
         linearQuery<{ projects: { nodes: { id: string }[] } }>(
           `query FindProject($name: String!) { projects(filter: { name: { eq: $name } }) { nodes { id } } }`,
-          { name: deletedProject?.linearProjectName ?? projectName },
+          { name: linkName },
         ).then((data) => {
           const linearProjectId = data.projects.nodes[0]?.id;
           if (linearProjectId) {
@@ -10142,11 +10269,16 @@ export function RoadmapView({ people, months, phases, teams, initialOverrides }:
         }).catch((err) => console.error("Failed to save rename:", err));
       }
 
-      // Rename the Linear project too — matched by explicit link, else by name
-      // (same convention as handleDeleteProject).
+      // Rename the Linear project too — only for explicitly linked bars, so a
+      // name coincidence can't rename an unrelated Linear project.
+      if (!linkedLinearName) {
+        setRenamingProjectId(null);
+        addToast("success", `Renamed to "${newName}"`);
+        return;
+      }
       linearQuery<{ projects: { nodes: { id: string }[] } }>(
         `query FindProject($name: String!) { projects(filter: { name: { eq: $name } }) { nodes { id } } }`,
-        { name: linkedLinearName ?? oldName },
+        { name: linkedLinearName },
       )
         .then(async (data) => {
           const linearProjectId = data.projects.nodes[0]?.id;
@@ -10267,35 +10399,75 @@ export function RoadmapView({ people, months, phases, teams, initialOverrides }:
           return person;
         });
       });
+      // Persist the move: hide it on the old owner, add it to the new one.
+      const movedProj = localPeople
+        .find((p) => p.name === fromPerson)
+        ?.projects.find((p) => p.id === projectId);
+      if (movedProj) {
+        saveOverride("deleteProject", {
+          key: `${fromPerson}:${movedProj.name}`,
+        }).catch(() => {});
+        saveOverride("addProject", {
+          personName: toPerson,
+          project: {
+            name: movedProj.name,
+            startMonth: movedProj.startMonth,
+            duration: movedProj.duration,
+            linearProjectName: movedProj.linearProjectName ?? null,
+          },
+        }).catch(() => {});
+      }
       addToast("success", `Moved to ${toPerson}`);
       // Close the panel since the person context has changed
       setSelected(null);
       setSelectedLinearProject(null);
     },
-    [addToast],
+    [addToast, localPeople],
   );
 
   // ── Update dates handler (from edit panel) ────────────────────────────
   const handleUpdateDates = useCallback(
     (projectId: string, pName: string, startMonth: number, duration: number) => {
-      setLocalPeople((prev) =>
-        prev.map((person) => ({
-          ...person,
-          projects: person.projects.map((proj) => {
-            if (proj.id !== projectId) return proj;
-            return { ...proj, startMonth, duration };
-          }),
-        })),
-      );
-      const key = `${pName}:${projectId}`;
-      saveOverride("updatePosition", { key, startMonth, duration }).catch(
-        (err) => console.error("Failed to save position override:", err),
-      );
-
-      // Push the new dates to the linked Linear project
       const proj = localPeople
         .find((p) => p.name === pName)
         ?.projects.find((p) => p.id === projectId);
+      const projName = proj?.name ?? null;
+
+      // Same-name copies on other people are the same project — keep them in
+      // step, matching the drag path's sibling sync.
+      setLocalPeople((prev) =>
+        prev.map((person) => ({
+          ...person,
+          projects: person.projects.map((p) => {
+            if (p.id === projectId || (projName !== null && p.name === projName)) {
+              return { ...p, startMonth, duration };
+            }
+            return p;
+          }),
+        })),
+      );
+
+      saveOverride("updatePosition", {
+        key: `${pName}:${projectId}`,
+        startMonth,
+        duration,
+      }).catch((err) => console.error("Failed to save position override:", err));
+      if (projName !== null) {
+        for (const person of localPeople) {
+          if (person.name === pName) continue;
+          for (const p of person.projects) {
+            if (p.name === projName) {
+              saveOverride("updatePosition", {
+                key: `${person.name}:${p.id}`,
+                startMonth,
+                duration,
+              }).catch(() => {});
+            }
+          }
+        }
+      }
+
+      // Push the new dates to the linked Linear project
       if (proj?.linearProjectName) {
         syncLinearProjectDates(
           proj.linearProjectName,
@@ -10437,7 +10609,7 @@ export function RoadmapView({ people, months, phases, teams, initialOverrides }:
             const startMonth = dateToMonthIndex(startDate);
             const endMonth = dateToMonthIndex(endDate);
             const duration = Math.max(1, endMonth - startMonth);
-            const newId = newProjId();
+            const newId = `proj-added-${owner}-${proj.name}`;
             setLocalPeople((prev) => prev.map((p) => {
               if (p.name !== owner) return p;
               return { ...p, projects: [...p.projects, { id: newId, name: proj.name, startMonth, duration, tasks: [], linearProjectName: proj.name }] };
@@ -10939,7 +11111,7 @@ export function RoadmapView({ people, months, phases, teams, initialOverrides }:
           onChangeOwner={handleChangeOwner}
           onUpdateDates={handleUpdateDates}
           onAddProjectToPerson={(pName, proj) => {
-            const newId = newProjId();
+            const newId = `proj-added-${pName}-${proj.name}`;
             setLocalPeople((prev) => prev.map((p) => {
               if (p.name !== pName) return p;
               return { ...p, projects: [...p.projects, { id: newId, name: proj.name, startMonth: proj.startMonth, duration: proj.duration, tasks: [], linearProjectName: proj.linearProjectName }] };
@@ -10995,7 +11167,7 @@ export function RoadmapView({ people, months, phases, teams, initialOverrides }:
           onChangeOwner={handleChangeOwner}
           onUpdateDates={handleUpdateDates}
           onAddProjectToPerson={(pName, proj) => {
-            const newId = newProjId();
+            const newId = `proj-added-${pName}-${proj.name}`;
             setLocalPeople((prev) => prev.map((p) => {
               if (p.name !== pName) return p;
               return { ...p, projects: [...p.projects, { id: newId, name: proj.name, startMonth: proj.startMonth, duration: proj.duration, tasks: [], linearProjectName: proj.linearProjectName }] };

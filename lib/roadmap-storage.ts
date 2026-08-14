@@ -97,7 +97,14 @@ async function withTransientRetry<T>(fn: () => Promise<T>): Promise<T> {
 export async function readOverrides(): Promise<RoadmapOverrides> {
   return withTransientRetry(async () => {
     const result = await get(BLOB_PATHNAME, { access: "private", useCache: false });
-    if (!result || result.statusCode !== 200) return {};
+    // Only a definitive "blob does not exist" (null result) may be treated as
+    // empty. Any other non-200 must THROW: mutateOverrides does
+    // read-modify-write, and treating a failed read as {} would rewrite the
+    // store with one entry, destroying everyone's saved data.
+    if (!result) return {};
+    if (result.statusCode !== 200) {
+      throw new Error(`Blob read failed: ${result.statusCode}`);
+    }
     const text = await new Response(result.stream).text();
     return JSON.parse(text) as RoadmapOverrides;
   });

@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
     const input: Record<string, string | null> = {};
     if (dueDate !== undefined) input.dueDate = dueDate || null;
     if (stateId !== undefined) input.stateId = stateId;
-    if (assigneeId !== undefined) input.assigneeId = assigneeId;
+    if (assigneeId !== undefined) input.assigneeId = assigneeId || null;
     if (body.cycleId !== undefined) input.cycleId = body.cycleId;
     if (body.projectId !== undefined) input.projectId = body.projectId || null;
 
