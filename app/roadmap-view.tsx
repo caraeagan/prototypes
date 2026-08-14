@@ -31,9 +31,11 @@ const BAR_HEIGHT = ROW_HEIGHT - BAR_V_PAD * 2;
 
 const SUBTEST_PROJECT_ID = "132ad838-091a-4a16-95d8-abb2f8c40d42";
 
-// ── Timeline range: Mar 2026 through Jan 2028 ────────────────────────────
+// ── Timeline range: Aug 2026 through Jan 2028 ────────────────────────────
+// Month indices in the data stay anchored to Mar 2026 (index 0); this only
+// sets which part of the timeline is visible.
 
-const TIMELINE_START = new Date(2026, 2, 1); // Mar 1, 2026
+const TIMELINE_START = new Date(2026, 7, 1); // Aug 1, 2026
 const TIMELINE_END = new Date(2028, 1, 1); // Feb 1, 2028 (end boundary)
 
 function generateColumns(zoom: ZoomLevel): { label: string; date: Date }[] {
@@ -209,9 +211,10 @@ function mergeOverridesIntoPeople(
             const idKey = `${personName}:${stableId}`;
             const posOv = ov.positions?.[nameKey] ?? ov.positions?.[idKey];
             const linkOv = ov.linearLinks?.[idKey];
+            const renameOv = ov.renames?.[nameKey];
             return {
               id: stableId,
-              name: a.name,
+              name: renameOv || a.name,
               startMonth: posOv?.startMonth ?? a.startMonth,
               duration: posOv?.duration ?? a.duration,
               order: posOv?.order,
@@ -797,21 +800,39 @@ async function linearQuery<T = unknown>(
   return json.data as T;
 }
 
+// Linear issues have no writable start date — only the due date can sync.
 async function linearUpdateDates(
   issueId: string,
-  startDate?: string | null,
   dueDate?: string | null,
 ): Promise<{ success: boolean }> {
   const res = await fetch("/api/linear/update", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ issueId, startDate, dueDate }),
+    body: JSON.stringify({ issueId, dueDate }),
   });
   const json = await res.json();
   if (!res.ok || json.error) {
     throw new Error(json.error || `API error: ${res.status}`);
   }
   return json;
+}
+
+/** Update a linked Linear project's start/target dates (matched by name). */
+async function syncLinearProjectDates(
+  linearProjectName: string,
+  startDate: string,
+  targetDate: string,
+): Promise<void> {
+  const data = await linearQuery<{ projects: { nodes: { id: string }[] } }>(
+    `query FindProject($name: String!) { projects(filter: { name: { eq: $name } }) { nodes { id } } }`,
+    { name: linearProjectName },
+  );
+  const id = data.projects.nodes[0]?.id;
+  if (!id) throw new Error(`Linear project "${linearProjectName}" not found`);
+  await linearQuery(
+    `mutation UpdateProjectDates($id: String!, $input: ProjectUpdateInput!) { projectUpdate(id: $id, input: $input) { success } }`,
+    { id, input: { startDate, targetDate } },
+  );
 }
 
 // ── Roadmap overrides API ────────────────────────────────────────────────
@@ -1061,7 +1082,8 @@ function monthIndexToDate(idx: number): string {
   const wholeMonths = Math.floor(idx);
   const fractionalDays = Math.round((idx - wholeMonths) * 30.44);
   const d = new Date(2026, 2 + wholeMonths, 1 + fractionalDays);
-  return d.toISOString().split("T")[0]; // "2026-03-01" format
+  // Format in local time — toISOString() is UTC and can shift the day.
+  return toIsoDate(d); // "2026-03-01" format
 }
 
 /** Convert a date string from input[type=date] to a fractional month index (Mar 2026 = 0) */
@@ -3784,9 +3806,11 @@ function FutureProjectsView({
 
   const columns = useMemo<{ start: Date; end: Date; label: string }[]>(() => {
     if (granularity === "year") {
+      // 24 months starting from August of the selected year, matching the
+      // Projects tab.
       return Array.from({ length: 24 }, (_, i) => {
-        const m = i % 12;
-        const y = year + Math.floor(i / 12);
+        const m = (7 + i) % 12;
+        const y = year + Math.floor((7 + i) / 12);
         return {
           start: prStartOfMonth(y, m),
           end: prEndOfMonth(y, m),
@@ -5485,11 +5509,11 @@ function ProductRoadmapView({
 
   const columns = useMemo<{ start: Date; end: Date; label: string }[]>(() => {
     if (granularity === "year") {
-      // Show 24 months starting from January of the selected year, so users
+      // Show 24 months starting from August of the selected year, so users
       // can see into the following year(s) without paginating.
       return Array.from({ length: 24 }, (_, i) => {
-        const m = i % 12;
-        const y = year + Math.floor(i / 12);
+        const m = (7 + i) % 12;
+        const y = year + Math.floor((7 + i) / 12);
         return {
           start: prStartOfMonth(y, m),
           end: prEndOfMonth(y, m),
@@ -9783,15 +9807,14 @@ export function RoadmapView({ people, months, phases, teams, initialOverrides }:
       }
     }
 
-    // If this was a Linear-linked bar and dates changed, update in Linear
+    // If this was a Linear-linked bar and dates changed, update in Linear.
+    // monthIndexToDate handles fractional (mid-month) positions; JS Date's
+    // month arg truncates them, which used to snap synced dates to the 1st.
     if (ds.linearIssueId && changed) {
-      const startDate = new Date(2026, 2 + ds.currentStartMonth, 1);
-      const endDate = new Date(2026, 2 + ds.currentStartMonth + ds.currentDuration, 1);
-      const startIso = startDate.toISOString().split("T")[0];
-      const endIso = endDate.toISOString().split("T")[0];
+      const endIso = monthIndexToDate(ds.currentStartMonth + ds.currentDuration);
 
-      linearUpdateDates(ds.linearIssueId, startIso, endIso)
-        .then(() => addToast("success", "Updated in Linear"))
+      linearUpdateDates(ds.linearIssueId, endIso)
+        .then(() => addToast("success", "Due date updated in Linear"))
         .catch((err) => {
           addToast("error", `Failed to save: ${err.message}`);
           // Revert
@@ -9811,9 +9834,29 @@ export function RoadmapView({ people, months, phases, teams, initialOverrides }:
         });
     }
 
+    // Project bars: push the new dates to the linked Linear project
+    if (!ds.linearIssueId && changed) {
+      let linkedName: string | null = null;
+      for (const person of localPeople) {
+        const proj = person.projects.find((p) => p.id === ds.projectId);
+        if (proj) { linkedName = proj.linearProjectName ?? null; break; }
+      }
+      if (linkedName) {
+        syncLinearProjectDates(
+          linkedName,
+          monthIndexToDate(ds.currentStartMonth),
+          monthIndexToDate(ds.currentStartMonth + ds.currentDuration),
+        )
+          .then(() => addToast("success", "Updated in Linear"))
+          .catch((err) =>
+            addToast("error", `Linear date sync failed: ${err.message}`),
+          );
+      }
+    }
+
     dragRef.current = null;
     setDragState(null);
-  }, [addToast, pushUndo]);
+  }, [addToast, pushUndo, localPeople]);
 
   useEffect(() => {
     if (dragState) {
@@ -10061,6 +10104,11 @@ export function RoadmapView({ people, months, phases, teams, initialOverrides }:
         return;
       }
 
+      const proj = localPeople
+        .find((p) => p.name === personName)
+        ?.projects.find((p) => p.id === projectId);
+      const linkedLinearName = proj?.linearProjectName ?? null;
+
       setLocalPeople((prev) =>
         prev.map((person) => {
           if (person.name !== personName) return person;
@@ -10079,10 +10127,41 @@ export function RoadmapView({ people, months, phases, teams, initialOverrides }:
         console.error("Failed to save rename:", err),
       );
 
+      // Rename the Linear project too — matched by explicit link, else by name
+      // (same convention as handleDeleteProject).
+      linearQuery<{ projects: { nodes: { id: string }[] } }>(
+        `query FindProject($name: String!) { projects(filter: { name: { eq: $name } }) { nodes { id } } }`,
+        { name: linkedLinearName ?? oldName },
+      )
+        .then(async (data) => {
+          const linearProjectId = data.projects.nodes[0]?.id;
+          if (!linearProjectId) return;
+          await linearQuery(
+            `mutation RenameProject($id: String!, $input: ProjectUpdateInput!) { projectUpdate(id: $id, input: $input) { success } }`,
+            { id: linearProjectId, input: { name: newName } },
+          );
+          // The Linear link is by name — repoint it at the renamed project.
+          if (linkedLinearName) {
+            setLocalPeople((prev) =>
+              prev.map((person) => ({
+                ...person,
+                projects: person.projects.map((p) =>
+                  p.id === projectId ? { ...p, linearProjectName: newName } : p,
+                ),
+              })),
+            );
+            saveOverride("linkLinearProject", {
+              key: `${personName}:${projectId}`,
+              linearProjectName: newName,
+            }).catch(() => {});
+          }
+        })
+        .catch((err) => console.error("Failed to rename Linear project:", err));
+
       setRenamingProjectId(null);
       addToast("success", `Renamed to "${newName}"`);
     },
-    [addToast],
+    [addToast, localPeople],
   );
 
   // ── Dependency handlers ───────────────────────────────────────────────
@@ -10192,9 +10271,26 @@ export function RoadmapView({ people, months, phases, teams, initialOverrides }:
       saveOverride("updatePosition", { key, startMonth, duration }).catch(
         (err) => console.error("Failed to save position override:", err),
       );
+
+      // Push the new dates to the linked Linear project
+      const proj = localPeople
+        .find((p) => p.name === pName)
+        ?.projects.find((p) => p.id === projectId);
+      if (proj?.linearProjectName) {
+        syncLinearProjectDates(
+          proj.linearProjectName,
+          monthIndexToDate(startMonth),
+          monthIndexToDate(startMonth + duration),
+        )
+          .then(() => addToast("success", "Dates updated in Linear"))
+          .catch((err) =>
+            addToast("error", `Linear date sync failed: ${err.message}`),
+          );
+      }
+
       addToast("success", "Dates updated");
     },
-    [addToast],
+    [addToast, localPeople],
   );
 
   const showPhases = true;

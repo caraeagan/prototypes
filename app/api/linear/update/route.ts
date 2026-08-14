@@ -19,7 +19,7 @@ const UPDATE_ISSUE = `
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { issueId, startDate, dueDate, stateId, assigneeId } = body;
+    const { issueId, dueDate, stateId, assigneeId } = body;
 
     if (!issueId || typeof issueId !== "string") {
       return NextResponse.json(
@@ -28,8 +28,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Note: IssueUpdateInput has no writable start date (startedAt is set by
+    // Linear when an issue enters In Progress), so only dueDate can sync.
     const input: Record<string, string | null> = {};
-    if (startDate !== undefined) input.startedAt = startDate;
     if (dueDate !== undefined) input.dueDate = dueDate || null;
     if (stateId !== undefined) input.stateId = stateId;
     if (assigneeId !== undefined) input.assigneeId = assigneeId;
