@@ -6475,7 +6475,865 @@ function newNormingItemId(): string {
   return `norm-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
+// ── Pre-Norming (Sep 8) ─────────────────────────────────────────────────
+const PRENORMING_TARGET = new Date("2026-09-08T00:00:00");
+// Linear label that marks every ticket that must land before pre-norming.
+const PRENORMING_LABEL = "Pre-norming (Sep 8)";
+
+type PrenormIssue = {
+  id: string;
+  identifier: string;
+  title: string;
+  url: string;
+  state: { name: string; type: string; color: string };
+  assignee: { displayName: string } | null;
+  team: { key: string } | null;
+  project: { name: string } | null;
+  projectMilestone: { name: string } | null;
+  // Carries the "Norming visibility" label: shown with an asterisk for
+  // awareness, but excluded from readiness and all counters.
+  isVisibility?: boolean;
+};
+
+const PRENORM_VIS_HINT =
+  "Shown for visibility — not a pre-norming dependency. We're confident scoring can be worked out during norming without affecting form design.";
+
+// Labeled tickets plus everything in the Form Updates project, so tests whose
+// norming forms already shipped (Done tickets, no label) still show as Done.
+const PRENORM_ISSUES_QUERY = `
+  query PrenormIssues($label: String!) {
+    labeled: issues(first: 100, filter: { labels: { name: { eq: $label } } }) {
+      nodes {
+        id
+        identifier
+        title
+        url
+        state { name type color }
+        assignee { displayName }
+        team { key }
+        project { name }
+        projectMilestone { name }
+      }
+    }
+    formUpdates: issues(first: 200, filter: { project: { name: { eq: "Form Updates" } } }) {
+      nodes {
+        id
+        identifier
+        title
+        url
+        state { name type color }
+        assignee { displayName }
+        team { key }
+        project { name }
+        projectMilestone { name }
+      }
+    }
+    visibility: issues(first: 50, filter: { labels: { name: { eq: "Norming visibility" } } }) {
+      nodes {
+        id
+        identifier
+        title
+        url
+        state { name type color }
+        assignee { displayName }
+        team { key }
+        project { name }
+        projectMilestone { name }
+      }
+    }
+  }
+`;
+
+// All 48 tests from the Norming Form Prep sheet (the PA and Math Fluency
+// parents are represented by their subtests). Tickets are matched to tests by
+// case-insensitive title substring; extra aliases cover old test names still
+// used in ticket titles (e.g. "Numeric Capacity Backward" for Numbers
+// Backward, "Orthographic Choice" for Spelling Recognition).
+// engNone marks tests with no engineering work needed: the Engineering cell
+// shows "None" and counts as done in the engineering total. psychNone marks
+// tests credited as done for psychometrics without a ticket — we're confident
+// the scoring model can be worked out during norming without affecting form
+// design.
+const PRENORM_TESTS: { name: string; matches: string[]; engNone?: boolean; psychNone?: boolean }[] = [
+  { name: "Pictorial Analogies", matches: ["pictorial analogies"] },
+  { name: "Verbal Analogies", matches: ["verbal analogies"] },
+  { name: "Receptive Vocabulary", matches: ["receptive vocabulary"] },
+  { name: "Visual Pattern Reasoning", matches: ["visual pattern reasoning"] },
+  { name: "Sequencing and Planning", matches: ["sequencing and planning", "sequencing & planning"] },
+  { name: "Numbers Forward", matches: ["numbers forward", "numeric capacity forward"] },
+  { name: "Numbers Backward", matches: ["numbers backward", "numeric capacity backward"] },
+  { name: "Visual Memory", matches: ["visual memory"] },
+  { name: "Shape Rotation", matches: ["shape rotation"] },
+  { name: "Symbol-Sound Learning", matches: ["symbsnd1"] },
+  { name: "Symbol-Sound Learning–Delayed", matches: ["symbsnd2"] },
+  { name: "Semantic Fluency", matches: ["semantic fluency"], engNone: true },
+  { name: "Speeded Symbol Matching", matches: ["speeded symbol matching", "spdsymat"] },
+  { name: "Figure Copying", matches: ["figure copying"], engNone: true },
+  { name: "Figure Tracing", matches: ["figure tracing"], engNone: true },
+  { name: "Handwritten Letter Fluency", matches: ["handwritten letter fluency", "handwritten alphabetic fluency"], engNone: true },
+  { name: "Handwritten Number Fluency", matches: ["handwritten number fluency", "handwritten numeric fluency"], engNone: true },
+  { name: "Keyboarding Fluency", matches: ["keyboarding fluency", "keyboard transcription fluency"], engNone: true },
+  { name: "PA: Rhyme Recognition", matches: ["rhyme recognition"] },
+  { name: "PA: Rhyme Production", matches: ["rhyme production"] },
+  { name: "PA: Syllable Counting", matches: ["syllable counting"] },
+  { name: "PA: Blending", matches: ["blending"] },
+  { name: "PA: Segmenting", matches: ["segmenting"] },
+  { name: "PA: Sound ID", matches: ["sound identification", "sound id"] },
+  { name: "PA: Substitution", matches: ["substitution"] },
+  { name: "Word Reading", matches: ["letter and word identification"] },
+  { name: "Nonsense Word Decoding", matches: ["nonsense word decoding"] },
+  { name: "Sentence Comprehension", matches: ["sentence comprehension"] },
+  { name: "Passage Comprehension", matches: ["passage comprehension"] },
+  { name: "Word Reading Fluency", matches: ["word reading fluency"] },
+  { name: "Oral Reading Fluency", matches: ["oral reading fluency"] },
+  { name: "Math Computation", matches: ["math computation", "mthcmput"] },
+  { name: "Math Fluency: Addition", matches: ["math fluency: addition"] },
+  { name: "Math Fluency: Subtraction", matches: ["math fluency: subtraction"] },
+  { name: "Math Fluency: Multiplication", matches: ["math fluency: multiplication"] },
+  { name: "Math Fluency: Division", matches: ["math fluency: division"] },
+  { name: "Math Applications", matches: ["math concepts and applications", "math applications"] },
+  { name: "Math Concepts", matches: ["applied math vocabulary", "mthcncep"] },
+  { name: "Value Estimation", matches: ["value estimation"] },
+  { name: "Spelling Production", matches: ["spelling production", "spelling: norming"] },
+  { name: "Spelling Recognition", matches: ["spelling recognition", "orthographic choice"] },
+  { name: "Dictation", matches: ["dictation"] },
+  { name: "Written Expression Fluency", matches: ["written expression fluency", "sentence composition fluency"] },
+  { name: "Handwritten Essay Writing", matches: ["handwritten essay", "essay scoring"], engNone: true, psychNone: true },
+  { name: "Typed Essay Writing", matches: ["typed essay", "essay scoring"], engNone: true, psychNone: true },
+  { name: "Letter and Number Formation", matches: ["letter and number formation"], engNone: true, psychNone: true },
+  { name: "Listening Comprehension", matches: ["listening comprehension"] },
+  { name: "Oral Expression Fluency", matches: ["oral expression fluency"] },
+];
+
+// Which column a labeled ticket belongs to. Tickets outside the Form Updates
+// scope (e.g. Internal App work) return null and stay out of this table.
+function prenormBucket(i: PrenormIssue): "psych" | "eng" | "other" | null {
+  if (i.team?.key === "PSY") return "psych";
+  if (/booklet/i.test(i.title)) return "other";
+  if (i.project?.name === "Form Updates") return "eng";
+  return null;
+}
+
+// Collapse a cell's tickets into one status. No tickets = nothing needed.
+function cellStatus(tickets: { state: { type: string } }[]): { label: string; color: string; bg: string; done: boolean } | null {
+  if (tickets.length === 0) return null;
+  if (tickets.every((t) => t.state.type === "completed")) return { label: "Done", color: "#15803d", bg: "#dcfce7", done: true };
+  if (tickets.some((t) => t.state.type === "started")) return { label: "In Progress", color: "#1d4ed8", bg: "#dbeafe", done: false };
+  return { label: "Todo", color: "#b45309", bg: "#fef3c7", done: false };
+}
+
+// "oleksii.zhaboiedov" / "erica.laforte" / "Cara Eagan" -> "Oleksii" / "Erica" / "Cara"
+function ownerFirstName(displayName: string | undefined): string {
+  if (!displayName) return "Unassigned";
+  const first = displayName.split(/[.\s_]/)[0];
+  return first.charAt(0).toUpperCase() + first.slice(1);
+}
+
+function PrenormStatusCell({ tickets, onOpen, none, derivedDone, onOpenNone, visibility }: {
+  tickets: PrenormIssue[];
+  onOpen: (id: string) => void;
+  none?: boolean;
+  derivedDone?: boolean;
+  onOpenNone?: () => void;
+  visibility?: PrenormIssue[];
+}) {
+  const status = cellStatus(tickets);
+  const visStatus = visibility && visibility.length > 0 ? cellStatus(visibility) : null;
+  const visPill = visStatus ? (
+    <div>
+      <button
+        onClick={() => onOpen(visibility![0].id)}
+        title={`${PRENORM_VIS_HINT}\n${visibility!.map((t) => `${t.identifier} · ${t.assignee?.displayName ?? "Unassigned"}`).join("\n")}`}
+        style={{
+          display: "inline-block", border: "1px dashed #cbd5e1", cursor: "pointer", fontFamily: "inherit",
+          fontSize: 10, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase",
+          padding: "2px 9px", borderRadius: 999, whiteSpace: "nowrap", color: "#64748b", background: "#f8fafc",
+        }}
+      >
+        {visStatus.label} *
+      </button>
+      <div style={{ fontSize: 10, fontWeight: 600, color: "#94a3b8", marginTop: 3, whiteSpace: "nowrap" }}>
+        {[...new Set(visibility!.filter((t) => t.state.type !== "completed").map((t) => ownerFirstName(t.assignee?.displayName)))].join(", ")}
+      </div>
+    </div>
+  ) : null;
+  if (!status && derivedDone) {
+    return (
+      <td style={{ padding: "10px 14px", textAlign: "center" }}>
+        <button
+          onClick={onOpenNone}
+          title="No separate psychometrics ticket — the design shipped with the engineering ticket, or scoring is deferred to norming (see the row note)"
+          style={{
+            display: "inline-block", border: "none", cursor: "pointer", fontFamily: "inherit",
+            fontSize: 10, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase",
+            padding: "3px 10px", borderRadius: 999, whiteSpace: "nowrap", color: "#15803d", background: "#dcfce7",
+          }}
+        >
+          Done
+        </button>
+      </td>
+    );
+  }
+  if (!status && none) {
+    return (
+      <td style={{ padding: "10px 14px", textAlign: "center" }}>
+        <span style={{
+          display: "inline-block", fontSize: 10, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase",
+          padding: "3px 10px", borderRadius: 999, whiteSpace: "nowrap", color: "#64748b", background: "#f1f5f9",
+        }}>
+          None
+        </span>
+      </td>
+    );
+  }
+  if (!status) {
+    return (
+      <td style={{ padding: "10px 14px", textAlign: "center", color: "#cbd5e1" }}>
+        {visPill ?? "–"}
+      </td>
+    );
+  }
+  const owners = [...new Set(
+    tickets.filter((t) => t.state.type !== "completed").map((t) => ownerFirstName(t.assignee?.displayName)),
+  )];
+  return (
+    <td style={{ padding: "10px 14px", textAlign: "center" }}>
+      <button
+        onClick={() => onOpen(tickets[0].id)}
+        title={tickets.map((t) => `${t.identifier} · ${t.assignee?.displayName ?? "Unassigned"}`).join("\n")}
+        style={{
+          display: "inline-block", border: "none", cursor: "pointer", fontFamily: "inherit",
+          fontSize: 10, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase",
+          padding: "3px 10px", borderRadius: 999, whiteSpace: "nowrap",
+          color: status.color, background: status.bg,
+        }}
+      >
+        {status.label}
+      </button>
+      {owners.length > 0 && (
+        <div style={{ fontSize: 10, fontWeight: 600, color: "#94a3b8", marginTop: 3, whiteSpace: "nowrap" }}>
+          {owners.join(", ")}
+        </div>
+      )}
+      {visPill && <div style={{ marginTop: 6 }}>{visPill}</div>}
+    </td>
+  );
+}
+
+function PrenormStat({ label, done, total, color, hint }: { label: string; done: number; total: number; color: string; hint?: string }) {
+  const [showHint, setShowHint] = useState(false);
+  return (
+    <div
+      onMouseEnter={() => setShowHint(true)}
+      onMouseLeave={() => setShowHint(false)}
+      style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, padding: "14px 16px", flex: 1, minWidth: 150, cursor: hint ? "help" : "default", position: "relative" }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 8 }}>
+        <span style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.06em" }}>{label}</span>
+        {hint && (
+          <span style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", border: "1px solid #cbd5e1", borderRadius: "50%", width: 14, height: 14, display: "inline-flex", alignItems: "center", justifyContent: "center", lineHeight: 1 }}>?</span>
+        )}
+      </div>
+      <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+        <span style={{ fontSize: 28, fontWeight: 900, color, lineHeight: 1 }}>{done}</span>
+        <span style={{ fontSize: 14, fontWeight: 700, color: "#94a3b8" }}>/ {total}</span>
+      </div>
+      {hint && showHint && (
+        <div style={{
+          position: "absolute", top: "calc(100% + 6px)", left: 0, zIndex: 20, width: 240,
+          background: "#1e293b", color: "#f1f5f9", fontSize: 12, lineHeight: 1.5, fontWeight: 500,
+          padding: "10px 12px", borderRadius: 8, boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+        }}>
+          {hint}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PrenormingSection() {
+  const [issues, setIssues] = useState<PrenormIssue[] | null>(null);
+  const [error, setError] = useState(false);
+  const [qa, setQa] = useState<Record<string, boolean>>({});
+  const [notes, setNotes] = useState<Record<string, string>>({});
+  const [selectedIssueId, setSelectedIssueId] = useState<string | null>(null);
+  const [showNoTicket, setShowNoTicket] = useState(false);
+
+  const loadIssues = useCallback(() => {
+    fetch("/api/linear", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ query: PRENORM_ISSUES_QUERY, variables: { label: PRENORMING_LABEL } }),
+    })
+      .then((r) => r.json())
+      .then((j) => {
+        if (j.error) throw new Error(j.error);
+        const labeled: PrenormIssue[] = j.data?.labeled?.nodes ?? [];
+        const formUpdates: PrenormIssue[] = j.data?.formUpdates?.nodes ?? [];
+        const visibility: PrenormIssue[] = j.data?.visibility?.nodes ?? [];
+        const byId = new Map<string, PrenormIssue>();
+        for (const i of [...labeled, ...formUpdates]) byId.set(i.id, i);
+        for (const i of visibility) byId.set(i.id, { ...i, isVisibility: true });
+        setIssues([...byId.values()]);
+      })
+      .catch(() => setError(true));
+  }, []);
+
+  useEffect(() => {
+    loadIssues();
+    fetchOverrides().then((ov) => {
+      setQa(ov.prenormQa ?? {});
+      setNotes(ov.prenormNotes ?? {});
+    });
+  }, [loadIssues]);
+
+  const saveNote = (test: string, note: string) => {
+    saveOverride("setPrenormNote", { test, note }).catch(() => {});
+  };
+
+  const toggleQa = (test: string) => {
+    const done = !qa[test];
+    setQa((prev) => ({ ...prev, [test]: done }));
+    saveOverride("setPrenormQa", { test, done }).catch(() => {
+      setQa((prev) => ({ ...prev, [test]: !done }));
+    });
+  };
+
+  if (error) {
+    return <div style={{ color: "#dc2626", padding: "40px 0", textAlign: "center" }}>Couldn&apos;t load tickets from Linear.</div>;
+  }
+  if (!issues) {
+    return <div style={{ color: "#94a3b8", padding: "40px 0", textAlign: "center" }}>Loading tickets from Linear...</div>;
+  }
+
+  // Only norming-related tickets belong in the table; the title guard keeps
+  // unrelated Form Updates work (e.g. "Dictation Routing") out of test rows.
+  const active = issues.filter(
+    (i) => i.state.type !== "canceled" && i.state.type !== "duplicate" && (/norming|booklet/i.test(i.title) || i.isVisibility),
+  );
+  const rows = PRENORM_TESTS.map((test) => {
+    const matched = active.filter((i) => test.matches.some((m) => i.title.toLowerCase().includes(m)));
+    const vis = matched.filter((i) => i.isVisibility);
+    const real = matched.filter((i) => !i.isVisibility);
+    const psych = real.filter((i) => prenormBucket(i) === "psych");
+    const eng = real.filter((i) => prenormBucket(i) === "eng");
+    const other = real.filter((i) => prenormBucket(i) === "other");
+    const tracked = [...psych, ...eng, ...other];
+    // Ready = every tracked ticket for this test is complete. Tests need at
+    // least one ticket to count (so unticketed tests don't read as ready by
+    // accident), unless engineering is explicitly marked None.
+    const ready = (tracked.length > 0 || !!test.engNone) && tracked.every((i) => i.state.type === "completed");
+    // Psych cell shows a derived Done when there's no psych ticket but the
+    // form design already shipped with the engineering ticket (completed, or
+    // spec'd in the Norming Forms milestone).
+    const psychDerivedDone = psych.length === 0 && (
+      !!test.psychNone ||
+      eng.some((i) => i.state.type === "completed" || i.projectMilestone?.name === "Norming Forms")
+    );
+    return { test, psych, eng, other, vis, ready, psychDerivedDone, qaDone: !!qa[test.name] };
+  });
+
+  // The engineering metric only counts tests that need engineering work;
+  // tests marked None are excluded from numerator and denominator alike.
+  const withEng = rows.filter((r) => r.eng.length > 0);
+  const engNoneCount = rows.filter((r) => r.test.engNone && r.eng.length === 0).length;
+  const engDone = withEng.filter((r) => r.eng.every((i) => i.state.type === "completed")).length;
+  // Psychometrics is measured against all 48 tests. A test counts as done
+  // when its PSY tickets are all complete, or when its form design was
+  // already delivered to engineering: the eng ticket is completed or carries
+  // the "Norming Forms" milestone (a full design spec). Bare engineering
+  // placeholders don't count — the design work is still ahead of psych.
+  const psychDone = rows.filter((r) => {
+    if (r.psych.some((i) => i.state.type !== "completed")) return false;
+    if (r.psych.length > 0) return true;
+    if (r.test.psychNone) return true;
+    return r.eng.some((i) => i.state.type === "completed" || i.projectMilestone?.name === "Norming Forms");
+  }).length;
+  const readyCount = rows.filter((r) => r.ready).length;
+  const qaCount = rows.filter((r) => r.qaDone).length;
+
+  const thStyle: React.CSSProperties = {
+    padding: "10px 14px", fontSize: 11, fontWeight: 800, color: "#94a3b8",
+    textTransform: "uppercase", letterSpacing: "0.08em", textAlign: "center",
+    borderBottom: "1px solid #e2e8f0", whiteSpace: "nowrap",
+  };
+
+  return (
+    <>
+      <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 18, paddingBottom: 12, borderBottom: "2px solid #1e293b" }}>
+        <div>
+          <div style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 4 }}>Readiness</div>
+          <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: "#0f172a", letterSpacing: "-0.01em" }}>Form Updates</h2>
+        </div>
+        <span style={{ fontSize: 12, fontWeight: 600, color: "#64748b" }}>Live from Linear · label &ldquo;{PRENORMING_LABEL}&rdquo;</span>
+      </div>
+
+      {/* Counters */}
+      <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 24 }}>
+        <PrenormStat label="Tests ready" done={readyCount} total={rows.length} color="#16a34a" />
+        <PrenormStat
+          label="Psychometrics"
+          done={psychDone}
+          total={rows.length}
+          color="#D97706"
+          hint={`Psychometrics owns all ${rows.length} tests. A test counts as done when its PSY tickets are complete, its form design was already delivered to engineering, or scoring is deferred to norming (essays, Letter and Number Formation). ${rows.length - psychDone} left.`}
+        />
+        <PrenormStat
+          label="Engineering"
+          done={engDone}
+          total={withEng.length}
+          color="#2563EB"
+          hint={`Counts only the ${withEng.length} tests with engineering work. ${engNoneCount} tests are marked None (no engineering needed) and are excluded.`}
+        />
+        <PrenormStat label="Full QA" done={qaCount} total={rows.length} color="#7C3AED" />
+      </div>
+
+      {/* Readiness table */}
+      <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 10, overflow: "auto", boxShadow: "0 1px 2px rgba(0,0,0,0.04)", marginBottom: 36 }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
+          <thead>
+            <tr style={{ background: "#f8fafc" }}>
+              <th style={{ ...thStyle, textAlign: "left" }}>Test</th>
+              <th style={thStyle}>Psychometrics</th>
+              <th style={thStyle}>Engineering</th>
+              <th style={thStyle}>Other</th>
+              <th style={thStyle}>Ready</th>
+              <th style={thStyle}>Full QA</th>
+              <th style={{ ...thStyle, textAlign: "left", minWidth: 200 }}>Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr key={r.test.name} style={{ borderBottom: "1px solid #f1f5f9", background: r.ready && r.qaDone ? "#fafdfb" : "#fff" }}>
+                <td style={{ padding: "10px 14px", fontWeight: 600, color: "#1e293b", whiteSpace: "nowrap" }}>{r.test.name}</td>
+                <PrenormStatusCell tickets={r.psych} onOpen={setSelectedIssueId} derivedDone={r.psychDerivedDone} onOpenNone={() => setShowNoTicket(true)} />
+                <PrenormStatusCell tickets={r.eng} onOpen={setSelectedIssueId} none={r.test.engNone} />
+                <PrenormStatusCell tickets={r.other} onOpen={setSelectedIssueId} visibility={r.vis} />
+                <td style={{ padding: "10px 14px", textAlign: "center", fontSize: 16 }}>
+                  {r.ready ? <span style={{ color: "#16a34a" }}>✓</span> : <span style={{ color: "#cbd5e1" }}>–</span>}
+                </td>
+                <td style={{ padding: "10px 14px", textAlign: "center" }}>
+                  <input
+                    type="checkbox"
+                    checked={r.qaDone}
+                    onChange={() => toggleQa(r.test.name)}
+                    style={{ width: 16, height: 16, cursor: "pointer", accentColor: "#7C3AED" }}
+                  />
+                </td>
+                <td style={{ padding: "4px 8px" }}>
+                  <input
+                    type="text"
+                    value={notes[r.test.name] ?? ""}
+                    placeholder="Add note..."
+                    onChange={(e) => setNotes((prev) => ({ ...prev, [r.test.name]: e.target.value }))}
+                    onBlur={(e) => saveNote(r.test.name, e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+                    style={{
+                      width: "100%", border: "1px solid transparent", borderRadius: 6, padding: "5px 8px",
+                      fontSize: 13, fontFamily: "inherit", color: "#334155", background: "transparent", outline: "none",
+                    }}
+                    onFocus={(e) => { e.target.style.border = "1px solid #cbd5e1"; e.target.style.background = "#fff"; }}
+                    onBlurCapture={(e) => { e.target.style.border = "1px solid transparent"; e.target.style.background = "transparent"; }}
+                  />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {selectedIssueId && (
+        <CycleIssueDetailPanel
+          issueId={selectedIssueId}
+          onClose={() => setSelectedIssueId(null)}
+          cycles={[]}
+          onUpdated={() => loadIssues()}
+        />
+      )}
+
+      {showNoTicket && (
+        <div className="detail-overlay" onClick={() => setShowNoTicket(false)}>
+          <div className="detail-panel" onClick={(e) => e.stopPropagation()}>
+            <div style={{ padding: "48px 32px", textAlign: "center" }}>
+              <div style={{ fontSize: 15, fontWeight: 700, color: "#334155", marginBottom: 8 }}>No linked ticket</div>
+              <div style={{ fontSize: 13, color: "#64748b", lineHeight: 1.6 }}>
+                There&apos;s no separate psychometrics ticket for this test. Either the norming form design was delivered directly in the engineering ticket (click the Engineering pill to see it), or the scoring model is deliberately deferred to norming — see the row&apos;s note.
+              </div>
+              <button
+                onClick={() => setShowNoTicket(false)}
+                style={{ marginTop: 20, border: "1px solid #e2e8f0", background: "#fff", borderRadius: 8, padding: "7px 16px", fontSize: 13, fontWeight: 600, color: "#334155", cursor: "pointer", fontFamily: "inherit" }}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+// ── Internal App section ──────────────────────────────────────────────────
+
+// Linear label marking tickets that must land before norming (Sep 28).
+const NORMING_LABEL = "Norming (Sep 28)";
+
+// Big chunks of Internal App work, each mapped to the Linear tickets that
+// prove it done. Status derives from ticket state — no hand-ticking.
+const INTERNAL_APP_ROCKS: { name: string; ids: string[] }[] = [
+  { name: "Intake survey redesign", ids: ["MAR2-1897", "MAR2-2057", "MAR2-2067"] },
+  { name: "Repeat-participant (PP3) identity linking", ids: ["MAR2-1921", "MAR2-1978"] },
+  { name: "Multi-battery / concurrent validity", ids: ["MAR2-1875", "MAR2-1877"] },
+  { name: "Monthly targets & availability forecasting", ids: ["MAR2-2053"] },
+  { name: "Norming scheduling & session packing", ids: ["MAR2-1917", "MAR2-1918", "MAR2-1919", "MAR2-2068"] },
+  { name: "Clinical cell attribution writer", ids: ["MAR2-2066"] },
+  { name: "Shipstation integration", ids: ["MAR2-2052"] },
+];
+
+type InternalAppIssue = {
+  id: string;
+  identifier: string;
+  title: string;
+  url: string;
+  state: { name: string; type: string; color: string };
+  assignee: { displayName: string } | null;
+  labels: { nodes: { name: string }[] };
+};
+
+// ponytail: fetches the whole project (191 issues today); paginate past 250 if it ever grows there.
+const INTERNAL_APP_QUERY = `
+  query InternalAppIssues {
+    issues(first: 250, filter: { project: { name: { eq: "Internal App" } } }) {
+      nodes {
+        id
+        identifier
+        title
+        url
+        state { name type color }
+        assignee { displayName }
+        labels { nodes { name } }
+      }
+    }
+  }
+`;
+
+function InternalAppSection({ label, accent }: { label: string; accent: string }) {
+  const [issues, setIssues] = useState<InternalAppIssue[] | null>(null);
+  const [error, setError] = useState(false);
+  const [selectedIssueId, setSelectedIssueId] = useState<string | null>(null);
+
+  const loadIssues = useCallback(() => {
+    fetch("/api/linear", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ query: INTERNAL_APP_QUERY }),
+    })
+      .then((r) => r.json())
+      .then((j) => {
+        if (j.error) throw new Error(j.error);
+        setIssues(j.data?.issues?.nodes ?? []);
+      })
+      .catch(() => setError(true));
+  }, []);
+
+  useEffect(() => {
+    loadIssues();
+  }, [loadIssues]);
+
+  const header = (
+    <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 18, paddingBottom: 12, borderBottom: "2px solid #1e293b" }}>
+      <div>
+        <div style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 4 }}>Readiness</div>
+        <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: "#0f172a", letterSpacing: "-0.01em" }}>Internal App</h2>
+      </div>
+      <span style={{ fontSize: 12, fontWeight: 600, color: "#64748b" }}>Live from Linear · label &ldquo;{label}&rdquo;</span>
+    </div>
+  );
+
+  if (error) {
+    return (
+      <div style={{ marginBottom: 36 }}>
+        {header}
+        <div style={{ color: "#dc2626", padding: "20px 0", textAlign: "center" }}>Couldn&apos;t load Internal App tickets from Linear.</div>
+      </div>
+    );
+  }
+  if (!issues) {
+    return (
+      <div style={{ marginBottom: 36 }}>
+        {header}
+        <div style={{ color: "#94a3b8", padding: "20px 0", textAlign: "center" }}>Loading tickets from Linear...</div>
+      </div>
+    );
+  }
+
+  const active = issues.filter((i) => i.state.type !== "canceled" && i.state.type !== "duplicate");
+  const labeled = active.filter((i) => i.labels.nodes.some((l) => l.name === label));
+  const labeledDone = labeled.filter((i) => i.state.type === "completed").length;
+  const pct = labeled.length > 0 ? Math.round((labeledDone / labeled.length) * 100) : 0;
+
+  const byIdent = new Map(active.map((i) => [i.identifier, i]));
+  const rocks = INTERNAL_APP_ROCKS.map((r) => {
+    const tickets = r.ids.map((id) => byIdent.get(id)).filter((i): i is InternalAppIssue => !!i);
+    return { name: r.name, tickets, status: cellStatus(tickets) };
+  });
+  const rocksDone = rocks.filter((r) => r.status?.done).length;
+
+  return (
+    <div style={{ marginBottom: 36 }}>
+      {header}
+
+      {/* Labeled-ticket progress */}
+      <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, padding: "16px 18px", marginBottom: 16, boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8 }}>
+          <span style={{ fontSize: 12, fontWeight: 700, color: "#475569" }}>
+            {labeledDone} / {labeled.length} labeled tickets done
+          </span>
+          <span style={{ fontSize: 12, fontWeight: 700, color: "#475569" }}>{pct}%</span>
+        </div>
+        <div style={{ height: 10, borderRadius: 999, background: "#e2e8f0", overflow: "hidden" }}>
+          <div style={{ width: `${pct}%`, height: "100%", background: accent, borderRadius: 999, transition: "width 0.4s ease" }} />
+        </div>
+      </div>
+
+      {/* Big rocks */}
+      <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 10, overflow: "hidden", boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 16px", borderBottom: "1px solid #e2e8f0", background: "#f8fafc" }}>
+          <span style={{ fontSize: 13, fontWeight: 800, color: "#1e293b", textTransform: "uppercase", letterSpacing: "0.08em" }}>Big items</span>
+          <span style={{ fontSize: 12, fontWeight: 700, color: "#475569" }}>{rocksDone} / {rocks.length} done</span>
+        </div>
+        {rocks.map((r) => (
+          <div
+            key={r.name}
+            onClick={r.status ? () => setSelectedIssueId((r.tickets.find((t) => t.state.type !== "completed") ?? r.tickets[0]).id) : undefined}
+            title={r.tickets.map((t) => `${t.identifier} · ${t.state.name} · ${t.assignee?.displayName ?? "Unassigned"}`).join("\n")}
+            style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 16px", borderBottom: "1px solid #f1f5f9", cursor: r.status ? "pointer" : "default" }}
+            onMouseEnter={(e) => { if (r.status) e.currentTarget.style.background = "#f8fafc"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+          >
+            <span style={{ fontSize: 16, width: 20, textAlign: "center", color: r.status?.done ? "#16a34a" : r.status?.label === "In Progress" ? "#2563eb" : "#cbd5e1" }}>
+              {r.status?.done ? "✓" : r.status?.label === "In Progress" ? "●" : "○"}
+            </span>
+            <span style={{ flex: 1, fontSize: 14, fontWeight: 600, color: r.status?.done ? "#94a3b8" : "#1e293b", textDecoration: r.status?.done ? "line-through" : "none" }}>
+              {r.name}
+            </span>
+            {r.status ? (
+              <span style={{
+                display: "inline-block", fontSize: 10, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase",
+                padding: "3px 10px", borderRadius: 999, whiteSpace: "nowrap",
+                color: r.status.color, background: r.status.bg,
+              }}>
+                {r.status.label} · {r.tickets.filter((t) => t.state.type === "completed").length}/{r.tickets.length}
+              </span>
+            ) : (
+              <span style={{ fontSize: 12, color: "#cbd5e1" }}>no tickets</span>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {selectedIssueId && (
+        <CycleIssueDetailPanel
+          issueId={selectedIssueId}
+          onClose={() => setSelectedIssueId(null)}
+          cycles={[]}
+          onUpdated={() => loadIssues()}
+        />
+      )}
+    </div>
+  );
+}
+
+// ── Instructions & Corrective Feedback section ────────────────────────────
+// Shipped-content state read from the marker-method prod read replica.
+
+type CfRow = { code: string; total: number; complete: number };
+type AiRow = { code: string; displayName: string; isActive: boolean; version: number; scenes: number; scenesWithAudio: number };
+
+// The 18 subtests that get corrective feedback animations, per the content
+// team's tracker sheet. Everything else with practice items is "UI example
+// only" and needs no feedback media.
+const CF_NEEDED = new Set([
+  "verbalAnalogies",
+  "appliedMathVocabulary",
+  "oralExpressionFluency",
+  "sentenceCompositionFluency",
+  "shapeRotation",
+  "pictorialAnalogies",
+  "numericCapacityForward",
+  "numericCapacityBackward",
+  "semanticFluency",
+  "sequencingAndPlanning",
+  "valueEstimation",
+  "phonologicalAwarenessRhymeRecognition",
+  "phonologicalAwarenessRhymeProduction",
+  "phonologicalAwarenessSyllabication",
+  "phonologicalAwarenessBlending",
+  "phonologicalAwarenessSegmenting",
+  "phonologicalAwarenessSoundId",
+  "phonologicalAwarenessSubstitution",
+]);
+
+function ReadinessPill({ complete, total }: { complete: number; total: number }) {
+  const done = total > 0 && complete === total;
+  const some = complete > 0;
+  const c = done
+    ? { color: "#15803d", bg: "#dcfce7" }
+    : some
+      ? { color: "#1d4ed8", bg: "#dbeafe" }
+      : { color: "#b45309", bg: "#fef3c7" };
+  return (
+    <span style={{
+      display: "inline-block", fontSize: 10, fontWeight: 800, letterSpacing: "0.06em",
+      padding: "3px 10px", borderRadius: 999, whiteSpace: "nowrap", color: c.color, background: c.bg,
+      fontVariantNumeric: "tabular-nums",
+    }}>
+      {complete}/{total}
+    </span>
+  );
+}
+
+const NONE_BADGE = (
+  <span style={{
+    display: "inline-block", fontSize: 10, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase",
+    padding: "3px 10px", borderRadius: 999, whiteSpace: "nowrap", color: "#64748b", background: "#f1f5f9",
+  }}>
+    None
+  </span>
+);
+
+function ContentReadinessSection() {
+  const [data, setData] = useState<{ instructions: AiRow[]; cfBuilt: CfRow[]; cfReleased: CfRow[] } | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch("/api/content-readiness")
+      .then((r) => r.json())
+      .then((j) => {
+        if (j.error) throw new Error(j.error);
+        setData(j);
+      })
+      .catch((e) => setError(e instanceof Error ? e.message : "failed"));
+  }, []);
+
+  const thStyle: React.CSSProperties = {
+    padding: "10px 14px", fontSize: 11, fontWeight: 800, color: "#94a3b8",
+    textTransform: "uppercase", letterSpacing: "0.08em", textAlign: "center",
+    borderBottom: "1px solid #e2e8f0", whiteSpace: "nowrap",
+  };
+  const tdStyle: React.CSSProperties = { padding: "8px 14px", textAlign: "center" };
+
+  let body: React.ReactNode;
+  if (error) {
+    body = <div style={{ color: "#dc2626", padding: "20px 0", textAlign: "center", fontSize: 13 }}>Couldn&apos;t load content readiness: {error}</div>;
+  } else if (!data) {
+    body = <div style={{ color: "#94a3b8", padding: "20px 0", textAlign: "center", fontSize: 13 }}>Loading from prod replica...</div>;
+  } else {
+    const cfBuiltByCode = new Map(data.cfBuilt.map((r) => [r.code, r]));
+    const cfReleasedByCode = new Map(data.cfReleased.map((r) => [r.code, r]));
+    // CF-needed subtests first (that's where the work is), then the rest.
+    const rows = [...data.instructions].sort((a, b) => {
+      const an = CF_NEEDED.has(a.code) ? 0 : 1;
+      const bn = CF_NEEDED.has(b.code) ? 0 : 1;
+      return an - bn || a.displayName.localeCompare(b.displayName);
+    });
+
+    const instrBuilt = rows.filter((r) => r.scenes > 0 && r.scenesWithAudio === r.scenes).length;
+    const instrReleased = rows.filter((r) => r.isActive).length;
+    const cfNeededRows = rows.filter((r) => CF_NEEDED.has(r.code));
+    const cfBuiltDone = cfNeededRows.filter((r) => {
+      const b = cfBuiltByCode.get(r.code);
+      return b && b.total > 0 && b.complete === b.total;
+    }).length;
+    const cfReleasedDone = cfNeededRows.filter((r) => {
+      const b = cfReleasedByCode.get(r.code);
+      return b && b.total > 0 && b.complete === b.total;
+    }).length;
+
+    body = (
+      <>
+        <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 16 }}>
+          <PrenormStat label="Instructions built" done={instrBuilt} total={rows.length} color="#2563EB" />
+          <PrenormStat label="Instructions released" done={instrReleased} total={rows.length} color="#16a34a" />
+          <PrenormStat label="Feedback built" done={cfBuiltDone} total={cfNeededRows.length} color="#D97706" />
+          <PrenormStat label="Feedback released" done={cfReleasedDone} total={cfNeededRows.length} color="#7C3AED" />
+        </div>
+
+        <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 10, overflow: "auto", boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
+            <thead>
+              <tr style={{ background: "#f8fafc" }}>
+                <th style={{ ...thStyle, textAlign: "left" }}>Subtest</th>
+                <th style={thStyle}>Instructions built</th>
+                <th style={thStyle}>Instructions released</th>
+                <th style={thStyle}>Feedback built</th>
+                <th style={thStyle}>Feedback released</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r) => {
+                const needsCf = CF_NEEDED.has(r.code);
+                const built = cfBuiltByCode.get(r.code);
+                const released = cfReleasedByCode.get(r.code);
+                return (
+                  <tr key={r.code} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                    <td style={{ padding: "8px 14px", fontWeight: 600, color: "#1e293b", whiteSpace: "nowrap" }}>{r.displayName}</td>
+                    <td style={tdStyle} title={`${r.scenesWithAudio} of ${r.scenes} scenes have audio (v${r.version})`}>
+                      {r.scenes > 0 ? <ReadinessPill complete={r.scenesWithAudio} total={r.scenes} /> : <span style={{ color: "#cbd5e1" }}>–</span>}
+                    </td>
+                    <td style={tdStyle}>
+                      {r.isActive
+                        ? <span style={{ color: "#16a34a", fontSize: 16 }}>✓</span>
+                        : <span style={{ color: "#cbd5e1" }}>–</span>}
+                    </td>
+                    <td style={tdStyle} title={needsCf && built ? `${built.complete} of ${built.total} practice items have all four feedback files` : undefined}>
+                      {!needsCf ? NONE_BADGE : built ? <ReadinessPill complete={built.complete} total={built.total} /> : <ReadinessPill complete={0} total={0} />}
+                    </td>
+                    <td style={tdStyle}>
+                      {!needsCf
+                        ? <span style={{ color: "#cbd5e1" }}>–</span>
+                        : released && released.total > 0 && released.complete === released.total
+                          ? <span style={{ color: "#16a34a", fontSize: 16 }}>✓</span>
+                          : released ? <ReadinessPill complete={released.complete} total={released.total} /> : <span style={{ color: "#cbd5e1" }}>–</span>}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        <div style={{ padding: "8px 2px", fontSize: 11, color: "#94a3b8" }}>
+          Built = latest CMS version (instruction scenes with audio; practice items with all four feedback files).
+          Released = live in the player (active instruction; active question release). &ldquo;None&rdquo; = no feedback planned per the content tracker.
+        </div>
+      </>
+    );
+  }
+
+  return (
+    <div style={{ marginBottom: 36 }}>
+      <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 18, paddingBottom: 12, borderBottom: "2px solid #1e293b" }}>
+        <div>
+          <div style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 4 }}>Readiness</div>
+          <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: "#0f172a", letterSpacing: "-0.01em" }}>Instructions &amp; Corrective Feedback</h2>
+        </div>
+        <span style={{ fontSize: 12, fontWeight: 600, color: "#64748b" }}>Live from marker-method prod (read-only)</span>
+      </div>
+      {body}
+    </div>
+  );
+}
+
 function NormingCountdownView() {
+  // This component only mounts client-side (after a tab click or the hash
+  // effect), so reading the hash in the initializer is hydration-safe.
+  const [subView, setSubView] = useState<"norming" | "prenorming">(() =>
+    typeof window !== "undefined" && window.location.hash === "#prenorming" ? "prenorming" : "norming",
+  );
+
+  useEffect(() => {
+    window.history.replaceState(null, "", `#${subView}`);
+  }, [subView]);
   const [checklist, setChecklist] = useState<Record<string, NormingItem[]>>({});
   const [loading, setLoading] = useState(true);
   const [saveState, setSaveState] = useState<"saving" | "saved" | "error" | "idle">("idle");
@@ -6528,9 +7386,12 @@ function NormingCountdownView() {
   };
 
   // ── Countdown math ──
+  const isPrenorm = subView === "prenorming";
+  const target = isPrenorm ? PRENORMING_TARGET : NORMING_TARGET;
   const msPerDay = 24 * 60 * 60 * 1000;
-  const daysRemaining = Math.max(0, Math.ceil((NORMING_TARGET.getTime() - now.getTime()) / msPerDay));
-  const targetLabel = NORMING_TARGET.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+  const daysRemaining = Math.max(0, Math.ceil((target.getTime() - now.getTime()) / msPerDay));
+  const targetLabel = target.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+  const accent = isPrenorm ? "#f97316" : "#eab308";
 
   // Progress reflects checklist completion across all teams.
   const allItems = Object.values(checklist).flat();
@@ -6543,41 +7404,70 @@ function NormingCountdownView() {
 
   return (
     <div style={{ fontFamily: "var(--font-sans)", height: "calc(100vh - 80px)", overflow: "auto", background: "#fef9c3", position: "relative" }}>
-      <BouncingPearsons count={1} />
-      <div style={{ maxWidth: 820, margin: "0 auto", padding: "32px 32px 80px", position: "relative", zIndex: 1 }}>
+      <div style={{ maxWidth: isPrenorm ? 1140 : 820, margin: "0 auto", padding: "32px 32px 80px", position: "relative", zIndex: 1 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24, flexWrap: "wrap", gap: 12 }}>
-          <h1 style={{ margin: 0, fontSize: 24, fontWeight: 800, color: "#0f172a", letterSpacing: "-0.01em" }}>Norming Countdown</h1>
-          {saveStateLabel && (
-            <span style={{ fontSize: 12, color: saveStateColor, fontWeight: 500 }}>{saveStateLabel}</span>
-          )}
+          <h1 style={{ margin: 0, fontSize: 24, fontWeight: 800, color: "#0f172a", letterSpacing: "-0.01em" }}>
+            {isPrenorm ? "Pre-Norming Countdown" : "Norming Countdown"}
+          </h1>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            {saveStateLabel && !isPrenorm && (
+              <span style={{ fontSize: 12, color: saveStateColor, fontWeight: 500 }}>{saveStateLabel}</span>
+            )}
+            <div style={{ display: "flex", background: "#fff", border: "1px solid #e2e8f0", borderRadius: 999, padding: 3 }}>
+              {([["prenorming", "Pre-norming · Sep 8"], ["norming", "Norming · Sep 28"]] as const).map(([key, label]) => (
+                <button
+                  key={key}
+                  onClick={() => setSubView(key)}
+                  style={{
+                    border: "none", cursor: "pointer", borderRadius: 999, padding: "6px 14px",
+                    fontSize: 12, fontWeight: 700, fontFamily: "inherit",
+                    background: subView === key ? (key === "prenorming" ? "#f97316" : "#eab308") : "transparent",
+                    color: subView === key ? "#fff" : "#64748b",
+                  }}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
 
         {/* Countdown + progress */}
         <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 16, padding: "28px 28px 24px", marginBottom: 36, boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
-          <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", flexWrap: "wrap", gap: 8, marginBottom: 18 }}>
+          <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", flexWrap: "wrap", gap: 8, marginBottom: isPrenorm ? 0 : 18 }}>
             <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
-              <span style={{ fontSize: 56, fontWeight: 900, color: "#eab308", lineHeight: 1, letterSpacing: "-0.03em" }}>{daysRemaining}</span>
-              <span style={{ fontSize: 18, fontWeight: 700, color: "#334155" }}>{daysRemaining === 1 ? "day" : "days"} until norming</span>
+              <span style={{ fontSize: 56, fontWeight: 900, color: accent, lineHeight: 1, letterSpacing: "-0.03em" }}>{daysRemaining}</span>
+              <span style={{ fontSize: 18, fontWeight: 700, color: "#334155" }}>{daysRemaining === 1 ? "day" : "days"} until {isPrenorm ? "pre-norming" : "norming"}</span>
             </div>
             <span style={{ fontSize: 14, fontWeight: 600, color: "#64748b" }}>Target: {targetLabel}</span>
           </div>
-          <div style={{ position: "relative", height: 16, borderRadius: 999, background: "#e2e8f0", overflow: "hidden" }}>
-            <div
-              style={{
-                position: "absolute", inset: 0, width: `${progressPct}%`,
-                background: "linear-gradient(90deg, #facc15, #eab308)",
-                borderRadius: 999, transition: "width 0.4s ease",
-              }}
-            />
-          </div>
-          <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8, fontSize: 12, fontWeight: 600, color: "#64748b" }}>
-            <span>{doneCount} / {allItems.length} items complete</span>
-            <span>{progressPct}% done</span>
-          </div>
+          {!isPrenorm && (
+            <>
+              <div style={{ position: "relative", height: 16, borderRadius: 999, background: "#e2e8f0", overflow: "hidden" }}>
+                <div
+                  style={{
+                    position: "absolute", inset: 0, width: `${progressPct}%`,
+                    background: "linear-gradient(90deg, #facc15, #eab308)",
+                    borderRadius: 999, transition: "width 0.4s ease",
+                  }}
+                />
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8, fontSize: 12, fontWeight: 600, color: "#64748b" }}>
+                <span>{doneCount} / {allItems.length} items complete</span>
+                <span>{progressPct}% done</span>
+              </div>
+            </>
+          )}
         </div>
 
+        {isPrenorm && <PrenormingSection />}
+
+        <InternalAppSection label={isPrenorm ? PRENORMING_LABEL : NORMING_LABEL} accent={accent} />
+
+        <ContentReadinessSection />
+
         {/* Per-team breakdown */}
-        {!loading && (
+        {!isPrenorm && !loading && (
           <div style={{ marginBottom: 36 }}>
             <h2 style={{ margin: "0 0 16px", fontSize: 16, fontWeight: 800, color: "#0f172a" }}>By team</h2>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 12 }}>
@@ -6609,29 +7499,33 @@ function NormingCountdownView() {
         )}
 
         {/* Per-team checklists */}
-        <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 18, paddingBottom: 12, borderBottom: "2px solid #1e293b" }}>
-          <div>
-            <div style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 4 }}>Readiness Checklist</div>
-            <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: "#0f172a", letterSpacing: "-0.01em" }}>Norming Requirements by Team</h2>
-          </div>
-          {allItems.length > 0 && (
-            <span style={{ fontSize: 13, fontWeight: 700, color: "#334155" }}>{doneCount} of {allItems.length} complete</span>
-          )}
-        </div>
+        {!isPrenorm && (
+          <>
+            <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 18, paddingBottom: 12, borderBottom: "2px solid #1e293b" }}>
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 4 }}>Readiness Checklist</div>
+                <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: "#0f172a", letterSpacing: "-0.01em" }}>Norming Requirements by Team</h2>
+              </div>
+              {allItems.length > 0 && (
+                <span style={{ fontSize: 13, fontWeight: 700, color: "#334155" }}>{doneCount} of {allItems.length} complete</span>
+              )}
+            </div>
 
-        {loading ? (
-          <div style={{ color: "#94a3b8", padding: "40px 0", textAlign: "center" }}>Loading...</div>
-        ) : (
-          NORMING_TEAMS.map((team) => (
-            <TeamChecklist
-              key={team.name}
-              team={team}
-              items={checklist[team.name] ?? []}
-              onAdd={(text) => addItem(team.name, text)}
-              onToggle={(id) => toggleItem(team.name, id)}
-              onRemove={(id) => removeItem(team.name, id)}
-            />
-          ))
+            {loading ? (
+              <div style={{ color: "#94a3b8", padding: "40px 0", textAlign: "center" }}>Loading...</div>
+            ) : (
+              NORMING_TEAMS.map((team) => (
+                <TeamChecklist
+                  key={team.name}
+                  team={team}
+                  items={checklist[team.name] ?? []}
+                  onAdd={(text) => addItem(team.name, text)}
+                  onToggle={(id) => toggleItem(team.name, id)}
+                  onRemove={(id) => removeItem(team.name, id)}
+                />
+              ))
+            )}
+          </>
         )}
       </div>
     </div>
@@ -8885,6 +9779,22 @@ function CyclesView({ cycles, people }: { cycles: LinearCycle[]; people: Person[
 export function RoadmapView({ people, months, phases, teams, initialOverrides }: RoadmapViewProps) {
   const [search, setSearch] = useState("");
   const [viewMode, setViewMode] = useState<"projects" | "subtestEdits" | "cycles" | "futureProjects" | "weeklyPlanning" | "normingCountdown">("projects");
+
+  // Keep the active view in the URL hash so reloads stay on the same page and
+  // links like #prenorming are shareable. The norming view writes its own
+  // #norming / #prenorming hash (it owns the sub-view toggle).
+  useEffect(() => {
+    const h = window.location.hash.slice(1);
+    if (h === "norming" || h === "prenorming") setViewMode("normingCountdown");
+    else if (["projects", "subtestEdits", "cycles", "futureProjects", "weeklyPlanning"].includes(h)) {
+      setViewMode(h as "projects" | "subtestEdits" | "cycles" | "futureProjects" | "weeklyPlanning");
+    }
+  }, []);
+  useEffect(() => {
+    if (viewMode !== "normingCountdown") {
+      window.history.replaceState(null, "", `#${viewMode}`);
+    }
+  }, [viewMode]);
   const [filterTeams, setFilterTeams] = useState<Set<string>>(new Set());
   const [filterPeople, setFilterPeople] = useState<Set<string>>(new Set());
   const [selected, setSelected] = useState<{

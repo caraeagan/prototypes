@@ -73,6 +73,11 @@ export type RoadmapOverrides = {
   // normingChecklist[teamName] = ordered checklist items for that team's
   // run-up to the Sept 1 norming deadline.
   normingChecklist?: Record<string, NormingChecklistItem[]>;
+  // prenormQa[testName] = true when full QA is manually checked off in the
+  // pre-norming Form Updates readiness table.
+  prenormQa?: Record<string, boolean>;
+  // prenormNotes[testName] = free-form note shown in the readiness table.
+  prenormNotes?: Record<string, string>;
 };
 
 function sleep(ms: number) {

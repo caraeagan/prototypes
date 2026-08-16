@@ -55,6 +55,8 @@ export async function POST(request: NextRequest) {
       "saveWeeklyPersonNote",
       "saveWeeklyTicketOrder",
       "saveNormingChecklist",
+      "setPrenormQa",
+      "setPrenormNote",
     ]);
     if (!knownActions.has(action)) {
       return NextResponse.json(
@@ -377,6 +379,26 @@ export async function POST(request: NextRequest) {
             delete overrides.normingChecklist[team];
           } else {
             overrides.normingChecklist[team] = items;
+          }
+          break;
+        }
+        case "setPrenormQa": {
+          const { test, done } = payload as { test: string; done: boolean };
+          if (!overrides.prenormQa) overrides.prenormQa = {};
+          if (done) {
+            overrides.prenormQa[test] = true;
+          } else {
+            delete overrides.prenormQa[test];
+          }
+          break;
+        }
+        case "setPrenormNote": {
+          const { test, note } = payload as { test: string; note: string };
+          if (!overrides.prenormNotes) overrides.prenormNotes = {};
+          if (note && note.trim()) {
+            overrides.prenormNotes[test] = note.trim();
+          } else {
+            delete overrides.prenormNotes[test];
           }
           break;
         }
