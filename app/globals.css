@@ -1580,3 +1580,36 @@ body.dragging * {
   }
 }
 
+
+/* Instant hover tooltip; reads its text from data-tip. */
+.hover-tip {
+  position: relative;
+  cursor: help;
+  text-decoration: underline dotted;
+}
+.hover-tip::after {
+  content: attr(data-tip);
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 50;
+  width: max-content;
+  max-width: 260px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: #1e293b;
+  color: #f8fafc;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: normal;
+  text-transform: none;
+  white-space: normal;
+  text-align: left;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.1s ease;
+}
+.hover-tip:hover::after {
+  opacity: 1;
+}

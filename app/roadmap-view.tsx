@@ -6475,6 +6475,255 @@ function newNormingItemId(): string {
   return `norm-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
+// Pre-norming projects tracked live from Linear: each card lists the
+// project's tickets and derives status from ticket state. Names must match
+// the Linear project names exactly.
+const PRENORM_PROJECTS: { name: string; color: string }[] = [
+  { name: "Between-Subtest Student Experience", color: "#0EA5E9" },
+  { name: "Test Renaming & Task Model", color: "#16A34A" },
+];
+
+// Render a Linear description's markdown links ([text](<url>)) and bare URLs
+// as anchors; everything else stays plain text.
+function linkifyDescription(text: string): React.ReactNode[] {
+  const re = /\[([^\]]+)\]\(<?(https?:\/\/[^)>\s]+)>?\)|(https?:\/\/[^\s)]+)/g;
+  const out: React.ReactNode[] = [];
+  let last = 0;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text)) !== null) {
+    if (m.index > last) out.push(text.slice(last, m.index));
+    const href = m[2] ?? m[3];
+    out.push(
+      <a key={m.index} href={href} target="_blank" rel="noreferrer" style={{ color: "#2563eb", wordBreak: "break-all" }}>
+        {m[1] ?? href}
+      </a>,
+    );
+    last = re.lastIndex;
+  }
+  if (last < text.length) out.push(text.slice(last));
+  return out;
+}
+
+type PrenormLinearProject = {
+  name: string;
+  description: string | null;
+  url: string;
+  targetDate: string | null;
+  lead: { displayName: string; avatarUrl: string | null } | null;
+};
+
+// Slide-over showing a pre-norming project's Linear description and owner.
+function PrenormProjectPanel({ name, color, onClose }: { name: string; color: string; onClose: () => void }) {
+  // undefined = loading, null = not found / error
+  const [project, setProject] = useState<PrenormLinearProject | null | undefined>(undefined);
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [onClose]);
+
+  useEffect(() => {
+    linearQuery<{ projects: { nodes: PrenormLinearProject[] } }>(
+      `query Project($name: String!) {
+        projects(filter: { name: { eq: $name } }, first: 1) {
+          nodes { name description url targetDate lead { displayName avatarUrl } }
+        }
+      }`,
+      { name },
+    )
+      .then((d) => setProject(d.projects.nodes[0] ?? null))
+      .catch(() => setProject(null));
+  }, [name]);
+
+  return (
+    <div className="detail-overlay" onClick={onClose}>
+      <div className="detail-panel" onClick={(e) => e.stopPropagation()}>
+        {project === undefined && (
+          <div style={{ padding: 40, textAlign: "center", color: "#94a3b8" }}>Loading project from Linear...</div>
+        )}
+        {project === null && (
+          <div style={{ padding: 40, textAlign: "center", color: "#dc2626" }}>Couldn&apos;t load this project from Linear.</div>
+        )}
+        {project && (
+          <>
+            <div className="detail-header" style={{ borderColor: color }}>
+              <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: "#0f172a" }}>{project.name}</h2>
+              <a href={project.url} target="_blank" rel="noreferrer" style={{ fontSize: 12, fontWeight: 600, color: "#2563eb" }}>
+                Open in Linear ↗
+              </a>
+            </div>
+            <div style={{ padding: 24 }}>
+              <div style={{ display: "flex", gap: 24, marginBottom: 20, flexWrap: "wrap" }}>
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>Owner</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, fontWeight: 600, color: "#1e293b" }}>
+                    {project.lead?.avatarUrl && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={project.lead.avatarUrl} alt="" style={{ width: 22, height: 22, borderRadius: "50%" }} />
+                    )}
+                    {project.lead?.displayName ?? "Unassigned"}
+                  </div>
+                </div>
+                {project.targetDate && (
+                  <div>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>Due</div>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: "#1e293b" }}>
+                      {parseDateLocal(project.targetDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                    </div>
+                  </div>
+                )}
+              </div>
+              {project.description && (
+                <>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>Description</div>
+                  <div style={{ fontSize: 13, color: "#475569", lineHeight: 1.6, whiteSpace: "pre-wrap" }}>
+                    {linkifyDescription(project.description)}
+                  </div>
+                </>
+              )}
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+type PrenormProjectIssue = {
+  id: string;
+  identifier: string;
+  title: string;
+  url: string;
+  state: { name: string; type: string; color: string };
+  assignee: { displayName: string } | null;
+  project: { name: string } | null;
+};
+
+// Auto-tracked project cards: tickets load live from Linear per project.
+function PrenormProjectsSection() {
+  const [issues, setIssues] = useState<PrenormProjectIssue[] | null>(null);
+  const [error, setError] = useState(false);
+  const [openProject, setOpenProject] = useState<{ name: string; color: string } | null>(null);
+  const [selectedIssueId, setSelectedIssueId] = useState<string | null>(null);
+
+  const load = useCallback(() => {
+    linearQuery<{ issues: { nodes: PrenormProjectIssue[] } }>(
+      `query PrenormProjectIssues($names: [String!]) {
+        issues(first: 100, filter: { project: { name: { in: $names } } }) {
+          nodes {
+            id identifier title url
+            state { name type color }
+            assignee { displayName }
+            project { name }
+          }
+        }
+      }`,
+      { names: PRENORM_PROJECTS.map((p) => p.name) },
+    )
+      .then((d) => setIssues(d.issues.nodes))
+      .catch(() => setError(true));
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  return (
+    <div style={{ marginBottom: 36 }}>
+      <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 18, paddingBottom: 12, borderBottom: "2px solid #1e293b" }}>
+        <div>
+          <div style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 4 }}>Readiness</div>
+          <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: "#0f172a", letterSpacing: "-0.01em" }}>Projects</h2>
+        </div>
+        <span style={{ fontSize: 12, fontWeight: 600, color: "#64748b" }}>Live from Linear · click a project name for details</span>
+      </div>
+
+      {error && <div style={{ color: "#dc2626", padding: "20px 0", textAlign: "center" }}>Couldn&apos;t load project tickets from Linear.</div>}
+      {!error && !issues && <div style={{ color: "#94a3b8", padding: "20px 0", textAlign: "center" }}>Loading tickets from Linear...</div>}
+
+      {issues && PRENORM_PROJECTS.map((p) => {
+        const projIssues = issues.filter(
+          (i) => i.project?.name === p.name && i.state.type !== "canceled" && i.state.type !== "duplicate",
+        );
+        const done = projIssues.filter((i) => i.state.type === "completed").length;
+        const pct = projIssues.length > 0 ? Math.round((done / projIssues.length) * 100) : 0;
+        return (
+          <section key={p.name} style={{ marginBottom: 24, background: "#fff", border: "1px solid #e2e8f0", borderRadius: 10, overflow: "hidden", boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
+            <header style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 18px", borderBottom: "1px solid #e2e8f0", borderLeft: `4px solid ${p.color}`, background: "#f8fafc" }}>
+              <h3
+                onClick={() => setOpenProject(p)}
+                title="View project details"
+                style={{
+                  margin: 0, fontSize: 13, fontWeight: 800, color: "#1e293b", textTransform: "uppercase",
+                  letterSpacing: "0.08em", flex: 1, cursor: "pointer",
+                  textDecoration: "underline dotted #94a3b8", textUnderlineOffset: 3,
+                }}
+              >
+                {p.name}
+              </h3>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <div style={{ width: 88, height: 6, borderRadius: 999, background: "#e2e8f0", overflow: "hidden" }}>
+                  <div style={{ width: `${pct}%`, height: "100%", background: p.color, transition: "width 0.3s ease" }} />
+                </div>
+                <span style={{ fontSize: 12, fontWeight: 700, color: "#475569", fontVariantNumeric: "tabular-nums", minWidth: 42, textAlign: "right" }}>
+                  {done} / {projIssues.length}
+                </span>
+              </div>
+            </header>
+            {projIssues.length === 0 && (
+              <div style={{ color: "#94a3b8", fontSize: 13, fontStyle: "italic", padding: "16px 18px" }}>No tickets in this project yet.</div>
+            )}
+            {projIssues.map((i) => (
+              <div
+                key={i.id}
+                onClick={() => setSelectedIssueId(i.id)}
+                title={`${i.identifier} · ${i.state.name} · ${i.assignee?.displayName ?? "Unassigned"}`}
+                style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 18px", borderBottom: "1px solid #f1f5f9", cursor: "pointer" }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = "#f8fafc"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+              >
+                <span style={{ fontSize: 16, width: 20, textAlign: "center", color: i.state.type === "completed" ? "#16a34a" : i.state.type === "started" ? "#2563eb" : "#cbd5e1" }}>
+                  {i.state.type === "completed" ? "✓" : i.state.type === "started" ? "●" : "○"}
+                </span>
+                <span style={{ flex: 1, fontSize: 14, fontWeight: 600, color: i.state.type === "completed" ? "#94a3b8" : "#1e293b", textDecoration: i.state.type === "completed" ? "line-through" : "none" }}>
+                  {i.title}
+                </span>
+                <span style={{ fontSize: 11, fontWeight: 600, color: "#94a3b8", whiteSpace: "nowrap" }}>
+                  {ownerFirstName(i.assignee?.displayName)}
+                </span>
+                {(() => {
+                  const s = cellStatus([i]);
+                  return s ? (
+                    <span style={{
+                      display: "inline-block", fontSize: 10, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase",
+                      padding: "3px 10px", borderRadius: 999, whiteSpace: "nowrap", color: s.color, background: s.bg,
+                    }}>
+                      {s.label}
+                    </span>
+                  ) : null;
+                })()}
+              </div>
+            ))}
+          </section>
+        );
+      })}
+
+      {openProject && (
+        <PrenormProjectPanel name={openProject.name} color={openProject.color} onClose={() => setOpenProject(null)} />
+      )}
+      {selectedIssueId && (
+        <CycleIssueDetailPanel
+          issueId={selectedIssueId}
+          onClose={() => setSelectedIssueId(null)}
+          cycles={[]}
+          onUpdated={() => load()}
+        />
+      )}
+    </div>
+  );
+}
+
 // ── Pre-Norming (Sep 8) ─────────────────────────────────────────────────
 const PRENORMING_TARGET = new Date("2026-09-08T00:00:00");
 // Linear label that marks every ticket that must land before pre-norming.
@@ -7253,9 +7502,9 @@ function ContentReadinessSection() {
     body = (
       <>
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 16 }}>
-          <PrenormStat label="Instructions built" done={instrBuilt} total={rows.length} color="#2563EB" />
+          <PrenormStat label="EN instructions built" done={instrBuilt} total={rows.length} color="#2563EB" />
           <PrenormStat label="Instructions released" done={instrReleased} total={rows.length} color="#16a34a" />
-          <PrenormStat label="Feedback built" done={cfBuiltDone} total={cfNeededRows.length} color="#D97706" />
+          <PrenormStat label="EN feedback built" done={cfBuiltDone} total={cfNeededRows.length} color="#D97706" />
           <PrenormStat label="Feedback released" done={cfReleasedDone} total={cfNeededRows.length} color="#7C3AED" />
         </div>
 
@@ -7264,9 +7513,11 @@ function ContentReadinessSection() {
             <thead>
               <tr style={{ background: "#f8fafc" }}>
                 <th style={{ ...thStyle, textAlign: "left" }}>Subtest</th>
-                <th style={thStyle}>Instructions built</th>
+                <th style={thStyle}>EN Instructions Built</th>
                 <th style={thStyle}>Instructions released</th>
-                <th style={thStyle}>Feedback built</th>
+                <th style={thStyle}>
+                  <span className="hover-tip" data-tip="No tooling in CMS for corrective feedback yet. Counts are based on # of practice items">EN Feedback Built</span>
+                </th>
                 <th style={thStyle}>Feedback released</th>
               </tr>
             </thead>
@@ -7393,8 +7644,9 @@ function NormingCountdownView() {
   const targetLabel = target.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
   const accent = isPrenorm ? "#f97316" : "#eab308";
 
-  // Progress reflects checklist completion across all teams.
-  const allItems = Object.values(checklist).flat();
+  // Progress reflects checklist completion across all teams (prenorm project
+  // checklists live in the same store but don't count here).
+  const allItems = NORMING_TEAMS.flatMap((t) => checklist[t.name] ?? []);
   const doneCount = allItems.filter((it) => it.done).length;
   const progress = allItems.length > 0 ? doneCount / allItems.length : 0;
   const progressPct = Math.round(progress * 100);
@@ -7410,7 +7662,7 @@ function NormingCountdownView() {
             {isPrenorm ? "Pre-Norming Countdown" : "Norming Countdown"}
           </h1>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            {saveStateLabel && !isPrenorm && (
+            {saveStateLabel && (
               <span style={{ fontSize: 12, color: saveStateColor, fontWeight: 500 }}>{saveStateLabel}</span>
             )}
             <div style={{ display: "flex", background: "#fff", border: "1px solid #e2e8f0", borderRadius: 999, padding: 3 }}>
@@ -7465,6 +7717,9 @@ function NormingCountdownView() {
         <InternalAppSection label={isPrenorm ? PRENORMING_LABEL : NORMING_LABEL} accent={accent} />
 
         <ContentReadinessSection />
+
+        {/* Pre-norming projects, tracked live from Linear */}
+        {isPrenorm && <PrenormProjectsSection />}
 
         {/* Per-team breakdown */}
         {!isPrenorm && !loading && (
