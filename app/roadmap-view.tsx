@@ -7679,6 +7679,148 @@ function ContentReadinessSection() {
   );
 }
 
+// ── Audio Content Updates ──────────────────────────────────────────────────
+// Manually-tracked mirror of the "Audio content audit" Google sheet (the app
+// can't read the sheet directly — see AUDIO_AUDIT_SHEET_URL). Statuses are
+// seeded from the sheet as of Aug 17 and edited in place; edits persist in
+// the shared overrides blob.
+const AUDIO_AUDIT_SHEET_URL =
+  "https://docs.google.com/spreadsheets/d/1PcsGqvVzf4ZbJimthnzPOKPCirLw2kTXIaj2lplgKkU/edit";
+
+// Pipeline order, least → most done. "Live" is the app-side terminal stage
+// (audio actually replaced in the product); the sheet itself stops at
+// "Ready for Upload".
+const AUDIO_STAGES = [
+  { name: "Pending", color: "#cbd5e1" },
+  { name: "Planned", color: "#f59e0b" },
+  { name: "In Review", color: "#2563eb" },
+  { name: "Final Edit", color: "#7c3aed" },
+  { name: "Ready for Upload", color: "#4ade80" },
+  { name: "Live", color: "#16a34a" },
+] as const;
+
+// The 25 tests in scope (Redo = TRUE on the audit sheet), seeded with the
+// sheet's column G status as of Aug 17.
+const AUDIO_AUDIT_TESTS: { name: string; seed: string }[] = [
+  { name: "Verbal Analogies", seed: "Final Edit" },
+  { name: "Receptive Vocabulary", seed: "Pending" },
+  { name: "Sequencing and Planning", seed: "Ready for Upload" },
+  { name: "Numbers Forward", seed: "Planned" },
+  { name: "Numbers Backward", seed: "Planned" },
+  { name: "Symbol-Sound Learning", seed: "Pending" },
+  { name: "Symbol-Sound Learning–Delayed", seed: "Pending" },
+  { name: "Semantic Fluency", seed: "Pending" },
+  { name: "Phonological Awareness–Rhyme Recognition", seed: "Final Edit" },
+  { name: "Phonological Awareness–Rhyme Production", seed: "Final Edit" },
+  { name: "Phonological Awareness–Syllable Counting", seed: "In Review" },
+  { name: "Phonological Awareness–Blending", seed: "In Review" },
+  { name: "Phonological Awareness–Segmenting", seed: "In Review" },
+  { name: "Phonological Awareness–Sound ID", seed: "In Review" },
+  { name: "Phonological Awareness–Substitution", seed: "In Review" },
+  { name: "Math Applications", seed: "Planned" },
+  { name: "Math Concepts", seed: "In Review" },
+  { name: "Value Estimation", seed: "In Review" },
+  { name: "Spelling Production", seed: "In Review" },
+  { name: "Spelling Recognition", seed: "In Review" },
+  { name: "Dictation", seed: "Pending" },
+  { name: "Handwritten Essay Writing", seed: "Pending" },
+  { name: "Typed Essay Writing", seed: "Pending" },
+  { name: "Listening Comprehension", seed: "Planned" },
+  { name: "Oral Expression Fluency", seed: "Pending" },
+];
+
+function AudioAuditSection() {
+  const [edits, setEdits] = useState<Record<string, string> | null>(null);
+
+  useEffect(() => {
+    fetchOverrides().then((ov) => setEdits(ov.audioAudit ?? {}));
+  }, []);
+
+  useEffect(() => {
+    const onSaved = () => {
+      fetchOverrides().then((ov) => setEdits(ov.audioAudit ?? {}));
+    };
+    window.addEventListener("roadmap-saved", onSaved);
+    return () => window.removeEventListener("roadmap-saved", onSaved);
+  }, []);
+
+  const statusOf = (t: { name: string; seed: string }) => edits?.[t.name] ?? t.seed;
+  const setStatus = (test: string, status: string) => {
+    setEdits((prev) => ({ ...prev, [test]: status }));
+    saveOverride("setAudioAuditStatus", { test, status }).catch(() => {});
+  };
+
+  const counts = AUDIO_STAGES.map((s) => ({
+    ...s,
+    count: AUDIO_AUDIT_TESTS.filter((t) => statusOf(t) === s.name).length,
+  }));
+  const liveCount = counts.find((c) => c.name === "Live")?.count ?? 0;
+
+  return (
+    <div style={{ marginBottom: 36 }}>
+      <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 18, paddingBottom: 12, borderBottom: "2px solid #1e293b" }}>
+        <div>
+          <div style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 4 }}>Readiness</div>
+          <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: "#0f172a", letterSpacing: "-0.01em" }}>Audio Content Updates</h2>
+        </div>
+        <span style={{ fontSize: 12, fontWeight: 600, color: "#64748b" }}>
+          Manually updated · mirrors the{" "}
+          <a href={AUDIO_AUDIT_SHEET_URL} target="_blank" rel="noreferrer" style={{ color: "#2563eb" }}>audit sheet</a>
+        </span>
+      </div>
+
+      <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, padding: "16px 18px", marginBottom: 16, boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8 }}>
+          <span style={{ fontSize: 12, fontWeight: 700, color: "#475569" }}>
+            {liveCount} / {AUDIO_AUDIT_TESTS.length} live
+          </span>
+          <span style={{ fontSize: 11, fontWeight: 600, color: "#94a3b8" }}>{AUDIO_AUDIT_TESTS.length} tests need new audio</span>
+        </div>
+        {/* Stacked pipeline bar, most-done stage on the left */}
+        <div style={{ display: "flex", height: 12, borderRadius: 999, overflow: "hidden", background: "#f1f5f9" }}>
+          {[...counts].reverse().filter((c) => c.count > 0).map((c) => (
+            <div key={c.name} title={`${c.name}: ${c.count}`} style={{ width: `${(c.count / AUDIO_AUDIT_TESTS.length) * 100}%`, background: c.color }} />
+          ))}
+        </div>
+        <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginTop: 10 }}>
+          {counts.filter((c) => c.count > 0).map((c) => (
+            <span key={c.name} style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11, fontWeight: 600, color: "#475569" }}>
+              <span style={{ width: 9, height: 9, borderRadius: 2, background: c.color, display: "inline-block" }} />
+              {c.name} · {c.count}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 10, boxShadow: "0 1px 2px rgba(0,0,0,0.04)", display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))" }}>
+        {AUDIO_AUDIT_TESTS.map((t) => {
+          const status = statusOf(t);
+          const stage = AUDIO_STAGES.find((s) => s.name === status);
+          return (
+            <div key={t.name} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 16px", borderBottom: "1px solid #f1f5f9" }}>
+              <span style={{ width: 9, height: 9, borderRadius: "50%", background: stage?.color ?? "#cbd5e1", flexShrink: 0 }} />
+              <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: status === "Live" ? "#94a3b8" : "#1e293b" }}>{t.name}</span>
+              <select
+                value={status}
+                disabled={edits === null}
+                onChange={(e) => setStatus(t.name, e.target.value)}
+                style={{
+                  fontSize: 11, fontWeight: 600, color: "#475569", fontFamily: "inherit",
+                  border: "1px solid #e2e8f0", borderRadius: 6, padding: "3px 6px", background: "#f8fafc", cursor: "pointer",
+                }}
+              >
+                {AUDIO_STAGES.map((s) => (
+                  <option key={s.name} value={s.name}>{s.name}</option>
+                ))}
+              </select>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function NormingCountdownView() {
   // This component only mounts client-side (after a tab click or the hash
   // effect), so reading the hash in the initializer is hydration-safe.
@@ -7810,6 +7952,8 @@ function NormingCountdownView() {
         {isPrenorm && <InternalAppSection label={PRENORMING_LABEL} accent={accent} />}
 
         {isPrenorm && <ContentReadinessSection />}
+
+        {isPrenorm && <AudioAuditSection />}
 
         {/* Pre-norming projects, tracked live from Linear */}
         {isPrenorm && <PrenormProjectsSection />}

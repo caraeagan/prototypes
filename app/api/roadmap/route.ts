@@ -57,6 +57,7 @@ export async function POST(request: NextRequest) {
       "saveNormingChecklist",
       "setPrenormQa",
       "setPrenormNote",
+      "setAudioAuditStatus",
     ]);
     if (!knownActions.has(action)) {
       return NextResponse.json(
@@ -389,6 +390,16 @@ export async function POST(request: NextRequest) {
             overrides.prenormQa[test] = true;
           } else {
             delete overrides.prenormQa[test];
+          }
+          break;
+        }
+        case "setAudioAuditStatus": {
+          const { test, status } = payload as { test: string; status: string };
+          if (!overrides.audioAudit) overrides.audioAudit = {};
+          if (status) {
+            overrides.audioAudit[test] = status;
+          } else {
+            delete overrides.audioAudit[test];
           }
           break;
         }

@@ -78,6 +78,9 @@ export type RoadmapOverrides = {
   prenormQa?: Record<string, boolean>;
   // prenormNotes[testName] = free-form note shown in the readiness table.
   prenormNotes?: Record<string, string>;
+  // audioAudit[testName] = manually-updated status for the audio content
+  // update effort. Seeded in code from the audit sheet; only edits are stored.
+  audioAudit?: Record<string, string>;
 };
 
 function sleep(ms: number) {
