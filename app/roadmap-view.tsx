@@ -7579,7 +7579,7 @@ function NormingCountdownView() {
   // This component only mounts client-side (after a tab click or the hash
   // effect), so reading the hash in the initializer is hydration-safe.
   const [subView, setSubView] = useState<"norming" | "prenorming">(() =>
-    typeof window !== "undefined" && window.location.hash === "#prenorming" ? "prenorming" : "norming",
+    typeof window !== "undefined" && window.location.hash === "#norming" ? "norming" : "prenorming",
   );
 
   useEffect(() => {
