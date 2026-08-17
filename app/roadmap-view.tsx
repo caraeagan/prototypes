@@ -3157,8 +3157,8 @@ function FilterBar({
   onPrint: () => void;
   onUndo: () => void;
   canUndo: boolean;
-  viewMode: "projects" | "subtestEdits" | "cycles" | "futureProjects" | "weeklyPlanning" | "normingCountdown";
-  onViewMode: (m: "projects" | "subtestEdits" | "cycles" | "futureProjects" | "weeklyPlanning" | "normingCountdown") => void;
+  viewMode: "projects" | "subtestEdits" | "cycles" | "futureProjects" | "weeklyPlanning" | "normingCountdown" | "metrics";
+  onViewMode: (m: "projects" | "subtestEdits" | "cycles" | "futureProjects" | "weeklyPlanning" | "normingCountdown" | "metrics") => void;
   teams: Team[];
   people: Person[];
   filterTeams: Set<string>;
@@ -3181,6 +3181,7 @@ function FilterBar({
               ["futureProjects", "Future Projects"],
               ["weeklyPlanning", "Weekly Planning"],
               ["normingCountdown", "Norming Countdown"],
+              ["metrics", "Metrics"],
             ] as const).map(([mode, label]) => {
               const active = viewMode === mode;
               return (
@@ -7101,6 +7102,58 @@ function PrenormStat({ label, done, total, color, hint }: { label: string; done:
   );
 }
 
+// Form Updates readiness math, shared by the pre-norming table and the
+// Metrics tab so the two never drift.
+function computePrenormReadiness(issues: PrenormIssue[], qa: Record<string, boolean>) {
+  // Only norming-related tickets belong in the table; the title guard keeps
+  // unrelated Form Updates work (e.g. "Dictation Routing") out of test rows.
+  const active = issues.filter(
+    (i) => i.state.type !== "canceled" && i.state.type !== "duplicate" && (/norming|booklet/i.test(i.title) || i.isVisibility),
+  );
+  const rows = PRENORM_TESTS.map((test) => {
+    const matched = active.filter((i) => test.matches.some((m) => i.title.toLowerCase().includes(m)));
+    const vis = matched.filter((i) => i.isVisibility);
+    const real = matched.filter((i) => !i.isVisibility);
+    const psych = real.filter((i) => prenormBucket(i) === "psych");
+    const eng = real.filter((i) => prenormBucket(i) === "eng");
+    const other = real.filter((i) => prenormBucket(i) === "other");
+    const tracked = [...psych, ...eng, ...other];
+    // Ready = every tracked ticket for this test is complete. Tests need at
+    // least one ticket to count (so unticketed tests don't read as ready by
+    // accident), unless engineering is explicitly marked None.
+    const ready = (tracked.length > 0 || !!test.engNone) && tracked.every((i) => i.state.type === "completed");
+    // Psych cell shows a derived Done when there's no psych ticket but the
+    // form design already shipped with the engineering ticket (completed, or
+    // spec'd in the Norming Forms milestone).
+    const psychDerivedDone = psych.length === 0 && (
+      !!test.psychNone ||
+      eng.some((i) => i.state.type === "completed" || i.projectMilestone?.name === "Norming Forms")
+    );
+    return { test, psych, eng, other, vis, ready, psychDerivedDone, qaDone: !!qa[test.name] };
+  });
+
+  // The engineering metric only counts tests that need engineering work;
+  // tests marked None are excluded from numerator and denominator alike.
+  const withEng = rows.filter((r) => r.eng.length > 0);
+  const engNoneCount = rows.filter((r) => r.test.engNone && r.eng.length === 0).length;
+  const engDone = withEng.filter((r) => r.eng.every((i) => i.state.type === "completed")).length;
+  // Psychometrics is measured against all 48 tests. A test counts as done
+  // when its PSY tickets are all complete, or when its form design was
+  // already delivered to engineering: the eng ticket is completed or carries
+  // the "Norming Forms" milestone (a full design spec). Bare engineering
+  // placeholders don't count — the design work is still ahead of psych.
+  const psychDone = rows.filter((r) => {
+    if (r.psych.some((i) => i.state.type !== "completed")) return false;
+    if (r.psych.length > 0) return true;
+    if (r.test.psychNone) return true;
+    return r.eng.some((i) => i.state.type === "completed" || i.projectMilestone?.name === "Norming Forms");
+  }).length;
+  const readyCount = rows.filter((r) => r.ready).length;
+  const qaCount = rows.filter((r) => r.qaDone).length;
+
+  return { rows, withEng, engNoneCount, engDone, psychDone, readyCount, qaCount };
+}
+
 function PrenormingSection() {
   const [issues, setIssues] = useState<PrenormIssue[] | null>(null);
   const [error, setError] = useState(false);
@@ -7156,51 +7209,7 @@ function PrenormingSection() {
     return <div style={{ color: "#94a3b8", padding: "40px 0", textAlign: "center" }}>Loading tickets from Linear...</div>;
   }
 
-  // Only norming-related tickets belong in the table; the title guard keeps
-  // unrelated Form Updates work (e.g. "Dictation Routing") out of test rows.
-  const active = issues.filter(
-    (i) => i.state.type !== "canceled" && i.state.type !== "duplicate" && (/norming|booklet/i.test(i.title) || i.isVisibility),
-  );
-  const rows = PRENORM_TESTS.map((test) => {
-    const matched = active.filter((i) => test.matches.some((m) => i.title.toLowerCase().includes(m)));
-    const vis = matched.filter((i) => i.isVisibility);
-    const real = matched.filter((i) => !i.isVisibility);
-    const psych = real.filter((i) => prenormBucket(i) === "psych");
-    const eng = real.filter((i) => prenormBucket(i) === "eng");
-    const other = real.filter((i) => prenormBucket(i) === "other");
-    const tracked = [...psych, ...eng, ...other];
-    // Ready = every tracked ticket for this test is complete. Tests need at
-    // least one ticket to count (so unticketed tests don't read as ready by
-    // accident), unless engineering is explicitly marked None.
-    const ready = (tracked.length > 0 || !!test.engNone) && tracked.every((i) => i.state.type === "completed");
-    // Psych cell shows a derived Done when there's no psych ticket but the
-    // form design already shipped with the engineering ticket (completed, or
-    // spec'd in the Norming Forms milestone).
-    const psychDerivedDone = psych.length === 0 && (
-      !!test.psychNone ||
-      eng.some((i) => i.state.type === "completed" || i.projectMilestone?.name === "Norming Forms")
-    );
-    return { test, psych, eng, other, vis, ready, psychDerivedDone, qaDone: !!qa[test.name] };
-  });
-
-  // The engineering metric only counts tests that need engineering work;
-  // tests marked None are excluded from numerator and denominator alike.
-  const withEng = rows.filter((r) => r.eng.length > 0);
-  const engNoneCount = rows.filter((r) => r.test.engNone && r.eng.length === 0).length;
-  const engDone = withEng.filter((r) => r.eng.every((i) => i.state.type === "completed")).length;
-  // Psychometrics is measured against all 48 tests. A test counts as done
-  // when its PSY tickets are all complete, or when its form design was
-  // already delivered to engineering: the eng ticket is completed or carries
-  // the "Norming Forms" milestone (a full design spec). Bare engineering
-  // placeholders don't count — the design work is still ahead of psych.
-  const psychDone = rows.filter((r) => {
-    if (r.psych.some((i) => i.state.type !== "completed")) return false;
-    if (r.psych.length > 0) return true;
-    if (r.test.psychNone) return true;
-    return r.eng.some((i) => i.state.type === "completed" || i.projectMilestone?.name === "Norming Forms");
-  }).length;
-  const readyCount = rows.filter((r) => r.ready).length;
-  const qaCount = rows.filter((r) => r.qaDone).length;
+  const { rows, withEng, engNoneCount, engDone, psychDone, readyCount, qaCount } = computePrenormReadiness(issues, qa);
 
   const thStyle: React.CSSProperties = {
     padding: "10px 14px", fontSize: 11, fontWeight: 800, color: "#94a3b8",
@@ -7816,6 +7825,174 @@ function AudioAuditSection() {
             </div>
           );
         })}
+      </div>
+    </div>
+  );
+}
+
+// ── Metrics tab ─────────────────────────────────────────────────────────────
+// One-screen summary of the numbers that matter for norming readiness. Every
+// tile reuses the same data sources and math as its detailed section on the
+// Norming Countdown tab, so the two always agree.
+function MetricTile({ label, done, total, color, note }: { label: string; done: number; total: number; color: string; note: string }) {
+  const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+  return (
+    <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 14, padding: "20px 22px", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+      <div style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>{label}</div>
+      <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 12 }}>
+        <span style={{ fontSize: 36, fontWeight: 900, color, lineHeight: 1, letterSpacing: "-0.02em" }}>{done}</span>
+        <span style={{ fontSize: 16, fontWeight: 700, color: "#94a3b8" }}>/ {total}</span>
+        <span style={{ marginLeft: "auto", fontSize: 14, fontWeight: 800, color: "#475569", fontVariantNumeric: "tabular-nums" }}>{pct}%</span>
+      </div>
+      <div style={{ height: 8, borderRadius: 999, background: "#f1f5f9", overflow: "hidden", marginBottom: 10 }}>
+        <div style={{ width: `${pct}%`, height: "100%", background: color, borderRadius: 999, transition: "width 0.4s ease" }} />
+      </div>
+      <div style={{ fontSize: 12, color: "#64748b", lineHeight: 1.5 }}>{note}</div>
+    </div>
+  );
+}
+
+function MetricsView() {
+  const [prenormIssues, setPrenormIssues] = useState<PrenormIssue[] | null>(null);
+  const [content, setContent] = useState<{ instructions: AiRow[]; cfBuilt: CfRow[] } | null>(null);
+  const [overrides, setOverrides] = useState<RoadmapOverrides | null>(null);
+  const [errors, setErrors] = useState<string[]>([]);
+
+  useEffect(() => {
+    fetch("/api/linear", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ query: PRENORM_ISSUES_QUERY, variables: { label: PRENORMING_LABEL } }),
+    })
+      .then((r) => r.json())
+      .then((j) => {
+        if (j.error) throw new Error(j.error);
+        const labeled: PrenormIssue[] = j.data?.labeled?.nodes ?? [];
+        const formUpdates: PrenormIssue[] = j.data?.formUpdates?.nodes ?? [];
+        const visibility: PrenormIssue[] = j.data?.visibility?.nodes ?? [];
+        const byId = new Map<string, PrenormIssue>();
+        for (const i of [...labeled, ...formUpdates]) byId.set(i.id, i);
+        for (const i of visibility) byId.set(i.id, { ...i, isVisibility: true });
+        setPrenormIssues([...byId.values()]);
+      })
+      .catch(() => setErrors((e) => [...e, "Linear tickets"]));
+    fetch("/api/content-readiness")
+      .then((r) => r.json())
+      .then((j) => {
+        if (j.error) throw new Error(j.error);
+        setContent(j);
+      })
+      .catch(() => setErrors((e) => [...e, "shipped content"]));
+    fetchOverrides().then(setOverrides);
+  }, []);
+
+  const now = new Date();
+  const msPerDay = 24 * 60 * 60 * 1000;
+  const daysToPrenorm = Math.max(0, Math.ceil((PRENORMING_TARGET.getTime() - now.getTime()) / msPerDay));
+  const daysToNorm = Math.max(0, Math.ceil((NORMING_TARGET.getTime() - now.getTime()) / msPerDay));
+
+  // Form Updates readiness (same math as the pre-norming table).
+  const readiness = prenormIssues ? computePrenormReadiness(prenormIssues, overrides?.prenormQa ?? {}) : null;
+
+  // All tickets carrying the pre-norming label, workspace-wide.
+  const labeledLive = (prenormIssues ?? []).filter(
+    (i) => !i.isVisibility && i.state.type !== "canceled" && i.state.type !== "duplicate",
+  );
+  const labeledDone = labeledLive.filter((i) => i.state.type === "completed").length;
+
+  // Instructions: a subtest counts when every scene of its latest version has audio.
+  const instrRows = content?.instructions ?? [];
+  const instrBuilt = instrRows.filter((r) => r.scenes > 0 && r.scenesWithAudio === r.scenes).length;
+  const instrReleased = instrRows.filter((r) => r.isActive).length;
+
+  // Corrective feedback: only the subtests the content tracker says need it.
+  const cfRows = (content?.cfBuilt ?? []).filter((r) => CF_NEEDED.has(r.code));
+  const cfDone = cfRows.filter((r) => r.total > 0 && r.complete === r.total).length;
+
+  // Audio content updates (manual tracker).
+  const audioEdits = overrides?.audioAudit ?? {};
+  const audioLive = AUDIO_AUDIT_TESTS.filter((t) => (audioEdits[t.name] ?? t.seed) === "Live").length;
+
+  return (
+    <div style={{ fontFamily: "var(--font-sans)", height: "calc(100vh - 80px)", overflow: "auto", background: "#f8fafc" }}>
+      <div style={{ maxWidth: 1000, margin: "0 auto", padding: "32px 32px 80px" }}>
+        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 24, flexWrap: "wrap", gap: 8 }}>
+          <h1 style={{ margin: 0, fontSize: 24, fontWeight: 800, color: "#0f172a", letterSpacing: "-0.01em" }}>Key Metrics</h1>
+          <span style={{ fontSize: 12, fontWeight: 600, color: "#64748b" }}>Same sources as the Norming Countdown sections</span>
+        </div>
+
+        {errors.length > 0 && (
+          <div style={{ color: "#dc2626", fontSize: 13, marginBottom: 16 }}>Couldn&apos;t load: {errors.join(", ")}.</div>
+        )}
+
+        {/* Deadlines */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16, marginBottom: 16 }}>
+          {[
+            { label: "Days to pre-norming", days: daysToPrenorm, date: "Sep 8", color: "#f97316" },
+            { label: "Days to norming", days: daysToNorm, date: "Sep 28", color: "#eab308" },
+          ].map((d) => (
+            <div key={d.label} style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 14, padding: "20px 22px", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>{d.label}</div>
+              <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+                <span style={{ fontSize: 36, fontWeight: 900, color: d.color, lineHeight: 1 }}>{d.days}</span>
+                <span style={{ fontSize: 13, fontWeight: 600, color: "#94a3b8" }}>{d.date}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Readiness */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 16 }}>
+          {readiness && (
+            <MetricTile
+              label="Tests ready for pre-norming"
+              done={readiness.readyCount}
+              total={readiness.rows.length}
+              color="#16a34a"
+              note="Norming form fully done: every tracked psychometrics and engineering ticket complete."
+            />
+          )}
+          {prenormIssues && (
+            <MetricTile
+              label="Pre-norming tickets done"
+              done={labeledDone}
+              total={labeledLive.length}
+              color="#f97316"
+              note={`Every ticket carrying the "${PRENORMING_LABEL}" label in Linear.`}
+            />
+          )}
+          {content && (
+            <MetricTile
+              label="Instructions built"
+              done={instrBuilt}
+              total={instrRows.length}
+              color="#2563EB"
+              note={`Subtests whose instruction scenes all have audio. ${instrReleased} released to the player so far.`}
+            />
+          )}
+          {content && (
+            <MetricTile
+              label="Corrective feedback built"
+              done={cfDone}
+              total={CF_NEEDED.size}
+              color="#D97706"
+              note="Subtests where every practice item has all four feedback files."
+            />
+          )}
+          {overrides && (
+            <MetricTile
+              label="Audio updates live"
+              done={audioLive}
+              total={AUDIO_AUDIT_TESTS.length}
+              color="#7C3AED"
+              note="Replacement audio actually live in the product. Manually tracked."
+            />
+          )}
+        </div>
+
+        {(!prenormIssues || !content || !overrides) && errors.length === 0 && (
+          <div style={{ color: "#94a3b8", padding: "20px 0", textAlign: "center", fontSize: 13 }}>Loading metrics...</div>
+        )}
       </div>
     </div>
   );
@@ -10209,7 +10386,7 @@ function CyclesView({ cycles, people }: { cycles: LinearCycle[]; people: Person[
 
 export function RoadmapView({ people, months, phases, teams, initialOverrides }: RoadmapViewProps) {
   const [search, setSearch] = useState("");
-  const [viewMode, setViewMode] = useState<"projects" | "subtestEdits" | "cycles" | "futureProjects" | "weeklyPlanning" | "normingCountdown">("projects");
+  const [viewMode, setViewMode] = useState<"projects" | "subtestEdits" | "cycles" | "futureProjects" | "weeklyPlanning" | "normingCountdown" | "metrics">("projects");
 
   // Keep the active view in the URL hash so reloads stay on the same page and
   // links like #prenorming are shareable. The norming view writes its own
@@ -10217,8 +10394,8 @@ export function RoadmapView({ people, months, phases, teams, initialOverrides }:
   useEffect(() => {
     const h = window.location.hash.slice(1);
     if (h === "norming" || h === "prenorming") setViewMode("normingCountdown");
-    else if (["projects", "subtestEdits", "cycles", "futureProjects", "weeklyPlanning"].includes(h)) {
-      setViewMode(h as "projects" | "subtestEdits" | "cycles" | "futureProjects" | "weeklyPlanning");
+    else if (["projects", "subtestEdits", "cycles", "futureProjects", "weeklyPlanning", "metrics"].includes(h)) {
+      setViewMode(h as "projects" | "subtestEdits" | "cycles" | "futureProjects" | "weeklyPlanning" | "metrics");
     }
   }, []);
   useEffect(() => {
@@ -11942,6 +12119,8 @@ export function RoadmapView({ people, months, phases, teams, initialOverrides }:
         <WeeklyPlanningView people={localPeople} />
       ) : viewMode === "normingCountdown" ? (
         <NormingCountdownView />
+      ) : viewMode === "metrics" ? (
+        <MetricsView />
       ) : viewMode === "futureProjects" ? (
         <FutureProjectsView
           people={localPeople}
