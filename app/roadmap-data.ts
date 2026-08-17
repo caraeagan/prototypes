@@ -185,6 +185,22 @@ export const PEOPLE: Person[] = [
         duration: 4,
         tasks: [],
       },
+      {
+        id: "p058",
+        name: "Between-Subtest Student Experience",
+        linearProjectName: "Between-Subtest Student Experience",
+        startMonth: 5,
+        duration: 1.3,
+        tasks: [],
+      },
+      {
+        id: "p059",
+        name: "Test Renaming & Task Model",
+        linearProjectName: "Test Renaming & Task Model",
+        startMonth: 5,
+        duration: 1.3,
+        tasks: [],
+      },
     ],
   },
   {
