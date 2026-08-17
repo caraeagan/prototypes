@@ -7686,102 +7686,30 @@ function NormingCountdownView() {
 
         {/* Countdown + progress */}
         <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 16, padding: "28px 28px 24px", marginBottom: 36, boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
-          <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", flexWrap: "wrap", gap: 8, marginBottom: isPrenorm ? 0 : 18 }}>
+          <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
             <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
               <span style={{ fontSize: 56, fontWeight: 900, color: accent, lineHeight: 1, letterSpacing: "-0.03em" }}>{daysRemaining}</span>
               <span style={{ fontSize: 18, fontWeight: 700, color: "#334155" }}>{daysRemaining === 1 ? "day" : "days"} until {isPrenorm ? "pre-norming" : "norming"}</span>
             </div>
             <span style={{ fontSize: 14, fontWeight: 600, color: "#64748b" }}>Target: {targetLabel}</span>
           </div>
-          {!isPrenorm && (
-            <>
-              <div style={{ position: "relative", height: 16, borderRadius: 999, background: "#e2e8f0", overflow: "hidden" }}>
-                <div
-                  style={{
-                    position: "absolute", inset: 0, width: `${progressPct}%`,
-                    background: "linear-gradient(90deg, #facc15, #eab308)",
-                    borderRadius: 999, transition: "width 0.4s ease",
-                  }}
-                />
-              </div>
-              <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8, fontSize: 12, fontWeight: 600, color: "#64748b" }}>
-                <span>{doneCount} / {allItems.length} items complete</span>
-                <span>{progressPct}% done</span>
-              </div>
-            </>
-          )}
         </div>
+
+        {!isPrenorm && (
+          <div style={{ padding: "60px 0", textAlign: "center", fontSize: 20, fontWeight: 700, color: "#94a3b8" }}>
+            Coming soon
+          </div>
+        )}
 
         {isPrenorm && <PrenormingSection />}
 
-        <InternalAppSection label={isPrenorm ? PRENORMING_LABEL : NORMING_LABEL} accent={accent} />
+        {isPrenorm && <InternalAppSection label={PRENORMING_LABEL} accent={accent} />}
 
-        <ContentReadinessSection />
+        {isPrenorm && <ContentReadinessSection />}
 
         {/* Pre-norming projects, tracked live from Linear */}
         {isPrenorm && <PrenormProjectsSection />}
 
-        {/* Per-team breakdown */}
-        {!isPrenorm && !loading && (
-          <div style={{ marginBottom: 36 }}>
-            <h2 style={{ margin: "0 0 16px", fontSize: 16, fontWeight: 800, color: "#0f172a" }}>By team</h2>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 12 }}>
-              {NORMING_TEAMS.map((team) => {
-                const teamItems = checklist[team.name] ?? [];
-                const done = teamItems.filter((it) => it.done).length;
-                const notDone = teamItems.length - done;
-                return (
-                  <div key={team.name} style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, padding: "14px 16px" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-                      <span style={{ width: 10, height: 10, borderRadius: 3, background: team.color, display: "inline-block" }} />
-                      <span style={{ fontSize: 13, fontWeight: 700, color: "#334155" }}>{team.name}</span>
-                    </div>
-                    <div style={{ display: "flex", gap: 16 }}>
-                      <div>
-                        <div style={{ fontSize: 28, fontWeight: 900, color: "#16a34a", lineHeight: 1 }}>{done}</div>
-                        <div style={{ fontSize: 11, fontWeight: 600, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.04em", marginTop: 4 }}>Completed</div>
-                      </div>
-                      <div>
-                        <div style={{ fontSize: 28, fontWeight: 900, color: "#dc2626", lineHeight: 1 }}>{notDone}</div>
-                        <div style={{ fontSize: 11, fontWeight: 600, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.04em", marginTop: 4 }}>Remaining</div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Per-team checklists */}
-        {!isPrenorm && (
-          <>
-            <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 18, paddingBottom: 12, borderBottom: "2px solid #1e293b" }}>
-              <div>
-                <div style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 4 }}>Readiness Checklist</div>
-                <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: "#0f172a", letterSpacing: "-0.01em" }}>Norming Requirements by Team</h2>
-              </div>
-              {allItems.length > 0 && (
-                <span style={{ fontSize: 13, fontWeight: 700, color: "#334155" }}>{doneCount} of {allItems.length} complete</span>
-              )}
-            </div>
-
-            {loading ? (
-              <div style={{ color: "#94a3b8", padding: "40px 0", textAlign: "center" }}>Loading...</div>
-            ) : (
-              NORMING_TEAMS.map((team) => (
-                <TeamChecklist
-                  key={team.name}
-                  team={team}
-                  items={checklist[team.name] ?? []}
-                  onAdd={(text) => addItem(team.name, text)}
-                  onToggle={(id) => toggleItem(team.name, id)}
-                  onRemove={(id) => removeItem(team.name, id)}
-                />
-              ))
-            )}
-          </>
-        )}
       </div>
     </div>
   );
