@@ -7338,6 +7338,7 @@ const INTERNAL_APP_ROCKS: { name: string; ids: string[] }[] = [
   { name: "Norming scheduling & session packing", ids: ["MAR2-1917", "MAR2-1918", "MAR2-1919", "MAR2-2068"] },
   { name: "Clinical cell attribution writer", ids: ["MAR2-2066"] },
   { name: "Shipstation integration", ids: ["MAR2-2052"] },
+  { name: "Consent form language updates", ids: ["MAR2-1512", "MAR2-1513"] },
 ];
 
 type InternalAppIssue = {
@@ -7614,7 +7615,9 @@ function ContentReadinessSection() {
             <thead>
               <tr style={{ background: "#f8fafc" }}>
                 <th style={{ ...thStyle, textAlign: "left" }}>Subtest</th>
-                <th style={thStyle}>EN Instructions Built</th>
+                <th style={thStyle}>
+                  <span className="hover-tip" data-tip="Counts instruction scenes: how many of the subtest's scenes have their audio file, out of the total scenes">EN Instructions Built</span>
+                </th>
                 <th style={thStyle}>Instructions released</th>
                 <th style={thStyle}>
                   <span className="hover-tip" data-tip="No tooling in CMS for corrective feedback yet. Counts are based on # of practice items">EN Feedback Built</span>
