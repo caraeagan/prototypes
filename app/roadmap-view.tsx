@@ -6478,9 +6478,11 @@ function newNormingItemId(): string {
 // Pre-norming projects tracked live from Linear: each card lists the
 // project's tickets and derives status from ticket state. Names must match
 // the Linear project names exactly.
-const PRENORM_PROJECTS: { name: string; color: string }[] = [
+const PRENORM_PROJECTS: { name: string; title?: string; color: string; prenormLabelOnly?: boolean }[] = [
   { name: "Between-Subtest Student Experience", color: "#0EA5E9" },
   { name: "Test Renaming & Task Model", color: "#16A34A" },
+  // Only this project's tickets that carry the pre-norming label, not the whole project.
+  { name: "Subtest Feedback & Assessment Player Edits", title: "Assessment Player", color: "#9333EA", prenormLabelOnly: true },
 ];
 
 // Render a Linear description's markdown links ([text](<url>)) and bare URLs
@@ -6600,29 +6602,95 @@ type PrenormProjectIssue = {
   project: { name: string } | null;
 };
 
+type CountNode = { id: string; state: { type: string }; project: { name: string } | null };
+
 // Auto-tracked project cards: tickets load live from Linear per project.
 function PrenormProjectsSection() {
   const [issues, setIssues] = useState<PrenormProjectIssue[] | null>(null);
+  // Per-project norming-label and total ticket counts for the label-only cards' hover hint.
+  const [labelCounts, setLabelCounts] = useState<Record<string, { norming?: number; total?: number }>>({});
   const [error, setError] = useState(false);
   const [openProject, setOpenProject] = useState<{ name: string; color: string } | null>(null);
   const [selectedIssueId, setSelectedIssueId] = useState<string | null>(null);
+  // Project name whose "?" count hint is hovered.
+  const [hoveredHint, setHoveredHint] = useState<string | null>(null);
 
   const load = useCallback(() => {
-    linearQuery<{ issues: { nodes: PrenormProjectIssue[] } }>(
-      `query PrenormProjectIssues($names: [String!]) {
-        issues(first: 100, filter: { project: { name: { in: $names } } }) {
-          nodes {
-            id identifier title url
-            state { name type color }
-            assignee { displayName }
-            project { name }
-          }
+    const labeledNames = PRENORM_PROJECTS.filter((p) => p.prenormLabelOnly).map((p) => p.name);
+    linearQuery<{
+      full: { nodes: PrenormProjectIssue[] };
+      labeled: { nodes: PrenormProjectIssue[] };
+      norming: { nodes: CountNode[] };
+    }>(
+      `query PrenormProjectIssues($names: [String!], $labeledNames: [String!], $label: String!) {
+        full: issues(first: 100, filter: { project: { name: { in: $names } } }) {
+          nodes { ...PrenormProjIssue }
         }
+        labeled: issues(first: 100, filter: { project: { name: { in: $labeledNames } }, labels: { name: { eq: $label } } }) {
+          nodes { ...PrenormProjIssue }
+        }
+        norming: issues(first: 250, filter: { project: { name: { in: $labeledNames } }, labels: { name: { eq: "Norming (Sep 28)" } } }) {
+          nodes { id state { type } project { name } }
+        }
+      }
+      fragment PrenormProjIssue on Issue {
+        id identifier title url
+        state { name type color }
+        assignee { displayName }
+        project { name }
       }`,
-      { names: PRENORM_PROJECTS.map((p) => p.name) },
+      {
+        names: PRENORM_PROJECTS.filter((p) => !p.prenormLabelOnly).map((p) => p.name),
+        labeledNames,
+        label: PRENORMING_LABEL,
+      },
     )
-      .then((d) => setIssues(d.issues.nodes))
+      .then((d) => {
+        setIssues([...d.full.nodes, ...d.labeled.nodes]);
+        setLabelCounts((prev) => {
+          const next = { ...prev };
+          for (const name of labeledNames) next[name] = { ...next[name], norming: 0 };
+          for (const n of d.norming.nodes) {
+            if (n.state.type === "canceled" || n.state.type === "duplicate") continue;
+            const c = next[n.project?.name ?? ""];
+            if (c) c.norming = (c.norming ?? 0) + 1;
+          }
+          return next;
+        });
+      })
       .catch(() => setError(true));
+
+    // Open (not completed/canceled) ticket counts paginate separately: the
+    // feedback project has 400+ tickets, past Linear's 250-per-page cap.
+    // Failures just leave the hover hint on its loading text.
+    (async () => {
+      const totals: Record<string, number> = {};
+      for (const name of labeledNames) totals[name] = 0;
+      let after: string | null = null;
+      do {
+        const d: { issues: { pageInfo: { hasNextPage: boolean; endCursor: string | null }; nodes: CountNode[] } } =
+          await linearQuery(
+            `query PrenormProjectTotals($names: [String!], $after: String) {
+              issues(first: 250, after: $after, filter: { project: { name: { in: $names } } }) {
+                pageInfo { hasNextPage endCursor }
+                nodes { id state { type } project { name } }
+              }
+            }`,
+            { names: labeledNames, after },
+          );
+        for (const n of d.issues.nodes) {
+          if (n.state.type === "completed" || n.state.type === "canceled" || n.state.type === "duplicate") continue;
+          const key = n.project?.name ?? "";
+          if (key in totals) totals[key]++;
+        }
+        after = d.issues.pageInfo.hasNextPage ? d.issues.pageInfo.endCursor : null;
+      } while (after);
+      setLabelCounts((prev) => {
+        const next = { ...prev };
+        for (const name of labeledNames) next[name] = { ...next[name], total: totals[name] };
+        return next;
+      });
+    })().catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -6660,8 +6728,39 @@ function PrenormProjectsSection() {
                   textDecoration: "underline dotted #94a3b8", textUnderlineOffset: 3,
                 }}
               >
-                {p.name}
+                {p.title ?? p.name}
               </h3>
+              {p.prenormLabelOnly && (
+                <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, fontWeight: 600, color: "#94a3b8", whiteSpace: "nowrap" }}>
+                  Pre-norming tickets only
+                  <span style={{ position: "relative", display: "inline-flex" }}>
+                    <span
+                      onMouseEnter={() => setHoveredHint(p.name)}
+                      onMouseLeave={() => setHoveredHint(null)}
+                      style={{
+                        display: "inline-flex", alignItems: "center", justifyContent: "center",
+                        width: 14, height: 14, borderRadius: "50%", border: "1px solid #cbd5e1",
+                        fontSize: 9, fontWeight: 800, color: "#64748b", cursor: "help",
+                      }}
+                    >
+                      ?
+                    </span>
+                    {hoveredHint === p.name && (
+                      <span
+                        style={{
+                          // Below the icon: the card clips overflow, so a bubble above would be cut off.
+                          position: "absolute", right: -8, top: "calc(100% + 8px)",
+                          background: "#1e293b", color: "#fff", fontSize: 12, fontWeight: 600,
+                          padding: "5px 9px", borderRadius: 6, whiteSpace: "nowrap", pointerEvents: "none",
+                          boxShadow: "0 4px 12px rgba(0, 0, 0, 0.18)", zIndex: 20,
+                        }}
+                      >
+                        Norming (Sep 28) tickets: {labelCounts[p.name]?.norming ?? "loading..."} · Open tickets: {labelCounts[p.name]?.total ?? "loading..."}
+                      </span>
+                    )}
+                  </span>
+                </span>
+              )}
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <div style={{ width: 88, height: 6, borderRadius: 999, background: "#e2e8f0", overflow: "hidden" }}>
                   <div style={{ width: `${pct}%`, height: "100%", background: p.color, transition: "width 0.3s ease" }} />
@@ -6672,7 +6771,9 @@ function PrenormProjectsSection() {
               </div>
             </header>
             {projIssues.length === 0 && (
-              <div style={{ color: "#94a3b8", fontSize: 13, fontStyle: "italic", padding: "16px 18px" }}>No tickets in this project yet.</div>
+              <div style={{ color: "#94a3b8", fontSize: 13, fontStyle: "italic", padding: "16px 18px" }}>
+                {p.prenormLabelOnly ? "No pre-norming tickets in this project yet." : "No tickets in this project yet."}
+              </div>
             )}
             {projIssues.map((i) => (
               <div
