@@ -7250,7 +7250,13 @@ function PrenormingSection() {
           color="#2563EB"
           hint={`Counts only the ${withEng.length} tests with engineering work. ${engNoneCount} tests are marked None (no engineering needed) and are excluded.`}
         />
-        <PrenormStat label="Full QA" done={qaCount} total={rows.length} color="#7C3AED" />
+        <PrenormStat
+          label="Full QA"
+          done={qaCount}
+          total={rows.length}
+          color="#7C3AED"
+          hint="Cara working on defining QA process, update coming soon"
+        />
       </div>
 
       {/* Readiness table */}
