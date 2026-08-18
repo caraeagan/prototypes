@@ -7229,7 +7229,13 @@ function PrenormingSection() {
 
       {/* Counters */}
       <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 24 }}>
-        <PrenormStat label="Tests ready" done={readyCount} total={rows.length} color="#16a34a" />
+        <PrenormStat
+          label="Tests ready"
+          done={readyCount}
+          total={rows.length}
+          color="#16a34a"
+          hint={`Counts all ${rows.length} tests. A test is ready when every tracked psychometrics, engineering, and booklet ticket is complete. Tests that need no engineering (e.g. essays) can be ready with no tickets, so this can run ahead of the Engineering count.`}
+        />
         <PrenormStat
           label="Psychometrics"
           done={psychDone}
