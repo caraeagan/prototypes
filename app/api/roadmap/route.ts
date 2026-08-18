@@ -58,6 +58,7 @@ export async function POST(request: NextRequest) {
       "setPrenormQa",
       "setPrenormNote",
       "setAudioAuditStatus",
+      "saveKeyDates",
     ]);
     if (!knownActions.has(action)) {
       return NextResponse.json(
@@ -391,6 +392,15 @@ export async function POST(request: NextRequest) {
           } else {
             delete overrides.prenormQa[test];
           }
+          break;
+        }
+        case "saveKeyDates": {
+          const { items } = payload as {
+            items: { id: string; text: string; date: string; status: "red" | "yellow" | "green" }[];
+          };
+          // Always store the array (even empty): an absent key means "use the
+          // code-seeded defaults", so deleting every row must not resurrect them.
+          overrides.keyDates = items ?? [];
           break;
         }
         case "setAudioAuditStatus": {

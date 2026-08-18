@@ -81,6 +81,10 @@ export type RoadmapOverrides = {
   // audioAudit[testName] = manually-updated status for the audio content
   // update effort. Seeded in code from the audit sheet; only edits are stored.
   audioAudit?: Record<string, string>;
+  // keyDates = user-managed milestone list on the pre-norming countdown, each
+  // with a red/yellow/green confidence status. Stored whole (even empty) so
+  // deleting the code-seeded defaults sticks.
+  keyDates?: { id: string; text: string; date: string; status: "red" | "yellow" | "green" }[];
 };
 
 function sleep(ms: number) {
