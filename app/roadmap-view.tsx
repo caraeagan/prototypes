@@ -7847,8 +7847,12 @@ const DEFAULT_KEY_DATES: KeyDate[] = [
   { id: "seed-intake-form", text: "Send out intake form", date: "2026-08-28", status: "green" },
 ];
 
-function KeyDatesSection() {
+// Compact chip row inside the countdown card. Each chip: status dot (click
+// cycles green/yellow/red), inline-editable title, click-to-edit date, ×.
+function KeyDatesBar() {
   const [items, setItems] = useState<KeyDate[] | null>(null);
+  // Chip id whose date is being edited (shows the native date input).
+  const [editingDate, setEditingDate] = useState<string | null>(null);
 
   useEffect(() => {
     fetchOverrides().then((ov) => setItems(ov.keyDates ?? DEFAULT_KEY_DATES));
@@ -7868,66 +7872,64 @@ function KeyDatesSection() {
   if (!items) return null;
 
   return (
-    <div style={{ marginBottom: 36 }}>
-      <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 18, paddingBottom: 12, borderBottom: "2px solid #1e293b" }}>
-        <div>
-          <div style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 4 }}>Schedule</div>
-          <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: "#0f172a", letterSpacing: "-0.01em" }}>Key Dates</h2>
-        </div>
-        <span style={{ fontSize: 12, fontWeight: 600, color: "#64748b" }}>Click the dot to set red / yellow / green</span>
-      </div>
-
-      <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 10, overflow: "hidden", boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
-        {items.length === 0 && (
-          <div style={{ color: "#94a3b8", fontSize: 13, fontStyle: "italic", padding: "16px 18px" }}>No key dates yet.</div>
-        )}
-        {items.map((it) => {
-          const c = KEY_DATE_COLORS[it.status];
-          return (
-            <div key={it.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 18px", borderBottom: "1px solid #f1f5f9", background: c.bg }}>
-              <button
-                onClick={() => update(it.id, { status: KEY_DATE_CYCLE[(KEY_DATE_CYCLE.indexOf(it.status) + 1) % KEY_DATE_CYCLE.length] })}
-                title={`Status: ${it.status} — click to change`}
-                style={{ width: 16, height: 16, borderRadius: "50%", background: c.dot, border: "2px solid #fff", boxShadow: "0 0 0 1px #e2e8f0", cursor: "pointer", flexShrink: 0, padding: 0 }}
-              />
-              <input
-                value={it.text}
-                placeholder="What needs to happen"
-                onChange={(e) => {
-                  // Local-only while typing; persisted on blur to avoid a save per keystroke.
-                  setItems((prev) => prev!.map((p) => (p.id === it.id ? { ...p, text: e.target.value } : p)));
-                }}
-                onBlur={(e) => update(it.id, { text: e.target.value.trim() })}
-                style={{ flex: 1, fontSize: 14, fontWeight: 600, color: "#1e293b", fontFamily: "inherit", border: "none", outline: "none", background: "transparent" }}
-              />
-              <span style={{ fontSize: 13, fontWeight: 700, color: "#475569", whiteSpace: "nowrap" }}>
-                {parseDateLocal(it.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-              </span>
+    <div style={{ marginTop: 18, paddingTop: 14, borderTop: "1px solid #f1f5f9", display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+      <span style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.08em", marginRight: 2 }}>Key dates</span>
+      {items.map((it) => {
+        const c = KEY_DATE_COLORS[it.status];
+        return (
+          <span key={it.id} style={{ display: "inline-flex", alignItems: "center", gap: 7, background: c.bg, border: "1px solid #e2e8f0", borderRadius: 999, padding: "4px 10px 4px 6px" }}>
+            <button
+              onClick={() => update(it.id, { status: KEY_DATE_CYCLE[(KEY_DATE_CYCLE.indexOf(it.status) + 1) % KEY_DATE_CYCLE.length] })}
+              title={`Status: ${it.status} — click to change`}
+              style={{ width: 12, height: 12, borderRadius: "50%", background: c.dot, border: "none", cursor: "pointer", flexShrink: 0, padding: 0 }}
+            />
+            <input
+              value={it.text}
+              placeholder="What needs to happen"
+              size={Math.max(it.text.length, 12)}
+              onChange={(e) => {
+                // Local-only while typing; persisted on blur to avoid a save per keystroke.
+                setItems((prev) => prev!.map((p) => (p.id === it.id ? { ...p, text: e.target.value } : p)));
+              }}
+              onBlur={(e) => update(it.id, { text: e.target.value.trim() })}
+              style={{ fontSize: 12, fontWeight: 600, color: "#1e293b", fontFamily: "inherit", border: "none", outline: "none", background: "transparent", padding: 0 }}
+            />
+            {editingDate === it.id ? (
               <input
                 type="date"
                 value={it.date}
+                autoFocus
                 onChange={(e) => { if (e.target.value) update(it.id, { date: e.target.value }); }}
-                style={{ fontSize: 12, fontFamily: "inherit", color: "#64748b", border: "1px solid #e2e8f0", borderRadius: 6, padding: "2px 6px", background: "#fff", cursor: "pointer" }}
+                onBlur={() => setEditingDate(null)}
+                style={{ fontSize: 11, fontFamily: "inherit", color: "#64748b", border: "1px solid #e2e8f0", borderRadius: 6, padding: "0 4px", background: "#fff" }}
               />
+            ) : (
               <button
-                onClick={() => persist(items.filter((p) => p.id !== it.id))}
-                title="Delete"
-                style={{ border: "none", background: "transparent", color: "#cbd5e1", fontSize: 16, cursor: "pointer", padding: "0 2px", lineHeight: 1 }}
-                onMouseEnter={(e) => { e.currentTarget.style.color = "#dc2626"; }}
-                onMouseLeave={(e) => { e.currentTarget.style.color = "#cbd5e1"; }}
+                onClick={() => setEditingDate(it.id)}
+                title="Change date"
+                style={{ fontSize: 12, fontWeight: 700, color: "#475569", whiteSpace: "nowrap", border: "none", background: "transparent", cursor: "pointer", fontFamily: "inherit", padding: 0 }}
               >
-                ×
+                {parseDateLocal(it.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
               </button>
-            </div>
-          );
-        })}
-        <button
-          onClick={() => persist([...items, { id: newNormingItemId(), text: "", date: new Date().toISOString().slice(0, 10), status: "yellow" }])}
-          style={{ display: "block", width: "100%", textAlign: "left", padding: "10px 18px", border: "none", background: "transparent", color: "#64748b", fontSize: 13, fontWeight: 600, fontFamily: "inherit", cursor: "pointer" }}
-        >
-          + Add key date
-        </button>
-      </div>
+            )}
+            <button
+              onClick={() => persist(items.filter((p) => p.id !== it.id))}
+              title="Delete"
+              style={{ border: "none", background: "transparent", color: "#cbd5e1", fontSize: 14, cursor: "pointer", padding: 0, lineHeight: 1 }}
+              onMouseEnter={(e) => { e.currentTarget.style.color = "#dc2626"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.color = "#cbd5e1"; }}
+            >
+              ×
+            </button>
+          </span>
+        );
+      })}
+      <button
+        onClick={() => persist([...items, { id: newNormingItemId(), text: "", date: new Date().toISOString().slice(0, 10), status: "yellow" }])}
+        style={{ border: "1px dashed #cbd5e1", background: "transparent", color: "#64748b", fontSize: 12, fontWeight: 600, fontFamily: "inherit", cursor: "pointer", borderRadius: 999, padding: "4px 10px" }}
+      >
+        + Add
+      </button>
     </div>
   );
 }
@@ -8218,6 +8220,7 @@ function NormingCountdownView() {
             </div>
             <span style={{ fontSize: 14, fontWeight: 600, color: "#64748b" }}>Target: {targetLabel}</span>
           </div>
+          {isPrenorm && <KeyDatesBar />}
         </div>
 
         {!isPrenorm && (
@@ -8225,8 +8228,6 @@ function NormingCountdownView() {
             Coming soon
           </div>
         )}
-
-        {isPrenorm && <KeyDatesSection />}
 
         {isPrenorm && <PrenormingSection />}
 
