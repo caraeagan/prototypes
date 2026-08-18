@@ -8243,12 +8243,7 @@ function NormingCountdownView() {
           </div>
           {isPrenorm && (
             <div style={{ marginTop: 18, paddingTop: 14, borderTop: "1px solid #f1f5f9" }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8, marginBottom: 10 }}>
-                <span style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.08em" }}>Goals</span>
-                <span style={{ fontSize: 12, fontWeight: 700, color: "#475569", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 999, padding: "3px 12px", whiteSpace: "nowrap" }}>
-                  12 examiners test 25 monolingual students
-                </span>
-              </div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>Goals</div>
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                 <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
                   <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: "#c2410c", background: "#fff7ed", borderRadius: 999, padding: "2px 8px", whiteSpace: "nowrap" }}>Primary</span>
@@ -8258,6 +8253,33 @@ function NormingCountdownView() {
                   <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: "#475569", background: "#f1f5f9", borderRadius: 999, padding: "2px 8px", whiteSpace: "nowrap" }}>Secondary</span>
                   <span style={{ fontSize: 13, fontWeight: 600, color: "#1e293b" }}>Prove the internal app ops workflow scales out to all examiners</span>
                 </div>
+              </div>
+              <div style={{ fontSize: 13, color: "#475569", marginTop: 10 }}>
+                We will have 12 examiners test 25 monolingual students.
+              </div>
+              {/* Examiner/student progress — placeholder zeros until wired to the read-only DB */}
+              <div style={{ display: "flex", gap: 20, flexWrap: "wrap", marginTop: 12, alignItems: "center" }}>
+                {[
+                  { label: "Examiners", done: 0, total: 12, color: "#2563eb" },
+                  { label: "Students", done: 0, total: 25, color: "#16a34a" },
+                ].map((g) => (
+                  <div key={g.label} style={{ flex: 1, minWidth: 200 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 5 }}>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: "#64748b" }}>{g.label}</span>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", fontVariantNumeric: "tabular-nums" }}>{g.done} / {g.total}</span>
+                    </div>
+                    <div style={{ height: 8, borderRadius: 999, background: "#f1f5f9", overflow: "hidden" }}>
+                      <div style={{ width: `${(g.done / g.total) * 100}%`, height: "100%", background: g.color, borderRadius: 999 }} />
+                    </div>
+                  </div>
+                ))}
+                <span
+                  className="hover-tip"
+                  data-tip="Not live yet — these bars need to be hooked up to the read-only database"
+                  style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", border: "1px solid #cbd5e1", borderRadius: "50%", width: 15, height: 15, display: "inline-flex", alignItems: "center", justifyContent: "center", lineHeight: 1, flexShrink: 0 }}
+                >
+                  ?
+                </span>
               </div>
             </div>
           )}
