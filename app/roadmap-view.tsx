@@ -7701,10 +7701,10 @@ function ContentReadinessSection() {
 }
 
 // ── Audio Content Updates ──────────────────────────────────────────────────
-// Manually-tracked mirror of the "Audio content audit" Google sheet (the app
-// can't read the sheet directly — see AUDIO_AUDIT_SHEET_URL). Statuses are
-// seeded from the sheet as of Aug 17 and edited in place; edits persist in
-// the shared overrides blob.
+// Pipeline statuses read live from the "Audio content audit" Google sheet via
+// /api/audio-audit (read-only service account). The one manual, app-side bit
+// is the Live checkbox — audio actually replaced in the product — stored in
+// the shared overrides blob as audioAudit[testName] = "Live".
 const AUDIO_AUDIT_SHEET_URL =
   "https://docs.google.com/spreadsheets/d/1PcsGqvVzf4ZbJimthnzPOKPCirLw2kTXIaj2lplgKkU/edit";
 
@@ -7720,87 +7720,90 @@ const AUDIO_STAGES = [
   { name: "Live", color: "#16a34a" },
 ] as const;
 
-// The 25 tests in scope (Redo = TRUE on the audit sheet), seeded with the
-// sheet's column G status as of Aug 17.
-const AUDIO_AUDIT_TESTS: { name: string; seed: string }[] = [
-  { name: "Verbal Analogies", seed: "Final Edit" },
-  { name: "Receptive Vocabulary", seed: "Pending" },
-  { name: "Sequencing and Planning", seed: "Ready for Upload" },
-  { name: "Numbers Forward", seed: "Planned" },
-  { name: "Numbers Backward", seed: "Planned" },
-  { name: "Symbol-Sound Learning", seed: "Pending" },
-  { name: "Symbol-Sound Learning–Delayed", seed: "Pending" },
-  { name: "Semantic Fluency", seed: "Pending" },
-  { name: "Phonological Awareness–Rhyme Recognition", seed: "Final Edit" },
-  { name: "Phonological Awareness–Rhyme Production", seed: "Final Edit" },
-  { name: "Phonological Awareness–Syllable Counting", seed: "In Review" },
-  { name: "Phonological Awareness–Blending", seed: "In Review" },
-  { name: "Phonological Awareness–Segmenting", seed: "In Review" },
-  { name: "Phonological Awareness–Sound ID", seed: "In Review" },
-  { name: "Phonological Awareness–Substitution", seed: "In Review" },
-  { name: "Math Applications", seed: "Planned" },
-  { name: "Math Concepts", seed: "In Review" },
-  { name: "Value Estimation", seed: "In Review" },
-  { name: "Spelling Production", seed: "In Review" },
-  { name: "Spelling Recognition", seed: "In Review" },
-  { name: "Dictation", seed: "Pending" },
-  { name: "Handwritten Essay Writing", seed: "Pending" },
-  { name: "Typed Essay Writing", seed: "Pending" },
-  { name: "Listening Comprehension", seed: "Planned" },
-  { name: "Oral Expression Fluency", seed: "Pending" },
-];
+type AudioAuditTest = { name: string; status: string };
 
 function AudioAuditSection() {
+  const [tests, setTests] = useState<AudioAuditTest[] | null>(null);
   const [edits, setEdits] = useState<Record<string, string> | null>(null);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
+    fetch("/api/audio-audit")
+      .then((r) => r.json())
+      .then((j) => {
+        if (j.error) throw new Error(j.error);
+        setTests(j.tests);
+      })
+      .catch(() => setError(true));
     fetchOverrides().then((ov) => setEdits(ov.audioAudit ?? {}));
   }, []);
 
-  useEffect(() => {
-    const onSaved = () => {
-      fetchOverrides().then((ov) => setEdits(ov.audioAudit ?? {}));
-    };
-    window.addEventListener("roadmap-saved", onSaved);
-    return () => window.removeEventListener("roadmap-saved", onSaved);
-  }, []);
-
-  const statusOf = (t: { name: string; seed: string }) => edits?.[t.name] ?? t.seed;
-  const setStatus = (test: string, status: string) => {
-    setEdits((prev) => ({ ...prev, [test]: status }));
-    saveOverride("setAudioAuditStatus", { test, status }).catch(() => {});
+  const isLive = (name: string) => edits?.[name] === "Live";
+  const setLive = (test: string, live: boolean) => {
+    setEdits((prev) => {
+      const next = { ...prev };
+      if (live) next[test] = "Live";
+      else delete next[test];
+      return next;
+    });
+    saveOverride("setAudioAuditStatus", { test, status: live ? "Live" : "" }).catch(() => {});
   };
+
+  // Live (manually ticked) trumps the sheet's pipeline status.
+  const statusOf = (t: AudioAuditTest) => (isLive(t.name) ? "Live" : t.status);
+
+  const header = (
+    <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 18, paddingBottom: 12, borderBottom: "2px solid #1e293b" }}>
+      <div>
+        <div style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 4 }}>Readiness</div>
+        <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: "#0f172a", letterSpacing: "-0.01em" }}>Audio Content Updates</h2>
+      </div>
+      <span style={{ fontSize: 12, fontWeight: 600, color: "#64748b" }}>
+        Live from the{" "}
+        <a href={AUDIO_AUDIT_SHEET_URL} target="_blank" rel="noreferrer" style={{ color: "#2563eb" }}>audit sheet</a>
+        {" "}· Live checkbox tracked here
+      </span>
+    </div>
+  );
+
+  if (error) {
+    return (
+      <div style={{ marginBottom: 36 }}>
+        {header}
+        <div style={{ color: "#dc2626", padding: "20px 0", textAlign: "center" }}>Couldn&apos;t load the audit sheet.</div>
+      </div>
+    );
+  }
+  if (!tests) {
+    return (
+      <div style={{ marginBottom: 36 }}>
+        {header}
+        <div style={{ color: "#94a3b8", padding: "20px 0", textAlign: "center" }}>Loading from the audit sheet...</div>
+      </div>
+    );
+  }
 
   const counts = AUDIO_STAGES.map((s) => ({
     ...s,
-    count: AUDIO_AUDIT_TESTS.filter((t) => statusOf(t) === s.name).length,
+    count: tests.filter((t) => statusOf(t) === s.name).length,
   }));
   const liveCount = counts.find((c) => c.name === "Live")?.count ?? 0;
 
   return (
     <div style={{ marginBottom: 36 }}>
-      <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 18, paddingBottom: 12, borderBottom: "2px solid #1e293b" }}>
-        <div>
-          <div style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 4 }}>Readiness</div>
-          <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: "#0f172a", letterSpacing: "-0.01em" }}>Audio Content Updates</h2>
-        </div>
-        <span style={{ fontSize: 12, fontWeight: 600, color: "#64748b" }}>
-          Manually updated · mirrors the{" "}
-          <a href={AUDIO_AUDIT_SHEET_URL} target="_blank" rel="noreferrer" style={{ color: "#2563eb" }}>audit sheet</a>
-        </span>
-      </div>
+      {header}
 
       <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, padding: "16px 18px", marginBottom: 16, boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8 }}>
           <span style={{ fontSize: 12, fontWeight: 700, color: "#475569" }}>
-            {liveCount} / {AUDIO_AUDIT_TESTS.length} live
+            {liveCount} / {tests.length} live
           </span>
-          <span style={{ fontSize: 11, fontWeight: 600, color: "#94a3b8" }}>{AUDIO_AUDIT_TESTS.length} tests need new audio</span>
+          <span style={{ fontSize: 11, fontWeight: 600, color: "#94a3b8" }}>{tests.length} tests need new audio</span>
         </div>
         {/* Stacked pipeline bar, most-done stage on the left */}
         <div style={{ display: "flex", height: 12, borderRadius: 999, overflow: "hidden", background: "#f1f5f9" }}>
           {[...counts].reverse().filter((c) => c.count > 0).map((c) => (
-            <div key={c.name} title={`${c.name}: ${c.count}`} style={{ width: `${(c.count / AUDIO_AUDIT_TESTS.length) * 100}%`, background: c.color }} />
+            <div key={c.name} title={`${c.name}: ${c.count}`} style={{ width: `${(c.count / tests.length) * 100}%`, background: c.color }} />
           ))}
         </div>
         <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginTop: 10 }}>
@@ -7814,26 +7817,24 @@ function AudioAuditSection() {
       </div>
 
       <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 10, boxShadow: "0 1px 2px rgba(0,0,0,0.04)", display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))" }}>
-        {AUDIO_AUDIT_TESTS.map((t) => {
+        {tests.map((t) => {
           const status = statusOf(t);
           const stage = AUDIO_STAGES.find((s) => s.name === status);
           return (
             <div key={t.name} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 16px", borderBottom: "1px solid #f1f5f9" }}>
               <span style={{ width: 9, height: 9, borderRadius: "50%", background: stage?.color ?? "#cbd5e1", flexShrink: 0 }} />
               <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: status === "Live" ? "#94a3b8" : "#1e293b" }}>{t.name}</span>
-              <select
-                value={status}
-                disabled={edits === null}
-                onChange={(e) => setStatus(t.name, e.target.value)}
-                style={{
-                  fontSize: 11, fontWeight: 600, color: "#475569", fontFamily: "inherit",
-                  border: "1px solid #e2e8f0", borderRadius: 6, padding: "3px 6px", background: "#f8fafc", cursor: "pointer",
-                }}
-              >
-                {AUDIO_STAGES.map((s) => (
-                  <option key={s.name} value={s.name}>{s.name}</option>
-                ))}
-              </select>
+              <span style={{ fontSize: 11, fontWeight: 600, color: "#64748b", whiteSpace: "nowrap" }}>{status}</span>
+              <label title="Audio actually replaced in the product" style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.05em", cursor: "pointer" }}>
+                <input
+                  type="checkbox"
+                  checked={isLive(t.name)}
+                  disabled={edits === null}
+                  onChange={(e) => setLive(t.name, e.target.checked)}
+                  style={{ width: 14, height: 14, cursor: "pointer", accentColor: "#16a34a" }}
+                />
+                Live
+              </label>
             </div>
           );
         })}
@@ -7972,6 +7973,7 @@ function MetricsView() {
   const [prenormIssues, setPrenormIssues] = useState<PrenormIssue[] | null>(null);
   const [content, setContent] = useState<{ instructions: AiRow[]; cfBuilt: CfRow[] } | null>(null);
   const [overrides, setOverrides] = useState<RoadmapOverrides | null>(null);
+  const [audioTests, setAudioTests] = useState<AudioAuditTest[] | null>(null);
   const [errors, setErrors] = useState<string[]>([]);
 
   useEffect(() => {
@@ -7999,6 +8001,13 @@ function MetricsView() {
         setContent(j);
       })
       .catch(() => setErrors((e) => [...e, "shipped content"]));
+    fetch("/api/audio-audit")
+      .then((r) => r.json())
+      .then((j) => {
+        if (j.error) throw new Error(j.error);
+        setAudioTests(j.tests);
+      })
+      .catch(() => setErrors((e) => [...e, "audio audit sheet"]));
     fetchOverrides().then(setOverrides);
   }, []);
 
@@ -8025,9 +8034,9 @@ function MetricsView() {
   const cfRows = (content?.cfBuilt ?? []).filter((r) => CF_NEEDED.has(r.code));
   const cfDone = cfRows.filter((r) => r.total > 0 && r.complete === r.total).length;
 
-  // Audio content updates (manual tracker).
+  // Audio content updates: scope from the audit sheet, Live ticks from the app.
   const audioEdits = overrides?.audioAudit ?? {};
-  const audioLive = AUDIO_AUDIT_TESTS.filter((t) => (audioEdits[t.name] ?? t.seed) === "Live").length;
+  const audioLive = (audioTests ?? []).filter((t) => audioEdits[t.name] === "Live").length;
 
   return (
     <div style={{ fontFamily: "var(--font-sans)", height: "calc(100vh - 80px)", overflow: "auto", background: "#f8fafc" }}>
@@ -8095,13 +8104,13 @@ function MetricsView() {
               note="Subtests where every practice item has all four feedback files."
             />
           )}
-          {overrides && (
+          {overrides && audioTests && (
             <MetricTile
               label="Audio updates live"
               done={audioLive}
-              total={AUDIO_AUDIT_TESTS.length}
+              total={audioTests.length}
               color="#7C3AED"
-              note="Replacement audio actually live in the product. Manually tracked."
+              note="Replacement audio actually live in the product. Scope from the audit sheet; Live ticked in the app."
             />
           )}
         </div>
