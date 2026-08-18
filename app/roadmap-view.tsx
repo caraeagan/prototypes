@@ -8123,6 +8123,70 @@ function MetricsView() {
   );
 }
 
+// Examiner/student progress toward the pre-norming goals, live from the prod
+// read replica via /api/norming-progress.
+function GoalProgressBars() {
+  // undefined = loading, null = error
+  const [data, setData] = useState<{ examiners: number; students: number } | null | undefined>(undefined);
+
+  useEffect(() => {
+    fetch("/api/norming-progress")
+      .then((r) => r.json())
+      .then((j) => {
+        if (j.error) throw new Error(j.error);
+        setData(j);
+      })
+      .catch(() => setData(null));
+  }, []);
+
+  const bars = [
+    {
+      label: "Examiners",
+      done: data?.examiners ?? 0,
+      total: 12,
+      color: "#2563eb",
+      tip: "Distinct examiners with at least one completed norming-phase session. Live from the read-only database; stays 0 until the norming study phase exists and sessions complete.",
+    },
+    {
+      label: "Students",
+      done: data?.students ?? 0,
+      total: 25,
+      color: "#16a34a",
+      tip: "Students whose norming examination is marked completed. Live from the read-only database; stays 0 until the norming study phase exists and exams complete.",
+    },
+  ];
+
+  return (
+    <div style={{ display: "flex", gap: 20, flexWrap: "wrap", marginTop: 12, alignItems: "center" }}>
+      {bars.map((g) => (
+        <div key={g.label} style={{ flex: 1, minWidth: 200 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 5 }}>
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11, fontWeight: 700, color: "#64748b" }}>
+              {g.label}
+              <span
+                className="hover-tip"
+                data-tip={g.tip}
+                style={{ fontSize: 9, fontWeight: 700, color: "#94a3b8", border: "1px solid #cbd5e1", borderRadius: "50%", width: 13, height: 13, display: "inline-flex", alignItems: "center", justifyContent: "center", lineHeight: 1 }}
+              >
+                ?
+              </span>
+            </span>
+            <span style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", fontVariantNumeric: "tabular-nums" }}>
+              {data === undefined ? "…" : data === null ? "–" : g.done} / {g.total}
+            </span>
+          </div>
+          <div style={{ height: 8, borderRadius: 999, background: "#f1f5f9", overflow: "hidden" }}>
+            <div style={{ width: `${Math.min(100, (g.done / g.total) * 100)}%`, height: "100%", background: g.color, borderRadius: 999, transition: "width 0.4s ease" }} />
+          </div>
+        </div>
+      ))}
+      {data === null && (
+        <span style={{ fontSize: 11, fontWeight: 600, color: "#dc2626" }}>Couldn&apos;t load from the database.</span>
+      )}
+    </div>
+  );
+}
+
 function NormingCountdownView() {
   // This component only mounts client-side (after a tab click or the hash
   // effect), so reading the hash in the initializer is hydration-safe.
@@ -8257,30 +8321,7 @@ function NormingCountdownView() {
               <div style={{ fontSize: 13, color: "#475569", marginTop: 10 }}>
                 We will have 12 examiners test 25 monolingual students.
               </div>
-              {/* Examiner/student progress — placeholder zeros until wired to the read-only DB */}
-              <div style={{ display: "flex", gap: 20, flexWrap: "wrap", marginTop: 12, alignItems: "center" }}>
-                {[
-                  { label: "Examiners", done: 0, total: 12, color: "#2563eb" },
-                  { label: "Students", done: 0, total: 25, color: "#16a34a" },
-                ].map((g) => (
-                  <div key={g.label} style={{ flex: 1, minWidth: 200 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 5 }}>
-                      <span style={{ fontSize: 11, fontWeight: 700, color: "#64748b" }}>{g.label}</span>
-                      <span style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", fontVariantNumeric: "tabular-nums" }}>{g.done} / {g.total}</span>
-                    </div>
-                    <div style={{ height: 8, borderRadius: 999, background: "#f1f5f9", overflow: "hidden" }}>
-                      <div style={{ width: `${(g.done / g.total) * 100}%`, height: "100%", background: g.color, borderRadius: 999 }} />
-                    </div>
-                  </div>
-                ))}
-                <span
-                  className="hover-tip"
-                  data-tip="Not live yet — these bars need to be hooked up to the read-only database"
-                  style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", border: "1px solid #cbd5e1", borderRadius: "50%", width: 15, height: 15, display: "inline-flex", alignItems: "center", justifyContent: "center", lineHeight: 1, flexShrink: 0 }}
-                >
-                  ?
-                </span>
-              </div>
+              <GoalProgressBars />
             </div>
           )}
           {isPrenorm && <KeyDatesBar />}
