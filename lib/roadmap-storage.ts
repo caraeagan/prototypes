@@ -85,6 +85,11 @@ export type RoadmapOverrides = {
   // with a red/yellow/green confidence status. Stored whole (even empty) so
   // deleting the code-seeded defaults sticks.
   keyDates?: { id: string; text: string; date: string; status: "red" | "yellow" | "green" }[];
+  // Same list for the norming (Sep 28) countdown, stored separately.
+  normingKeyDates?: { id: string; text: string; date: string; status: "red" | "yellow" | "green" }[];
+  // Norming phase strip: which phase is current, plus manual unblocker
+  // statuses (ticket-backed unblockers derive status live and aren't stored).
+  normingPhases?: { current?: string; statuses?: Record<string, "red" | "yellow" | "green"> };
 };
 
 function sleep(ms: number) {
