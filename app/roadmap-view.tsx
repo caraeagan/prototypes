@@ -6865,6 +6865,7 @@ const NORMING_PHASES: NormingPhase[] = [
     goal: "Scale the run to every group: external batteries and rating scales start, scheduling machinery runs at volume, and Arabic + Mandarin launch with a few weeks to prove out recruiting.",
     milestones: [
       { date: "2026-10-26", title: "Correlation studies begin" },
+      { date: "2026-10-26", title: "Ops evaluate staffing needs and actuals for scaling recruiting push" },
       { date: "2026-12-07", title: "Arabic + Mandarin launch" },
     ],
   },
@@ -6872,7 +6873,8 @@ const NORMING_PHASES: NormingPhase[] = [
     id: "np3", code: "NP3", name: "Close Out", start: "2027-01-04", end: "2027-03-26", color: "#0EA5E9",
     goal: "Fill the remaining cells, wrap the correlation studies, and land the data for analysis.",
     milestones: [
-      { date: "2027-01-04", title: "New years recruiting push" },
+      { date: "2027-01-04", title: "Final examiner recruiting push based on remaining sessions left in Norming" },
+      { date: "2027-01-04", title: "Evaluate participant recruiting needs for remaining demographics needed in Study" },
       { date: "2027-01-15", title: "Initial psychometrics structural analysis" },
       { date: "2027-02-01", title: "Hard-to-reach audit and game plan" },
       { date: "2027-03-26", title: "Done!" },
@@ -6973,7 +6975,7 @@ function NormingPhasesSection() {
               <div style={{ fontSize: 12, color: "#64748b", lineHeight: 1.5, marginBottom: 12 }}>{p.goal}</div>
               <div style={{ fontSize: 10, fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>Key dates</div>
               {p.milestones.map((m) => (
-                <div key={m.date} style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "3px 0", fontSize: 12, lineHeight: 1.45 }}>
+                <div key={`${m.date}-${m.title}`} style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "3px 0", fontSize: 12, lineHeight: 1.45 }}>
                   <span style={{ width: 7, height: 7, borderRadius: "50%", background: p.color, flexShrink: 0, marginTop: 5 }} />
                   <span style={{ color: "#1e293b" }}>
                     <span style={{ fontWeight: 800, color: p.color }}>{npFmt(m.date)}:</span>{" "}
