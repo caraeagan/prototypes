@@ -6892,7 +6892,6 @@ function NormingPhasesSection() {
   const [statuses, setStatuses] = useState<Record<string, PhaseStatus>>({});
   // No phase is current until someone marks one (norming hasn't started).
   const [current, setCurrent] = useState<string | null>(null);
-  const [expanded, setExpanded] = useState<string | null>(null);
   // identifier -> live Linear issue, null while loading.
   const [tickets, setTickets] = useState<Record<string, PrenormProjectIssue> | null>(null);
 
@@ -6934,19 +6933,6 @@ function NormingPhasesSection() {
     return statuses[u.id] ?? u.defaultStatus ?? "yellow";
   };
 
-  const cycleStatus = (u: PhaseUnblocker) => {
-    const next = KEY_DATE_CYCLE[(KEY_DATE_CYCLE.indexOf(unblockerStatus(u)) + 1) % KEY_DATE_CYCLE.length];
-    setStatuses((prev) => ({ ...prev, [u.id]: next }));
-    saveOverride("saveNormingPhases", { statuses: { [u.id]: next } }).catch(() => {});
-  };
-
-  const markCurrent = (id: string) => {
-    setCurrent(id);
-    saveOverride("saveNormingPhases", { current: id }).catch(() => {});
-  };
-
-  const expandedPhase = NORMING_PHASES.find((p) => p.id === expanded);
-
   return (
     <div style={{ marginBottom: 36 }}>
       <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 18, paddingBottom: 12, borderBottom: "2px solid #1e293b" }}>
@@ -6954,22 +6940,18 @@ function NormingPhasesSection() {
           <div style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 4 }}>Roadmap</div>
           <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: "#0f172a", letterSpacing: "-0.01em" }}>Phases</h2>
         </div>
-        <span style={{ fontSize: 12, fontWeight: 600, color: "#64748b" }}>Each phase unlocks when its list is green · click a phase</span>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: 12 }}>
         {NORMING_PHASES.map((p, idx) => {
-          const ready = p.unblockers.filter((u) => unblockerStatus(u) === "green").length;
           const isCurrent = current === p.id;
-          const isOpen = expanded === p.id;
           return (
-            <button
+            <div
               key={p.id}
-              onClick={() => setExpanded(isOpen ? null : p.id)}
               style={{
-                textAlign: "left", fontFamily: "inherit", cursor: "pointer",
+                textAlign: "left", fontFamily: "inherit",
                 background: "#fff", borderRadius: 12, padding: "14px 16px",
-                border: isOpen ? `2px solid ${p.color}` : "1px solid #e2e8f0",
+                border: "1px solid #e2e8f0",
                 borderTop: `4px solid ${p.color}`,
                 boxShadow: isCurrent ? `0 2px 8px ${p.color}33` : "0 1px 2px rgba(0,0,0,0.04)",
               }}
@@ -6981,72 +6963,11 @@ function NormingPhasesSection() {
                 )}
               </div>
               <div style={{ fontSize: 14, fontWeight: 800, color: "#0f172a", marginBottom: 2 }}>{p.name}</div>
-              <div style={{ fontSize: 12, fontWeight: 600, color: "#64748b", marginBottom: 8 }}>{p.window}</div>
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <div style={{ flex: 1, height: 5, borderRadius: 999, background: "#f1f5f9", overflow: "hidden" }}>
-                  <div style={{ width: `${p.unblockers.length ? (ready / p.unblockers.length) * 100 : 0}%`, height: "100%", background: p.color, transition: "width 0.3s ease" }} />
-                </div>
-                <span style={{ fontSize: 11, fontWeight: 700, color: "#475569", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>{ready}/{p.unblockers.length}</span>
-              </div>
-            </button>
+              <div style={{ fontSize: 12, fontWeight: 600, color: "#64748b" }}>{p.window}</div>
+            </div>
           );
         })}
       </div>
-
-      {expandedPhase && (
-        <div style={{ marginTop: 12, background: "#fff", border: "1px solid #e2e8f0", borderLeft: `4px solid ${expandedPhase.color}`, borderRadius: 10, padding: "16px 18px", boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 12, flexWrap: "wrap" }}>
-            <span style={{ fontSize: 13, color: "#475569" }}>{expandedPhase.description}</span>
-            {current !== expandedPhase.id && (
-              <button
-                onClick={() => markCurrent(expandedPhase.id)}
-                style={{ border: "1px solid #e2e8f0", background: "#f8fafc", color: "#475569", fontSize: 11, fontWeight: 700, fontFamily: "inherit", cursor: "pointer", borderRadius: 999, padding: "4px 12px", whiteSpace: "nowrap" }}
-              >
-                Mark as current phase
-              </button>
-            )}
-          </div>
-          {expandedPhase.unblockers.map((u) => {
-            const s = unblockerStatus(u);
-            const c = KEY_DATE_COLORS[s];
-            return (
-              <div key={u.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "7px 0", borderBottom: "1px solid #f1f5f9" }}>
-                {u.tickets ? (
-                  <span title="Derived from ticket status" style={{ width: 12, height: 12, borderRadius: "50%", background: c.dot, flexShrink: 0 }} />
-                ) : (
-                  <button
-                    onClick={() => cycleStatus(u)}
-                    title={`Status: ${s} — click to change`}
-                    style={{ width: 12, height: 12, borderRadius: "50%", background: c.dot, border: "none", cursor: "pointer", flexShrink: 0, padding: 0 }}
-                  />
-                )}
-                <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: "#1e293b" }}>{u.text}</span>
-                {u.owner && <span style={{ fontSize: 11, fontWeight: 600, color: "#94a3b8", whiteSpace: "nowrap" }}>{u.owner}</span>}
-                {u.tickets?.map((id) => {
-                  const t = tickets?.[id];
-                  return (
-                    <a
-                      key={id}
-                      href={t?.url}
-                      target="_blank"
-                      rel="noreferrer"
-                      title={t ? `${t.title} · ${t.state.name}` : "Loading from Linear..."}
-                      style={{
-                        fontSize: 10, fontWeight: 800, letterSpacing: "0.04em", textDecoration: "none",
-                        padding: "3px 9px", borderRadius: 999, whiteSpace: "nowrap",
-                        color: t?.state.type === "completed" ? "#16a34a" : t?.state.type === "started" ? "#2563eb" : "#64748b",
-                        background: t?.state.type === "completed" ? "#f0fdf4" : t?.state.type === "started" ? "#eff6ff" : "#f1f5f9",
-                      }}
-                    >
-                      {id}{t ? ` · ${t.state.name}` : ""}
-                    </a>
-                  );
-                })}
-              </div>
-            );
-          })}
-        </div>
-      )}
     </div>
   );
 }
@@ -7946,6 +7867,35 @@ const AUDIO_STAGES = [
 ] as const;
 
 type AudioAuditTest = { name: string; status: string };
+type DeployFrequency = { windowDays: number; total: number; last30: number; perWeek: number; daysSinceLast: number | null };
+
+type EngMetrics = {
+  prWindowDays: number;
+  prsMerged: number;
+  prsPerWeek: number;
+  prCycleMedianHours: number | null;
+  leadTimeMedianHours: number | null;
+  deploys: { windowDays: number; total: number; failed: number; failurePct: number | null };
+  unreleasedPrs: number;
+  lastReleaseDaysAgo: number | null;
+  series: {
+    weekStarts: string[];
+    prsPerWeek: number[];
+    prCycleHours: (number | null)[];
+    leadTimeHours: (number | null)[];
+    releasesPerWeek: number[];
+  };
+};
+
+// "18.4h" under a day, "2.3d" beyond it.
+function formatHours(h: number | null): string {
+  if (h === null) return "–";
+  return h < 24 ? `${h.toFixed(1)}h` : `${(h / 24).toFixed(1)}d`;
+}
+
+function weekLabels(eng: EngMetrics): string[] {
+  return eng.series.weekStarts.map((d) => parseDateLocal(d).toLocaleDateString("en-US", { month: "short", day: "numeric" }));
+}
 
 function AudioAuditSection() {
   const [tests, setTests] = useState<AudioAuditTest[] | null>(null);
@@ -8200,11 +8150,430 @@ function MetricTile({ label, done, total, color, note }: { label: string; done: 
   );
 }
 
+// A plain number tile for metrics that aren't a done/total fraction.
+// Weekly trend chart inside a stat tile: recessive axes (0 / mid / max
+// gridlines, first / mid / last week labels), gray line with the current
+// week's point in the tile's accent, hover shows the week's value.
+type Trend = {
+  points: (number | null)[];
+  labels: string[];
+  format: (v: number) => string;
+  // Compact axis-tick formatter; defaults to rounded numbers.
+  tickFormat?: (v: number) => string;
+};
+
+function Sparkline({ trend, accent }: { trend: Trend; accent: string }) {
+  const [hover, setHover] = useState<number | null>(null);
+  const { points, labels, format } = trend;
+  const tickFormat = trend.tickFormat ?? ((v: number) => String(Math.round(v)));
+  const nonNull = points.filter((v): v is number => v !== null);
+  if (nonNull.length < 2) return null;
+  const w = 240;
+  const h = 88;
+  const padL = 34;
+  const padR = 8;
+  const padT = 16;
+  const padB = 16;
+  const max = Math.max(...nonNull, 1);
+  const x = (i: number) => padL + (i * (w - padL - padR)) / (points.length - 1);
+  const y = (v: number) => h - padB - (v / max) * (h - padT - padB);
+  // One path with gaps where a week has no data.
+  let d = "";
+  let pen = false;
+  points.forEach((v, i) => {
+    if (v === null) {
+      pen = false;
+      return;
+    }
+    d += `${pen ? "L" : "M"}${x(i).toFixed(1)},${y(v).toFixed(1)}`;
+    pen = true;
+  });
+  const lastIdx = points.length - 1 - [...points].reverse().findIndex((v) => v !== null);
+  const slot = (w - padL - padR) / (points.length - 1);
+  const mid = Math.floor((points.length - 1) / 2);
+  const yTicks = [0, max / 2, max];
+  const hoverV = hover !== null ? points[hover] : null;
+  return (
+    <svg
+      viewBox={`0 0 ${w} ${h}`}
+      role="img"
+      aria-label="12-week trend"
+      style={{ width: "100%", height: h, display: "block", marginTop: 12 }}
+      onMouseLeave={() => setHover(null)}
+    >
+      {/* y axis: gridlines + compact tick labels */}
+      {yTicks.map((t) => (
+        <g key={t}>
+          <line x1={padL} x2={w - padR} y1={y(t)} y2={y(t)} stroke="#f1f5f9" strokeWidth={1} />
+          <text x={padL - 5} y={y(t) + 2.5} textAnchor="end" fontSize={8} fill="#94a3b8" fontFamily="inherit">
+            {tickFormat(t)}
+          </text>
+        </g>
+      ))}
+      {/* x axis: first / mid / last week */}
+      {[0, mid, points.length - 1].map((i, k) => (
+        <text
+          key={i}
+          x={x(i)}
+          y={h - 4}
+          textAnchor={k === 0 ? "start" : k === 2 ? "end" : "middle"}
+          fontSize={8}
+          fill="#94a3b8"
+          fontFamily="inherit"
+        >
+          {labels[i]}
+        </text>
+      ))}
+      <path d={d} fill="none" stroke="#cbd5e1" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+      {points[lastIdx] !== null && <circle cx={x(lastIdx)} cy={y(points[lastIdx])} r={3.5} fill={accent} />}
+      {/* hover: guide line, point, and value readout */}
+      {hover !== null && hoverV !== null && (
+        <g pointerEvents="none">
+          <line x1={x(hover)} x2={x(hover)} y1={padT - 4} y2={h - padB} stroke="#e2e8f0" strokeWidth={1} />
+          <circle cx={x(hover)} cy={y(hoverV)} r={3.5} fill={accent} />
+          <text
+            x={x(hover)}
+            y={padT - 6}
+            textAnchor={hover < points.length / 3 ? "start" : hover > (2 * points.length) / 3 ? "end" : "middle"}
+            fontSize={9}
+            fontWeight={700}
+            fill="#334155"
+            fontFamily="inherit"
+            stroke="#fff"
+            strokeWidth={3}
+            paintOrder="stroke"
+          >
+            {labels[hover]} · {format(hoverV)}
+          </text>
+        </g>
+      )}
+      {points.map((v, i) =>
+        v === null ? null : (
+          <rect
+            key={i}
+            x={x(i) - slot / 2}
+            y={0}
+            width={slot}
+            height={h}
+            fill="transparent"
+            onMouseEnter={() => setHover(i)}
+          />
+        ),
+      )}
+    </svg>
+  );
+}
+
+function StatTile({
+  label,
+  value,
+  unit,
+  color,
+  note,
+  definition,
+  trend,
+}: {
+  label: string;
+  value: string;
+  unit: string;
+  color: string;
+  note?: string;
+  definition?: string;
+  trend?: Trend;
+}) {
+  const [showDef, setShowDef] = useState(false);
+  return (
+    <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 14, padding: "20px 22px", boxShadow: "0 1px 3px rgba(0,0,0,0.05)", position: "relative" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
+        <span style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.08em" }}>{label}</span>
+        {definition && (
+          <span style={{ position: "relative", display: "inline-flex" }}>
+            <span
+              onMouseEnter={() => setShowDef(true)}
+              onMouseLeave={() => setShowDef(false)}
+              style={{
+                display: "inline-flex", alignItems: "center", justifyContent: "center",
+                width: 14, height: 14, borderRadius: "50%", border: "1px solid #cbd5e1",
+                fontSize: 9, fontWeight: 800, color: "#64748b", cursor: "help",
+              }}
+            >
+              ?
+            </span>
+            {showDef && (
+              <span
+                style={{
+                  position: "absolute", left: -8, top: "calc(100% + 8px)", width: 240,
+                  background: "#1e293b", color: "#fff", fontSize: 12, fontWeight: 500, lineHeight: 1.5,
+                  padding: "8px 10px", borderRadius: 6, pointerEvents: "none",
+                  boxShadow: "0 4px 12px rgba(0, 0, 0, 0.18)", zIndex: 20,
+                }}
+              >
+                {definition}
+              </span>
+            )}
+          </span>
+        )}
+      </div>
+      <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: note ? 12 : 0 }}>
+        <span style={{ fontSize: 36, fontWeight: 900, color, lineHeight: 1, letterSpacing: "-0.02em" }}>{value}</span>
+        <span style={{ fontSize: 14, fontWeight: 700, color: "#94a3b8" }}>{unit}</span>
+      </div>
+      {note && <div style={{ fontSize: 12, color: "#64748b", lineHeight: 1.5 }}>{note}</div>}
+      {trend && <Sparkline trend={trend} accent={color} />}
+    </div>
+  );
+}
+
+// Section header used across the Metrics tab, matching the eyebrow + rule
+// style of the Norming Countdown sections.
+function MetricsSectionHeader({ eyebrow, title, hint }: { eyebrow: string; title: string; hint?: string }) {
+  return (
+    <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", margin: "36px 0 18px", paddingBottom: 12, borderBottom: "2px solid #1e293b", flexWrap: "wrap", gap: 8 }}>
+      <div>
+        <div style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 4 }}>{eyebrow}</div>
+        <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: "#0f172a", letterSpacing: "-0.01em" }}>{title}</h2>
+      </div>
+      {hint && <span style={{ fontSize: 12, fontWeight: 600, color: "#64748b" }}>{hint}</span>}
+    </div>
+  );
+}
+
+// ── Bugs section (Metrics tab) ──────────────────────────────────────────
+// Everything carrying Linear's "Bug" label: flow stats up top, then the
+// actual open list grouped by priority — at ~a dozen open bugs, titles beat
+// aggregates. Rows open the standard Linear detail panel.
+type BugIssue = {
+  id: string;
+  identifier: string;
+  title: string;
+  url: string;
+  priority: number; // 0 none, 1 urgent, 2 high, 3 medium, 4 low
+  createdAt: string;
+  completedAt: string | null;
+  canceledAt: string | null;
+  state: { name: string; type: string; color: string };
+  assignee: { displayName: string } | null;
+};
+
+const BUG_PRIORITIES: { value: number; label: string; color: string; bg: string }[] = [
+  { value: 1, label: "Urgent", color: "#dc2626", bg: "#fef2f2" },
+  { value: 2, label: "High", color: "#ea580c", bg: "#fff7ed" },
+  { value: 3, label: "Medium", color: "#ca8a04", bg: "#fefce8" },
+  { value: 4, label: "Low", color: "#64748b", bg: "#f8fafc" },
+  { value: 0, label: "No priority", color: "#94a3b8", bg: "#f8fafc" },
+];
+
+const OPEN_STATE_TYPES = new Set(["triage", "backlog", "unstarted", "started"]);
+
+function BugsSection() {
+  const [bugs, setBugs] = useState<BugIssue[] | null>(null);
+  const [error, setError] = useState(false);
+  const [selectedIssueId, setSelectedIssueId] = useState<string | null>(null);
+  // Priority groups the user has expanded; all collapsed by default.
+  const [openGroups, setOpenGroups] = useState<Record<number, boolean>>({});
+
+  const load = useCallback(() => {
+    linearQuery<{ issues: { nodes: BugIssue[] } }>(
+      `query Bugs {
+        issues(first: 250, filter: { labels: { name: { eq: "Bug" } } }) {
+          nodes {
+            id identifier title url priority createdAt completedAt canceledAt
+            state { name type color }
+            assignee { displayName }
+          }
+        }
+      }`,
+    )
+      .then((d) => setBugs(d.issues.nodes))
+      .catch(() => setError(true));
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const day = 24 * 60 * 60 * 1000;
+  const now = Date.now();
+  const open = (bugs ?? []).filter((b) => OPEN_STATE_TYPES.has(b.state.type));
+  const opened30 = (bugs ?? []).filter((b) => now - new Date(b.createdAt).getTime() < 30 * day).length;
+  const fixed30 = (bugs ?? []).filter(
+    (b) => b.state.type === "completed" && b.completedAt && now - new Date(b.completedAt).getTime() < 30 * day,
+  ).length;
+  const triage = open.filter((b) => b.state.type === "triage").length;
+  const ageDays = (b: BugIssue) => Math.floor((now - new Date(b.createdAt).getTime()) / day);
+
+  // Median report -> fix over 90 days. 30 days is too few fixes to trust:
+  // one old-backlog cleanup sweep poisons the small window.
+  const fixedBugs = (bugs ?? []).filter(
+    (b) => b.state.type === "completed" && b.completedAt && now - new Date(b.completedAt!).getTime() < 90 * day,
+  );
+  const timeToFixFor = (priority?: number): { median: number | null; n: number } => {
+    const ts = fixedBugs
+      .filter((b) => priority === undefined || b.priority === priority)
+      .map((b) => (new Date(b.completedAt!).getTime() - new Date(b.createdAt).getTime()) / day)
+      .sort((a, b) => a - b);
+    if (ts.length === 0) return { median: null, n: 0 };
+    const mid = Math.floor(ts.length / 2);
+    return { median: ts.length % 2 ? ts[mid] : (ts[mid - 1] + ts[mid]) / 2, n: ts.length };
+  };
+  const formatFix = (d2: number) => (d2 < 1 ? `${Math.round(d2 * 24)}h` : `${d2.toFixed(1)}d`);
+  const ttfAll = timeToFixFor();
+  const ttfUrgent = timeToFixFor(1);
+  const ttfHigh = timeToFixFor(2);
+
+  // Open-backlog history: for each of the last 12 weeks, how many bugs were
+  // open at that week's end. Reconstructed from created/closed timestamps.
+  const WEEK = 7 * day;
+  const thisWeek = Math.floor((now - 4 * day) / WEEK) * WEEK + 4 * day; // Mondays (epoch was a Thursday)
+  const weekStarts = Array.from({ length: 12 }, (_, i) => thisWeek - (11 - i) * WEEK);
+  const closedAtOf = (b: BugIssue): number | null => {
+    const ts = b.completedAt ?? b.canceledAt;
+    if (ts) return new Date(ts).getTime();
+    // Closed-type state but no timestamp (old imports): treat as closed at
+    // creation so it never inflates the historical open count.
+    return OPEN_STATE_TYPES.has(b.state.type) ? null : new Date(b.createdAt).getTime();
+  };
+  const backlogSeries = weekStarts.map((ws) => {
+    const t = Math.min(ws + WEEK, now);
+    return (bugs ?? []).filter((b) => {
+      if (new Date(b.createdAt).getTime() > t) return false;
+      const closed = closedAtOf(b);
+      return closed === null || closed > t;
+    }).length;
+  });
+  const backlogLabels = weekStarts.map((ws) => new Date(ws).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" }));
+
+  return (
+    <>
+      <MetricsSectionHeader eyebrow="Quality" title="Bugs" hint={'Live from Linear · everything labeled "Bug"'} />
+      {error && <div style={{ color: "#dc2626", padding: "12px 0" }}>Couldn&apos;t load bugs from Linear.</div>}
+      {!error && !bugs && <div style={{ color: "#94a3b8", padding: "12px 0" }}>Loading bugs from Linear...</div>}
+      {bugs && (
+        <>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 16, marginBottom: 16 }}>
+            <StatTile
+              label="Open bugs"
+              value={String(open.length)}
+              unit="across all priorities"
+              color={open.some((b) => b.priority === 1) ? "#dc2626" : "#0f766e"}
+              definition={'Everything carrying Linear\'s "Bug" label that isn\'t done, canceled, or a duplicate. The trend shows how many bugs were open at the end of each of the last 12 weeks, reconstructed from report and close dates.'}
+              trend={{ points: backlogSeries, labels: backlogLabels, format: (v) => `${v} open bugs` }}
+            />
+            <StatTile
+              label="In triage"
+              value={String(triage)}
+              unit="awaiting a priority call"
+              color={triage > 0 ? "#b45309" : "#0f766e"}
+              definition="Bug reports still in Linear's triage state: nobody has accepted or prioritized them yet."
+            />
+            <StatTile
+              label="Bug flow"
+              value={`${opened30} / ${fixed30}`}
+              unit="opened / fixed, last 30 days"
+              color={opened30 > fixed30 ? "#b45309" : "#0f766e"}
+              definition="Bugs reported vs bugs fixed over the last 30 days. More opened than fixed means the backlog is growing."
+            />
+            <StatTile
+              label="Time to fix"
+              value={ttfAll.median === null ? "–" : formatFix(ttfAll.median)}
+              unit={`median, ${ttfAll.n} fixes in 90 days`}
+              color="#0f766e"
+              definition="Median time from a bug being reported to being fixed, over the last 90 days. Blends all priorities, so deliberate low-priority waiting counts against it; a jump here often just means old backlog bugs got cleaned up."
+            />
+            <StatTile
+              label="Time to fix · urgent"
+              value={ttfUrgent.median === null ? "–" : formatFix(ttfUrgent.median)}
+              unit={ttfUrgent.n === 0 ? "no urgent bugs fixed in 90 days" : `median, ${ttfUrgent.n} fixes in 90 days`}
+              color={ttfUrgent.median !== null && ttfUrgent.median > 2 ? "#dc2626" : "#0f766e"}
+              definition="Median report-to-fix time for urgent-priority bugs over the last 90 days. A dash means none were filed and fixed, which is the good outcome. Turns red if the median passes 2 days."
+            />
+            <StatTile
+              label="Time to fix · high"
+              value={ttfHigh.median === null ? "–" : formatFix(ttfHigh.median)}
+              unit={ttfHigh.n === 0 ? "no high-priority bugs fixed in 90 days" : `median, ${ttfHigh.n} fixes in 90 days`}
+              color={ttfHigh.median !== null && ttfHigh.median > 7 ? "#b45309" : "#0f766e"}
+              definition="Median report-to-fix time for high-priority bugs over the last 90 days. Small sample: with only a handful of fixes, one slow bug moves this a lot. Turns amber if the median passes a week."
+            />
+          </div>
+          <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 14, overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+            {open.length === 0 && (
+              <div style={{ color: "#94a3b8", fontSize: 13, fontStyle: "italic", padding: "16px 18px" }}>No open bugs.</div>
+            )}
+            {BUG_PRIORITIES.map((p) => {
+              const rows = open
+                .filter((b) => b.priority === p.value)
+                .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+              if (rows.length === 0) return null;
+              const isOpen = openGroups[p.value] ?? false;
+              return (
+                <div key={p.value}>
+                  <div
+                    onClick={() => setOpenGroups((g) => ({ ...g, [p.value]: !isOpen }))}
+                    style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 18px", background: "#f8fafc", borderBottom: "1px solid #e2e8f0", borderTop: "1px solid #e2e8f0", cursor: "pointer", userSelect: "none" }}
+                  >
+                    <span style={{ fontSize: 10, color: "#94a3b8", width: 10 }}>{isOpen ? "▾" : "▸"}</span>
+                    <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: p.color, background: p.bg, borderRadius: 999, padding: "3px 10px" }}>
+                      {p.label}
+                    </span>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: "#94a3b8" }}>{rows.length}</span>
+                    {!isOpen && (
+                      <span style={{ fontSize: 12, color: "#cbd5e1", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>
+                        {rows.map((b) => b.identifier).join(" · ")}
+                      </span>
+                    )}
+                  </div>
+                  {isOpen && rows.map((b) => (
+                    <div
+                      key={b.id}
+                      onClick={() => setSelectedIssueId(b.id)}
+                      title={`${b.identifier} · ${b.state.name}`}
+                      style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 18px", borderBottom: "1px solid #f1f5f9", cursor: "pointer" }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = "#f8fafc"; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+                    >
+                      <span style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", whiteSpace: "nowrap", minWidth: 74 }}>{b.identifier}</span>
+                      <span style={{ flex: 1, fontSize: 14, fontWeight: 600, color: "#1e293b" }}>{b.title}</span>
+                      <span style={{ fontSize: 11, fontWeight: 600, color: "#94a3b8", whiteSpace: "nowrap" }}>
+                        {ownerFirstName(b.assignee?.displayName)}
+                      </span>
+                      <span style={{ fontSize: 11, fontWeight: 600, color: ageDays(b) > 60 ? "#b45309" : "#94a3b8", whiteSpace: "nowrap", minWidth: 44, textAlign: "right" }} title="Age since reported">
+                        {ageDays(b)}d old
+                      </span>
+                      <span style={{
+                        display: "inline-block", fontSize: 10, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase",
+                        padding: "3px 10px", borderRadius: 999, whiteSpace: "nowrap",
+                        color: b.state.type === "started" ? "#2563eb" : "#64748b",
+                        background: b.state.type === "started" ? "#eff6ff" : "#f1f5f9",
+                      }}>
+                        {b.state.name}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              );
+            })}
+          </div>
+          {selectedIssueId && (
+            <CycleIssueDetailPanel
+              issueId={selectedIssueId}
+              onClose={() => setSelectedIssueId(null)}
+              cycles={[]}
+              onUpdated={() => load()}
+            />
+          )}
+        </>
+      )}
+    </>
+  );
+}
+
 function MetricsView() {
   const [prenormIssues, setPrenormIssues] = useState<PrenormIssue[] | null>(null);
   const [content, setContent] = useState<{ instructions: AiRow[]; cfBuilt: CfRow[] } | null>(null);
   const [overrides, setOverrides] = useState<RoadmapOverrides | null>(null);
   const [audioTests, setAudioTests] = useState<AudioAuditTest[] | null>(null);
+  const [deploys, setDeploys] = useState<DeployFrequency | null>(null);
+  const [eng, setEng] = useState<EngMetrics | null>(null);
   const [errors, setErrors] = useState<string[]>([]);
 
   useEffect(() => {
@@ -8239,6 +8608,20 @@ function MetricsView() {
         setAudioTests(j.tests);
       })
       .catch(() => setErrors((e) => [...e, "audio audit sheet"]));
+    fetch("/api/release-frequency")
+      .then((r) => r.json())
+      .then((j) => {
+        if (j.error) throw new Error(j.error);
+        setDeploys(j);
+      })
+      .catch(() => setErrors((e) => [...e, "release frequency"]));
+    fetch("/api/eng-metrics")
+      .then((r) => r.json())
+      .then((j) => {
+        if (j.error) throw new Error(j.error);
+        setEng(j);
+      })
+      .catch(() => setErrors((e) => [...e, "engineering metrics"]));
     fetchOverrides().then(setOverrides);
   }, []);
 
@@ -8274,14 +8657,16 @@ function MetricsView() {
       <div style={{ maxWidth: 1000, margin: "0 auto", padding: "32px 32px 80px" }}>
         <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 24, flexWrap: "wrap", gap: 8 }}>
           <h1 style={{ margin: 0, fontSize: 24, fontWeight: 800, color: "#0f172a", letterSpacing: "-0.01em" }}>Key Metrics</h1>
-          <span style={{ fontSize: 12, fontWeight: 600, color: "#64748b" }}>Same sources as the Norming Countdown sections</span>
+          <span style={{ fontSize: 12, fontWeight: 600, color: "#64748b" }}>Live from Linear, GitHub, and the content trackers · hover a ? for definitions</span>
         </div>
 
         {errors.length > 0 && (
-          <div style={{ color: "#dc2626", fontSize: 13, marginBottom: 16 }}>Couldn&apos;t load: {errors.join(", ")}.</div>
+          <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 10, color: "#b91c1c", fontSize: 13, fontWeight: 600, padding: "10px 14px", marginBottom: 16 }}>
+            Couldn&apos;t load: {[...new Set(errors)].join(", ")}. The rest of the page is unaffected.
+          </div>
         )}
 
-        {/* Deadlines */}
+        <MetricsSectionHeader eyebrow="Norming" title="Readiness" hint="Same sources and math as the Norming Countdown tab" />
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16, marginBottom: 16 }}>
           {[
             { label: "Days to pre-norming", days: daysToPrenorm, date: "Sep 8", color: "#f97316" },
@@ -8297,7 +8682,6 @@ function MetricsView() {
           ))}
         </div>
 
-        {/* Readiness */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 16 }}>
           {readiness && (
             <MetricTile
@@ -8345,6 +8729,74 @@ function MetricsView() {
             />
           )}
         </div>
+
+        <MetricsSectionHeader eyebrow="marker-method" title="Engineering" hint="Live from GitHub · PR stats over 30 days, deploys over 90" />
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 16 }}>
+          {deploys && (
+            <StatTile
+              label="Release frequency"
+              value={deploys.perWeek.toFixed(1)}
+              unit="releases / week"
+              color="#0f766e"
+              definition={`How often marker-method ships to production: successful runs of the Deploy to Production workflow (main merged to production) per week, over the last ${deploys.windowDays} days. The trend line is a 4-week rolling rate.`}
+              note={`${deploys.total} releases in ${deploys.windowDays} days · ${deploys.last30} in the last 30 · last release ${deploys.daysSinceLast === null ? "unknown" : deploys.daysSinceLast === 0 ? "today" : `${deploys.daysSinceLast}d ago`}`}
+              trend={eng ? { points: eng.series.releasesPerWeek, labels: weekLabels(eng), format: (v) => `${v.toFixed(1)} releases/wk (4-wk avg)`, tickFormat: (v) => v.toFixed(1) } : undefined}
+            />
+          )}
+          {eng && (
+            <StatTile
+              label="Unreleased PRs"
+              value={String(eng.unreleasedPrs)}
+              unit="merged, awaiting release"
+              color={eng.unreleasedPrs > 40 ? "#b45309" : "#0f766e"}
+              definition="Work that's merged into main but not yet in production: PRs merged since the last successful Deploy to Production run. Grows between releases and resets to zero when one ships."
+              note={eng.lastReleaseDaysAgo === null ? undefined : `Queued since the last release, ${eng.lastReleaseDaysAgo === 0 ? "today" : `${eng.lastReleaseDaysAgo}d ago`}`}
+            />
+          )}
+          {eng && (
+            <StatTile
+              label="PR throughput"
+              value={eng.prsPerWeek.toFixed(1)}
+              unit="PRs merged / week"
+              color="#0f766e"
+              definition={`How much work lands: pull requests merged into marker-method's main branch per week, over the last ${eng.prWindowDays} days.`}
+              note={`${eng.prsMerged} PRs merged in the last ${eng.prWindowDays} days`}
+              trend={{ points: eng.series.prsPerWeek, labels: weekLabels(eng), format: (v) => `${v} PRs merged` }}
+            />
+          )}
+          {eng && (
+            <StatTile
+              label="PR cycle time"
+              value={formatHours(eng.prCycleMedianHours)}
+              unit="median, open → merge"
+              color="#0f766e"
+              definition={`How long work waits in review: median time from a PR being opened to merging into main, over the last ${eng.prWindowDays} days. Lower is better.`}
+              trend={{ points: eng.series.prCycleHours, labels: weekLabels(eng), format: (v) => `${formatHours(v)} median`, tickFormat: (v) => (v === 0 ? "0" : formatHours(v)) }}
+            />
+          )}
+          {eng && (
+            <StatTile
+              label="Lead time to prod"
+              value={formatHours(eng.leadTimeMedianHours)}
+              unit="median, merge → release"
+              color="#0f766e"
+              definition={`How long merged work waits to ship: median time from a PR merging into main until the production release that included it, over the last ${eng.prWindowDays} days. The trend line is a 4-week rolling median. Lower is better.`}
+              trend={{ points: eng.series.leadTimeHours, labels: weekLabels(eng), format: (v) => `${formatHours(v)} median (4-wk)`, tickFormat: (v) => (v === 0 ? "0" : formatHours(v)) }}
+            />
+          )}
+          {eng && eng.deploys.failurePct !== null && (
+            <StatTile
+              label="Change failure rate"
+              value={`${eng.deploys.failurePct}%`}
+              unit="failed deploy runs"
+              color={eng.deploys.failurePct > 10 ? "#dc2626" : "#0f766e"}
+              definition={`How often shipping breaks: the share of Deploy to Production workflow runs that failed, over the last ${eng.deploys.windowDays} days. Too few deploys to trend honestly, so this stays a single number.`}
+              note={`${eng.deploys.failed} of ${eng.deploys.total} deploy runs failed in ${eng.deploys.windowDays} days`}
+            />
+          )}
+        </div>
+
+        <BugsSection />
 
         {(!prenormIssues || !content || !overrides) && errors.length === 0 && (
           <div style={{ color: "#94a3b8", padding: "20px 0", textAlign: "center", fontSize: 13 }}>Loading metrics...</div>
