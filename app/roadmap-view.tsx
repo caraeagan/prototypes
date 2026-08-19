@@ -6842,96 +6842,66 @@ function PrenormProjectsSection({ label = PRENORMING_LABEL, projects = PRENORM_P
 // The norming run as a sequence of gates: each phase lists what unlocks it.
 // Ticket-backed unblockers derive status live from Linear; the rest are
 // manual red/yellow/green chips (click the dot). "Current" is a manual call.
-type PhaseStatus = "red" | "yellow" | "green";
-type PhaseUnblocker = { id: string; text: string; owner?: string; tickets?: string[]; defaultStatus?: PhaseStatus };
-type NormingPhase = { id: string; name: string; window: string; color: string; description: string; unblockers: PhaseUnblocker[] };
+// Each phase is its goal plus date-led key dates ("Sep 28: Launch!") — the
+// milestone dates are the deadlines we run on. Line-item tracking lives in
+// Linear (the norming label), not here.
+type PhaseMilestone = { date: string; title: string };
+type NormingPhase = { id: string; code: string; name: string; start: string; end: string; color: string; goal: string; milestones: PhaseMilestone[] };
 
+// Restructured 8/19: Spanish folds into NP1 (turn-on Oct 5 per Eleanor);
+// NP2 scales everything at once incl. the Dec 7 Arabic + Mandarin launch with
+// a few weeks to prove out those groups; NP3 is the Jan–Mar close out.
 const NORMING_PHASES: NormingPhase[] = [
   {
-    id: "p1", name: "Initial launch", window: "Sep 28", color: "#eab308",
-    description: "Norming opens with monolingual and high English-exposure multilingual students while examiner ops scales.",
-    unblockers: [
-      { id: "p1-intake", text: "Intake survey sent to norming group", owner: "Lucie", defaultStatus: "yellow" },
-      { id: "p1-recruiting", text: "Monolingual recruiting under way", owner: "Erin", defaultStatus: "yellow" },
-      { id: "p1-examiners", text: "Examiner scaling on pace", owner: "Erin", defaultStatus: "yellow" },
-      { id: "p1-tickets", text: "Internal app norming tickets", tickets: ["MAR2-1688", "MAR2-1793"] },
+    id: "np1", code: "NP1", name: "Initial Launch", start: "2026-09-28", end: "2026-10-26", color: "#eab308",
+    goal: "Open norming to monolingual and high English-exposure multilingual students, prove the machine at volume, and turn Spanish on mid-phase to lay the foundation of our multilingual ops and tech.",
+    milestones: [
+      { date: "2026-09-28", title: "Launch!" },
+      { date: "2026-10-05", title: "Spanish launches" },
     ],
   },
   {
-    id: "p2", name: "Spanish expansion", window: "Oct 12", color: "#16a34a",
-    description: "Low-LEI Spanish speakers open up once instructions and routing are live.",
-    unblockers: [
-      { id: "p2-instructions", text: "Spanish instructions shipped", owner: "Eleanor", defaultStatus: "yellow" },
-      { id: "p2-calendar", text: "Spanish Calendly live", owner: "Erin", defaultStatus: "green" },
-      { id: "p2-lei", text: "LEI computed + low-LEI examiner routing", tickets: ["MAR2-2095", "PSY-42"] },
+    id: "np2", code: "NP2", name: "Scaling", start: "2026-10-26", end: "2026-12-24", color: "#9333EA",
+    goal: "Scale the run to every group: external batteries and rating scales start, scheduling machinery runs at volume, and Arabic + Mandarin launch with a few weeks to prove out recruiting.",
+    milestones: [
+      { date: "2026-10-26", title: "Correlation studies begin" },
+      { date: "2026-12-07", title: "Arabic + Mandarin launch" },
     ],
   },
   {
-    id: "p3", name: "Correlation studies", window: "Oct 26", color: "#9333EA",
-    description: "WISC / WIAT / KTEA sessions start once examiner tooling and the score workflow exist.",
-    unblockers: [
-      { id: "p3-assignment", text: "Multi-battery assignment + booking", tickets: ["MAR2-1875"] },
-      { id: "p3-external", text: "External battery completion flow", tickets: ["MAR2-1877"] },
-      { id: "p3-wrapper", text: "Examiner companion tool (timing + raw scores) · no ticket yet", defaultStatus: "red" },
-      { id: "p3-qglobal", text: "Q Global score workflow · no ticket yet", defaultStatus: "red" },
-      { id: "p3-rating", text: "Rating scales link queue + reminders · no ticket yet", defaultStatus: "red" },
-    ],
-  },
-  {
-    id: "p4", name: "Arabic + Mandarin", window: "Dec 7", color: "#0EA5E9",
-    description: "Remaining low-LEI languages open when translated instructions land.",
-    unblockers: [
-      { id: "p4-instructions", text: "Arabic + Mandarin instructions", owner: "Eleanor", defaultStatus: "yellow" },
-      { id: "p4-calendars", text: "Arabic + Mandarin Calendlys", owner: "Erin", defaultStatus: "yellow" },
-      { id: "p4-examiners", text: "Arabic-speaking examiners recruited", owner: "Erin", defaultStatus: "red" },
+    id: "np3", code: "NP3", name: "Close Out", start: "2027-01-04", end: "2027-03-26", color: "#0EA5E9",
+    goal: "Fill the remaining cells, wrap the correlation studies, and land the data for analysis.",
+    milestones: [
+      { date: "2027-01-04", title: "New years recruiting push" },
+      { date: "2027-01-15", title: "Initial psychometrics structural analysis" },
+      { date: "2027-02-01", title: "Hard-to-reach audit and game plan" },
+      { date: "2027-03-26", title: "Done!" },
     ],
   },
 ];
 
+// Month-scale timeline the phase bars are positioned against.
+const NP_RANGE_START = new Date(2026, 8, 1); // Sep 1, 2026
+const NP_RANGE_END = new Date(2027, 3, 1); // Apr 1, 2027
+function npPct(d: Date): number {
+  const pct = ((d.getTime() - NP_RANGE_START.getTime()) / (NP_RANGE_END.getTime() - NP_RANGE_START.getTime())) * 100;
+  return Math.min(100, Math.max(0, pct));
+}
+const NP_MONTHS = ["Sep", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar"].map((label, i) => ({
+  label,
+  date: new Date(2026, 8 + i, 1),
+}));
+function npFmt(dateStr: string): string {
+  return parseDateLocal(dateStr).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+function npDays(start: string, end: string): number {
+  return Math.round((parseDateLocal(end).getTime() - parseDateLocal(start).getTime()) / (24 * 60 * 60 * 1000));
+}
+
 function NormingPhasesSection() {
-  const [statuses, setStatuses] = useState<Record<string, PhaseStatus>>({});
-  // No phase is current until someone marks one (norming hasn't started).
-  const [current, setCurrent] = useState<string | null>(null);
-  // identifier -> live Linear issue, null while loading.
-  const [tickets, setTickets] = useState<Record<string, PrenormProjectIssue> | null>(null);
-
-  useEffect(() => {
-    fetchOverrides().then((ov) => {
-      setStatuses(ov.normingPhases?.statuses ?? {});
-      if (ov.normingPhases?.current) setCurrent(ov.normingPhases.current);
-    });
-    const ids = NORMING_PHASES.flatMap((p) => p.unblockers.flatMap((u) => u.tickets ?? []));
-    // Linear filters by issue number, not identifier; the number-in query can
-    // return same-numbered issues from other teams, so match identifiers after.
-    const nums = [...new Set(ids.map((i) => Number(i.split("-")[1])))];
-    linearQuery<{ issues: { nodes: PrenormProjectIssue[] } }>(
-      `query PhaseTickets($nums: [Float!]) {
-        issues(first: 100, filter: { number: { in: $nums } }) {
-          nodes { id identifier title url state { name type color } assignee { displayName } project { name } }
-        }
-      }`,
-      { nums },
-    )
-      .then((d) => {
-        const wanted = new Set(ids);
-        const map: Record<string, PrenormProjectIssue> = {};
-        for (const n of d.issues.nodes) if (wanted.has(n.identifier)) map[n.identifier] = n;
-        setTickets(map);
-      })
-      .catch(() => setTickets({}));
-  }, []);
-
-  const unblockerStatus = (u: PhaseUnblocker): PhaseStatus => {
-    if (u.tickets) {
-      if (!tickets) return "yellow";
-      const ts = u.tickets.map((id) => tickets[id]).filter(Boolean);
-      if (ts.length === 0) return "red";
-      if (ts.every((t) => t.state.type === "completed")) return "green";
-      if (ts.some((t) => t.state.type === "started" || t.state.type === "completed")) return "yellow";
-      return "red";
-    }
-    return statuses[u.id] ?? u.defaultStatus ?? "yellow";
-  };
+  // Line-item readiness tracking lives in Linear via the norming label, not
+  // on these cards; the red today line marks where we are in the run.
+  const todayPct = npPct(new Date());
 
   return (
     <div style={{ marginBottom: 36 }}>
@@ -6940,11 +6910,51 @@ function NormingPhasesSection() {
           <div style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 4 }}>Roadmap</div>
           <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: "#0f172a", letterSpacing: "-0.01em" }}>Phases</h2>
         </div>
+        <span style={{ fontSize: 12, fontWeight: 600, color: "#64748b" }}>Sep 28, 2026 → Mar 26, 2027</span>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: 12 }}>
-        {NORMING_PHASES.map((p, idx) => {
-          const isCurrent = current === p.id;
+      {/* Month-scale timeline: phase bars sized by duration, targets flagged */}
+      <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, padding: "14px 18px 10px", marginBottom: 16 }}>
+        <div style={{ position: "relative", height: 88 }}>
+          {NP_MONTHS.map((m) => (
+            <div key={m.label} style={{ position: "absolute", left: `${npPct(m.date)}%`, top: 0, bottom: 0 }}>
+              <div style={{ position: "absolute", top: 18, bottom: 0, borderLeft: "1px dashed #e2e8f0" }} />
+              <div style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.06em", paddingLeft: 4 }}>{m.label}</div>
+            </div>
+          ))}
+          {NORMING_PHASES.map((p) => {
+            const left = npPct(parseDateLocal(p.start));
+            const width = npPct(parseDateLocal(p.end)) - left;
+            return (
+              <div
+                key={p.id}
+                title={`${p.code} · ${p.name}: ${npFmt(p.start)} → ${npFmt(p.end)} (${npDays(p.start, p.end)} days)`}
+                style={{
+                  position: "absolute", left: `${left}%`, width: `${width}%`, top: 28, height: 30,
+                  background: p.color, borderRadius: 8, display: "flex", alignItems: "center", paddingLeft: 8,
+                  color: "#fff", fontSize: 11, fontWeight: 800, letterSpacing: "0.04em",
+                  whiteSpace: "nowrap", overflow: "hidden",
+                }}
+              >
+                {p.code}
+              </div>
+            );
+          })}
+          {/* Target-date callouts under each phase's end */}
+          {NORMING_PHASES.map((p) => (
+            <div key={`${p.id}-target`} style={{ position: "absolute", left: `${npPct(parseDateLocal(p.end))}%`, top: 58 }}>
+              <div style={{ position: "absolute", top: 0, height: 7, borderLeft: `2px solid ${p.color}`, transform: "translateX(-1px)" }} />
+              <div style={{ position: "absolute", top: 9, transform: "translateX(-50%)", fontSize: 10, fontWeight: 800, color: p.color, whiteSpace: "nowrap" }}>{npFmt(p.end)}</div>
+            </div>
+          ))}
+          {todayPct > 0 && todayPct < 100 && (
+            <div title="Today" style={{ position: "absolute", left: `${todayPct}%`, top: 18, height: 44, borderLeft: "2px solid #ef4444" }} />
+          )}
+        </div>
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
+        {NORMING_PHASES.map((p) => {
           return (
             <div
               key={p.id}
@@ -6953,17 +6963,24 @@ function NormingPhasesSection() {
                 background: "#fff", borderRadius: 12, padding: "14px 16px",
                 border: "1px solid #e2e8f0",
                 borderTop: `4px solid ${p.color}`,
-                boxShadow: isCurrent ? `0 2px 8px ${p.color}33` : "0 1px 2px rgba(0,0,0,0.04)",
+                boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
               }}
             >
-              <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
-                <span style={{ fontSize: 10, fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.08em" }}>Phase {idx + 1}</span>
-                {isCurrent && (
-                  <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: "#fff", background: p.color, borderRadius: 999, padding: "2px 7px" }}>Current</span>
-                )}
+              <div style={{ fontSize: 14, fontWeight: 800, color: "#0f172a", marginBottom: 4 }}>
+                <span style={{ color: p.color }}>{p.code}:</span> {p.name}
               </div>
-              <div style={{ fontSize: 14, fontWeight: 800, color: "#0f172a", marginBottom: 2 }}>{p.name}</div>
-              <div style={{ fontSize: 12, fontWeight: 600, color: "#64748b" }}>{p.window}</div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "#64748b", marginBottom: 6 }}>{npFmt(p.start)} → {npFmt(p.end)} · {npDays(p.start, p.end)} days</div>
+              <div style={{ fontSize: 12, color: "#64748b", lineHeight: 1.5, marginBottom: 12 }}>{p.goal}</div>
+              <div style={{ fontSize: 10, fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>Key dates</div>
+              {p.milestones.map((m) => (
+                <div key={m.date} style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "3px 0", fontSize: 12, lineHeight: 1.45 }}>
+                  <span style={{ width: 7, height: 7, borderRadius: "50%", background: p.color, flexShrink: 0, marginTop: 5 }} />
+                  <span style={{ color: "#1e293b" }}>
+                    <span style={{ fontWeight: 800, color: p.color }}>{npFmt(m.date)}:</span>{" "}
+                    <span style={{ fontWeight: 600 }}>{m.title}</span>
+                  </span>
+                </div>
+              ))}
             </div>
           );
         })}
