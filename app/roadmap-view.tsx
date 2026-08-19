@@ -8703,11 +8703,11 @@ function MetricsView() {
           )}
           {content && (
             <MetricTile
-              label="Instructions built"
+              label="English instructions built"
               done={instrBuilt}
               total={instrRows.length}
               color="#2563EB"
-              note={`Subtests whose instruction scenes all have audio. ${instrReleased} released to the player so far.`}
+              note={`Subtests whose English instruction scenes all have audio. ${instrReleased} released to the player so far.`}
             />
           )}
           {content && (
