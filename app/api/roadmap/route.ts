@@ -59,6 +59,7 @@ export async function POST(request: NextRequest) {
       "setPrenormNote",
       "setAudioAuditStatus",
       "saveKeyDates",
+      "saveNormingPhases",
     ]);
     if (!knownActions.has(action)) {
       return NextResponse.json(
@@ -395,12 +396,25 @@ export async function POST(request: NextRequest) {
           break;
         }
         case "saveKeyDates": {
-          const { items } = payload as {
+          const { items, scope } = payload as {
             items: { id: string; text: string; date: string; status: "red" | "yellow" | "green" }[];
+            scope?: "norming";
           };
           // Always store the array (even empty): an absent key means "use the
           // code-seeded defaults", so deleting every row must not resurrect them.
-          overrides.keyDates = items ?? [];
+          overrides[scope === "norming" ? "normingKeyDates" : "keyDates"] = items ?? [];
+          break;
+        }
+        case "saveNormingPhases": {
+          const { current, statuses } = payload as {
+            current?: string;
+            statuses?: Record<string, "red" | "yellow" | "green">;
+          };
+          const prev = overrides.normingPhases ?? {};
+          overrides.normingPhases = {
+            current: current ?? prev.current,
+            statuses: { ...prev.statuses, ...statuses },
+          };
           break;
         }
         case "setAudioAuditStatus": {
