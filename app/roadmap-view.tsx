@@ -3157,8 +3157,8 @@ function FilterBar({
   onPrint: () => void;
   onUndo: () => void;
   canUndo: boolean;
-  viewMode: "projects" | "subtestEdits" | "cycles" | "futureProjects" | "weeklyPlanning" | "normingCountdown" | "metrics";
-  onViewMode: (m: "projects" | "subtestEdits" | "cycles" | "futureProjects" | "weeklyPlanning" | "normingCountdown" | "metrics") => void;
+  viewMode: "projects" | "cycles" | "futureProjects" | "weeklyPlanning" | "normingCountdown" | "metrics";
+  onViewMode: (m: "projects" | "cycles" | "futureProjects" | "weeklyPlanning" | "normingCountdown" | "metrics") => void;
   teams: Team[];
   people: Person[];
   filterTeams: Set<string>;
@@ -3177,7 +3177,6 @@ function FilterBar({
           <div style={{ display: "flex", alignItems: "center", background: "#f1f5f9", borderRadius: 8, padding: 2 }}>
             {([
               ["projects", "Projects"],
-              ["subtestEdits", "Tasks"],
               ["futureProjects", "Future Projects"],
               ["weeklyPlanning", "Weekly Planning"],
               ["normingCountdown", "Norming Countdown"],
@@ -3365,7 +3364,7 @@ type CycleIssue = {
   priorityLabel: string;
 };
 
-// ── Subtest Edits List View ──────────────────────────────────────────────
+// ── Shared priority buckets ─────────────────────────────────────────────
 
 const PRIORITY_GROUPS: { key: number; label: string; color: string }[] = [
   { key: 1, label: "Urgent", color: "#dc2626" },
@@ -3374,375 +3373,6 @@ const PRIORITY_GROUPS: { key: number; label: string; color: string }[] = [
   { key: 4, label: "Low", color: "#94a3b8" },
   { key: 0, label: "No Priority", color: "#cbd5e1" },
 ];
-
-type TaskIssue = {
-  id: string;
-  identifier?: string;
-  url?: string;
-  title: string;
-  priority: number;
-  priorityLabel: string;
-  state: { name: string; color: string; type?: string };
-  assignee: { id?: string; displayName: string; avatarUrl: string | null } | null;
-  dueDate: string | null;
-  projectName: string;
-};
-
-function TasksView({
-  people,
-  onIssueClick,
-}: {
-  people: Person[];
-  onIssueClick: (issueId: string) => void;
-}) {
-  const [allIssues, setAllIssues] = useState<TaskIssue[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [filterOwner, setFilterOwner] = useState<string | null>(null);
-  const [filterProject, setFilterProject] = useState<string | null>(null);
-  const [sortField, setSortField] = useState<"due" | "status" | "owner" | null>("due");
-  const [editingField, setEditingField] = useState<{ issueId: string; field: "owner" | "status" | "dueDate"; x: number; y: number } | null>(null);
-  const [saving, setSaving] = useState<string | null>(null);
-  const [workflowStates, setWorkflowStates] = useState<WorkflowState[]>([]);
-  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
-
-  // Fetch all issues — first get project IDs, then fetch issues per project
-  useEffect(() => {
-    setLoading(true);
-
-    // Step 1: get all project IDs and names
-    linearQuery<{ projects: { nodes: { id: string; name: string }[] } }>(
-      `query { projects(first: 50) { nodes { id name } } }`,
-    ).then(async (data) => {
-      const allIssues: TaskIssue[] = [];
-      // Step 2: fetch issues per project (avoids complexity limit)
-      for (const proj of data.projects.nodes) {
-        try {
-          const issueData = await linearQuery<{ project: { issues: { nodes: { id: string; identifier: string; url: string; title: string; priority: number; priorityLabel: string; state: { name: string; color: string; type: string }; assignee: { id: string; displayName: string; avatarUrl: string | null } | null; dueDate: string | null }[] } } }>(
-            `query ProjectIssues($id: String!) { project(id: $id) { issues(first: 250) { nodes { id identifier url title priority priorityLabel state { name color type } assignee { id displayName avatarUrl } dueDate } } } }`,
-            { id: proj.id },
-          );
-          for (const issue of issueData.project.issues.nodes) {
-            if (issue.state.type === "completed" || issue.state.type === "canceled") continue;
-            allIssues.push({ ...issue, projectName: proj.name });
-          }
-        } catch {
-          // Skip projects that fail
-        }
-      }
-      setAllIssues(allIssues);
-    })
-      .catch((err) => console.error("[TASKS] Failed:", err))
-      .finally(() => setLoading(false));
-
-    // Fetch teams for editing
-    linearQuery<{ teams: { nodes: { id: string; states: { nodes: WorkflowState[] }; members: { nodes: TeamMember[] } }[] } }>(
-      `query { teams(first: 10) { nodes { id states { nodes { id name color position } } members(first: 50) { nodes { id displayName avatarUrl } } } } }`,
-    ).then((data) => {
-      const stateMap = new Map<string, WorkflowState>();
-      const memberMap = new Map<string, TeamMember>();
-      for (const team of data.teams.nodes) {
-        for (const s of team.states.nodes) { if (!stateMap.has(s.name)) stateMap.set(s.name, s); }
-        for (const m of team.members.nodes) memberMap.set(m.id, m);
-      }
-      setWorkflowStates([...stateMap.values()].sort((a, b) => a.position - b.position));
-      setTeamMembers([...memberMap.values()].sort((a, b) => a.displayName.localeCompare(b.displayName)));
-    }).catch(() => {});
-  }, []);
-
-  const ownerNames = useMemo(() => {
-    const names = new Set<string>();
-    for (const i of allIssues) {
-      if (i.assignee) names.add(normalizeAssigneeName(i.assignee.displayName) ?? i.assignee.displayName);
-    }
-    return [...names].sort();
-  }, [allIssues]);
-
-  const projectNames = useMemo(() => [...new Set(allIssues.map((i) => i.projectName))].sort(), [allIssues]);
-
-  const filtered = useMemo(() => {
-    let list = allIssues;
-    if (filterOwner) list = list.filter((i) => {
-      const name = i.assignee ? (normalizeAssigneeName(i.assignee.displayName) ?? i.assignee.displayName) : "Unassigned";
-      return name === filterOwner;
-    });
-    if (filterProject) list = list.filter((i) => i.projectName === filterProject);
-    return list;
-  }, [allIssues, filterOwner, filterProject]);
-
-  // Group by priority
-  const byPriority = useMemo(() => {
-    const groups: Record<number, TaskIssue[]> = {};
-    for (const issue of filtered) {
-      if (!groups[issue.priority]) groups[issue.priority] = [];
-      groups[issue.priority].push(issue);
-    }
-    for (const key in groups) {
-      groups[key].sort((a, b) => {
-        const aName = a.assignee ? (normalizeAssigneeName(a.assignee.displayName) ?? a.assignee.displayName) : "";
-        const bName = b.assignee ? (normalizeAssigneeName(b.assignee.displayName) ?? b.assignee.displayName) : "";
-        if (sortField === "due") {
-          if (!a.dueDate && !b.dueDate) return 0;
-          if (!a.dueDate) return 1;
-          if (!b.dueDate) return -1;
-          return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
-        }
-        if (sortField === "status") return a.state.name.localeCompare(b.state.name);
-        if (sortField === "owner") return aName.localeCompare(bName);
-        if (!a.dueDate && !b.dueDate) return 0;
-        if (!a.dueDate) return 1;
-        if (!b.dueDate) return -1;
-        return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
-      });
-    }
-    return groups;
-  }, [filtered, sortField]);
-
-  const fmtDate = (d: string) => parseDateLocal(d).toLocaleDateString("en-US", { month: "short", day: "numeric" });
-
-  const updateField = async (issueId: string, field: string, value: string) => {
-    setSaving(issueId);
-    try {
-      const res = await fetch("/api/linear/update", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ issueId, [field]: value }),
-      });
-      const json = await res.json();
-      if (json.success) {
-        const u = json.issue;
-        setAllIssues((prev) => prev.map((issue) => {
-          if (issue.id !== issueId) return issue;
-          const updated = { ...issue };
-          if (u.state) updated.state = { name: u.state.name, color: u.state.color, type: u.state.type };
-          if (u.dueDate !== undefined) updated.dueDate = u.dueDate;
-          if (u.assignee !== undefined) updated.assignee = u.assignee;
-          if (u.state?.type === "completed" || u.state?.type === "canceled") return null as unknown as TaskIssue;
-          return updated;
-        }).filter(Boolean));
-      }
-    } catch (err) { console.error("Update failed:", err); }
-    finally { setSaving(null); setEditingField(null); }
-  };
-
-  const selectStyle: React.CSSProperties = {
-    fontFamily: "var(--font-sans)", fontSize: 13, fontWeight: 600,
-    padding: "6px 12px", cursor: "pointer", borderRadius: 6,
-    border: "1px solid #e2e8f0", background: "white", color: "#1e293b",
-  };
-
-  const COL = { title: "1 1 0", owner: "0 0 130px", due: "0 0 100px", status: "0 0 110px" };
-
-  return (
-    <>
-    <div style={{ padding: "24px 32px", fontFamily: "var(--font-sans)", maxHeight: "calc(100vh - 120px)", overflow: "auto", maxWidth: 1000, margin: "0 auto" }}>
-      {/* Filters */}
-      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20, flexWrap: "wrap" }}>
-        <select value={filterOwner ?? ""} onChange={(e) => setFilterOwner(e.target.value || null)} style={selectStyle}>
-          <option value="">All owners</option>
-          {ownerNames.map((n) => <option key={n} value={n}>{n}</option>)}
-        </select>
-        <select value={filterProject ?? ""} onChange={(e) => setFilterProject(e.target.value || null)} style={selectStyle}>
-          <option value="">All projects</option>
-          {projectNames.map((n) => <option key={n} value={n}>{n}</option>)}
-        </select>
-        <span style={{ fontSize: 12, color: "#94a3b8" }}>
-          {filtered.length} open task{filtered.length !== 1 ? "s" : ""}
-        </span>
-      </div>
-
-      {loading && <div style={{ color: "#94a3b8", padding: "40px 0", textAlign: "center" }}>Loading...</div>}
-
-      {!loading && filtered.length === 0 && (
-        <div style={{ color: "#94a3b8", padding: "40px 0", textAlign: "center" }}>No open tasks found.</div>
-      )}
-
-      {!loading && PRIORITY_GROUPS.map((pg) => {
-        const items = byPriority[pg.key];
-        if (!items || items.length === 0) return null;
-        return (
-          <div key={pg.key} style={{ marginBottom: 24 }}>
-            {/* Priority group header */}
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8, borderBottom: `2px solid ${pg.color}`, paddingBottom: 6 }}>
-              <span style={{ fontSize: 14, fontWeight: 800, color: pg.color, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                {pg.label}
-              </span>
-              <span style={{ fontSize: 11, color: "#94a3b8", fontWeight: 500 }}>
-                {items.length} task{items.length !== 1 ? "s" : ""}
-              </span>
-            </div>
-
-            {/* Column headers */}
-            <div style={{
-              display: "flex", alignItems: "center", gap: 8, padding: "4px 12px",
-              background: hexToRgba(pg.color, 0.05), fontSize: 10, fontWeight: 700, color: "#94a3b8",
-              textTransform: "uppercase", letterSpacing: "0.04em", borderRadius: "8px 8px 0 0",
-            }}>
-              <span style={{ width: 8 }} />
-              <span style={{ flex: COL.title }}>Task</span>
-              <span style={{ flex: COL.owner, cursor: "pointer", color: sortField === "owner" ? pg.color : undefined }} onClick={() => setSortField(sortField === "owner" ? null : "owner")}>
-                Owner {sortField === "owner" ? "\u25B2" : ""}
-              </span>
-              <span style={{ flex: COL.due, textAlign: "right", cursor: "pointer", color: sortField === "due" ? pg.color : undefined }} onClick={() => setSortField(sortField === "due" ? null : "due")}>
-                Due {sortField === "due" ? "\u25B2" : ""}
-              </span>
-              <span style={{ flex: COL.status, cursor: "pointer", color: sortField === "status" ? pg.color : undefined }} onClick={() => setSortField(sortField === "status" ? null : "status")}>
-                Status {sortField === "status" ? "\u25B2" : ""}
-              </span>
-            </div>
-
-            {/* Task rows */}
-            <div style={{ border: `1px solid ${hexToRgba(pg.color, 0.15)}`, borderTop: "none", borderRadius: "0 0 8px 8px", overflow: "visible" }}>
-              {items.map((issue, idx) => {
-                const ownerName = issue.assignee ? (normalizeAssigneeName(issue.assignee.displayName) ?? issue.assignee.displayName) : "Unassigned";
-                const ownerPerson = people.find((p) => p.name === ownerName);
-                const isSaving = saving === issue.id;
-                const isEditingOwner = editingField?.issueId === issue.id && editingField.field === "owner";
-                const isEditingStatus = editingField?.issueId === issue.id && editingField.field === "status";
-                const isEditingDue = editingField?.issueId === issue.id && editingField.field === "dueDate";
-
-                return (
-                  <div
-                    key={issue.id}
-                    style={{
-                      display: "flex", alignItems: "center", gap: 8,
-                      padding: "6px 12px", fontSize: 12,
-                      background: idx % 2 === 0 ? "white" : hexToRgba(pg.color, 0.02),
-                      borderTop: idx > 0 ? `1px solid ${hexToRgba(pg.color, 0.08)}` : "none",
-                      opacity: isSaving ? 0.5 : 1,
-                      position: (isEditingOwner || isEditingStatus || isEditingDue) ? "relative" : undefined,
-                      zIndex: (isEditingOwner || isEditingStatus || isEditingDue) ? 60 : undefined,
-                    }}
-                  >
-                    <span style={{ width: 8, height: 8, borderRadius: "50%", flexShrink: 0, backgroundColor: issue.state.color }} />
-
-                    {/* Title */}
-                    <span
-                      onClick={() => onIssueClick(issue.id)}
-                      style={{ flex: COL.title, fontWeight: 500, color: "#1e293b", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", cursor: "pointer" }}
-                      title={`[${issue.projectName}] ${issue.title}`}
-                    >
-                      {issue.identifier && <span style={{ color: "#94a3b8", fontSize: 10, marginRight: 4 }}>{issue.identifier}</span>}
-                      {issue.title}
-                    </span>
-
-                    {/* Owner */}
-                    <span style={{ flex: COL.owner }}>
-                      <span
-                        onClick={(e) => { e.stopPropagation(); const r = (e.target as HTMLElement).getBoundingClientRect(); setEditingField(isEditingOwner ? null : { issueId: issue.id, field: "owner", x: r.left, y: r.bottom + 4 }); }}
-                        style={{
-                          fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 999, cursor: "pointer",
-                          backgroundColor: ownerPerson ? hexToRgba(ownerPerson.color, 0.15) : "#f1f5f9",
-                          color: ownerPerson?.color ?? "#64748b",
-                          display: "inline-block", maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-                        }}
-                      >
-                        {ownerName}
-                      </span>
-                    </span>
-
-                    {/* Due date */}
-                    <span style={{ flex: COL.due, textAlign: "right" }}>
-                      {isEditingDue ? (
-                        <span onClick={(e) => e.stopPropagation()} style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-                          <input type="date" autoFocus
-                            defaultValue={issue.dueDate ? issue.dueDate.split("T")[0] : ""}
-                            onChange={(e) => { if (e.target.value) updateField(issue.id, "dueDate", e.target.value); }}
-                            onBlur={() => setEditingField(null)}
-                            style={{ fontFamily: "var(--font-sans)", fontSize: 11, padding: "2px 4px", border: "1px solid #e2e8f0", borderRadius: 4, width: 105 }}
-                          />
-                          {issue.dueDate && (
-                            <button onMouseDown={(e) => { e.preventDefault(); updateField(issue.id, "dueDate", ""); }}
-                              style={{ fontSize: 12, color: "#dc2626", background: "none", border: "none", cursor: "pointer", padding: "0 2px", lineHeight: 1 }}
-                            >&times;</button>
-                          )}
-                        </span>
-                      ) : (
-                        <span
-                          onClick={(e) => { e.stopPropagation(); setEditingField({ issueId: issue.id, field: "dueDate", x: 0, y: 0 }); }}
-                          style={{ fontSize: 11, color: issue.dueDate ? "#475569" : "#cbd5e1", cursor: "pointer", padding: "2px 6px", borderRadius: 4, border: "1px solid transparent" }}
-                          onMouseEnter={(e) => { (e.currentTarget as HTMLSpanElement).style.borderColor = "#e2e8f0"; }}
-                          onMouseLeave={(e) => { (e.currentTarget as HTMLSpanElement).style.borderColor = "transparent"; }}
-                        >
-                          {issue.dueDate ? fmtDate(issue.dueDate) : "Add date"}
-                        </span>
-                      )}
-                    </span>
-
-                    {/* Status */}
-                    <span style={{ flex: COL.status }}>
-                      <span
-                        onClick={(e) => { e.stopPropagation(); const r = (e.target as HTMLElement).getBoundingClientRect(); setEditingField(isEditingStatus ? null : { issueId: issue.id, field: "status", x: r.right, y: r.bottom + 4 }); }}
-                        style={{
-                          fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 999, cursor: "pointer",
-                          backgroundColor: hexToRgba(issue.state.color, 0.15), color: issue.state.color, whiteSpace: "nowrap",
-                          display: "inline-block",
-                        }}
-                      >
-                        {issue.state.name}
-                      </span>
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        );
-      })}
-    </div>
-
-    {/* Backdrop */}
-    {editingField && <div onClick={() => setEditingField(null)} style={{ position: "fixed", inset: 0, zIndex: 9998 }} />}
-
-    {/* Owner dropdown */}
-    {editingField && editingField.field === "owner" && (
-      <div data-dropdown onClick={(e) => e.stopPropagation()} style={{
-        position: "fixed", top: editingField.y, left: editingField.x, zIndex: 9999,
-        background: "white", border: "1px solid #e2e8f0", borderRadius: 8,
-        boxShadow: "0 8px 24px rgba(0,0,0,0.16)", padding: 4, minWidth: 180, maxHeight: 240, overflowY: "auto",
-      }}>
-        {teamMembers.length === 0 && <div style={{ padding: "8px 12px", fontSize: 12, color: "#94a3b8" }}>Loading...</div>}
-        {teamMembers.map((m) => {
-          const issue = allIssues.find((i) => i.id === editingField.issueId);
-          const issueName = issue?.assignee ? (normalizeAssigneeName(issue.assignee.displayName) ?? issue.assignee.displayName) : "";
-          const isSelected = m.displayName === issue?.assignee?.displayName || normalizeAssigneeName(m.displayName) === issueName;
-          return (
-            <div key={m.id} onClick={() => updateField(editingField.issueId, "assigneeId", m.id)}
-              style={{ padding: "6px 12px", fontSize: 13, cursor: "pointer", borderRadius: 6, fontWeight: isSelected ? 700 : 400, background: isSelected ? "#f1f5f9" : "transparent" }}
-              onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.background = "#f8fafc"; }}
-              onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = isSelected ? "#f1f5f9" : "transparent"; }}
-            >{m.displayName}</div>
-          );
-        })}
-      </div>
-    )}
-
-    {/* Status dropdown */}
-    {editingField && editingField.field === "status" && (
-      <div data-dropdown onClick={(e) => e.stopPropagation()} style={{
-        position: "fixed", top: editingField.y, left: editingField.x - 160, zIndex: 9999,
-        background: "white", border: "1px solid #e2e8f0", borderRadius: 8,
-        boxShadow: "0 8px 24px rgba(0,0,0,0.16)", padding: 4, minWidth: 160, maxHeight: 260, overflowY: "auto",
-      }}>
-        {workflowStates.length === 0 && <div style={{ padding: "8px 12px", fontSize: 12, color: "#94a3b8" }}>Loading...</div>}
-        {workflowStates.map((ws) => {
-          const issue = allIssues.find((i) => i.id === editingField.issueId);
-          const isSelected = ws.name === issue?.state.name;
-          return (
-            <div key={ws.id} onClick={() => updateField(editingField.issueId, "stateId", ws.id)}
-              style={{ padding: "6px 12px", fontSize: 13, cursor: "pointer", borderRadius: 6, display: "flex", alignItems: "center", gap: 8, fontWeight: isSelected ? 700 : 400, background: isSelected ? hexToRgba(ws.color, 0.1) : "transparent" }}
-              onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.background = hexToRgba(ws.color, 0.08); }}
-              onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = isSelected ? hexToRgba(ws.color, 0.1) : "transparent"; }}
-            >
-              <span style={{ width: 8, height: 8, borderRadius: "50%", backgroundColor: ws.color, flexShrink: 0 }} />
-              <span style={{ color: ws.color }}>{ws.name}</span>
-            </div>
-          );
-        })}
-      </div>
-    )}
-    </>
-  );
-}
 
 // ── Future Projects View ─────────────────────────────────────────────────
 
@@ -6605,8 +6235,20 @@ type PrenormProjectIssue = {
 
 type CountNode = { id: string; state: { type: string }; project: { name: string } | null };
 
+type LabelProjectIssue = {
+  id: string;
+  identifier: string;
+  title: string;
+  url: string;
+  state: { name: string; type: string; color: string };
+  assignee: { displayName: string } | null;
+  project: { id: string; name: string } | null;
+};
+
 // Auto-tracked project cards: tickets load live from Linear per project.
-function PrenormProjectsSection() {
+function PrenormProjectsSection({ label }: { label: string }) {
+  // "Pre-norming (Sep 8)" -> "Pre-norming"; "Norming (Sep 28)" -> "Norming".
+  const phase = label.split(" (")[0];
   const [issues, setIssues] = useState<PrenormProjectIssue[] | null>(null);
   // Per-project norming-label and total ticket counts for the label-only cards' hover hint.
   const [labelCounts, setLabelCounts] = useState<Record<string, { norming?: number; total?: number }>>({});
@@ -6643,7 +6285,7 @@ function PrenormProjectsSection() {
       {
         names: PRENORM_PROJECTS.filter((p) => !p.prenormLabelOnly).map((p) => p.name),
         labeledNames,
-        label: PRENORMING_LABEL,
+        label,
       },
     )
       .then((d) => {
@@ -6692,7 +6334,7 @@ function PrenormProjectsSection() {
         return next;
       });
     })().catch(() => {});
-  }, []);
+  }, [label]);
 
   useEffect(() => {
     load();
@@ -6733,7 +6375,7 @@ function PrenormProjectsSection() {
               </h3>
               {p.prenormLabelOnly && (
                 <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, fontWeight: 600, color: "#94a3b8", whiteSpace: "nowrap" }}>
-                  Pre-norming tickets only
+                  {phase} tickets only
                   <span style={{ position: "relative", display: "inline-flex" }}>
                     <span
                       onMouseEnter={() => setHoveredHint(p.name)}
@@ -6773,7 +6415,7 @@ function PrenormProjectsSection() {
             </header>
             {projIssues.length === 0 && (
               <div style={{ color: "#94a3b8", fontSize: 13, fontStyle: "italic", padding: "16px 18px" }}>
-                {p.prenormLabelOnly ? "No pre-norming tickets in this project yet." : "No tickets in this project yet."}
+                {p.prenormLabelOnly ? `No ${phase.toLowerCase()} tickets in this project yet.` : "No tickets in this project yet."}
               </div>
             )}
             {projIssues.map((i) => (
@@ -7154,11 +6796,13 @@ function computePrenormReadiness(issues: PrenormIssue[], qa: Record<string, bool
   return { rows, withEng, engNoneCount, engDone, psychDone, readyCount, qaCount };
 }
 
-function PrenormingSection() {
+function PrenormingSection({ label, variant }: { label: string; variant: "prenorm" | "norming" }) {
   const [issues, setIssues] = useState<PrenormIssue[] | null>(null);
   const [error, setError] = useState(false);
   const [qa, setQa] = useState<Record<string, boolean>>({});
   const [notes, setNotes] = useState<Record<string, string>>({});
+  // Manually-ticked "pre-norming edits complete" state for the norming table.
+  const [edits, setEdits] = useState<Record<string, boolean>>({});
   const [selectedIssueId, setSelectedIssueId] = useState<string | null>(null);
   const [showNoTicket, setShowNoTicket] = useState(false);
 
@@ -7166,7 +6810,7 @@ function PrenormingSection() {
     fetch("/api/linear", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ query: PRENORM_ISSUES_QUERY, variables: { label: PRENORMING_LABEL } }),
+      body: JSON.stringify({ query: PRENORM_ISSUES_QUERY, variables: { label } }),
     })
       .then((r) => r.json())
       .then((j) => {
@@ -7180,18 +6824,27 @@ function PrenormingSection() {
         setIssues([...byId.values()]);
       })
       .catch(() => setError(true));
-  }, []);
+  }, [label]);
 
   useEffect(() => {
     loadIssues();
     fetchOverrides().then((ov) => {
       setQa(ov.prenormQa ?? {});
       setNotes(ov.prenormNotes ?? {});
+      setEdits(ov.normingEdits ?? {});
     });
   }, [loadIssues]);
 
   const saveNote = (test: string, note: string) => {
     saveOverride("setPrenormNote", { test, note }).catch(() => {});
+  };
+
+  const toggleEdit = (test: string) => {
+    const done = !edits[test];
+    setEdits((prev) => ({ ...prev, [test]: done }));
+    saveOverride("setNormingEdit", { test, done }).catch(() => {
+      setEdits((prev) => ({ ...prev, [test]: !done }));
+    });
   };
 
   const toggleQa = (test: string) => {
@@ -7210,6 +6863,10 @@ function PrenormingSection() {
   }
 
   const { rows, withEng, engNoneCount, engDone, psychDone, readyCount, qaCount } = computePrenormReadiness(issues, qa);
+  // The norming tab tracks one thing only: whether each test's pre-norming
+  // edits have all landed. That's a manual call, not derived from ticket state.
+  const isNorming = variant === "norming";
+  const editsDoneCount = rows.filter((r) => edits[r.test.name]).length;
 
   const thStyle: React.CSSProperties = {
     padding: "10px 14px", fontSize: 11, fontWeight: 800, color: "#94a3b8",
@@ -7222,13 +6879,25 @@ function PrenormingSection() {
       <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 18, paddingBottom: 12, borderBottom: "2px solid #1e293b" }}>
         <div>
           <div style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 4 }}>Readiness</div>
-          <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: "#0f172a", letterSpacing: "-0.01em" }}>Form Updates</h2>
+          <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: "#0f172a", letterSpacing: "-0.01em" }}>
+            {isNorming ? "Test Readiness" : "Form Updates"}
+          </h2>
         </div>
-        <span style={{ fontSize: 12, fontWeight: 600, color: "#64748b" }}>Live from Linear · label &ldquo;{PRENORMING_LABEL}&rdquo;</span>
+        <span style={{ fontSize: 12, fontWeight: 600, color: "#64748b" }}>Live from Linear · label &ldquo;{label}&rdquo;</span>
       </div>
 
       {/* Counters */}
       <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 24 }}>
+        {isNorming && (
+          <PrenormStat
+            label="Pre-norming edits complete"
+            done={editsDoneCount}
+            total={rows.length}
+            color="#16a34a"
+            hint={`Ticked by hand as each test's pre-norming edits are signed off. ${rows.length - editsDoneCount} of ${rows.length} still outstanding.`}
+          />
+        )}
+        {!isNorming && (<>
         <PrenormStat
           label="Tests ready"
           done={readyCount}
@@ -7257,6 +6926,7 @@ function PrenormingSection() {
           color="#7C3AED"
           hint="Cara working on defining QA process, update coming soon"
         />
+        </>)}
       </div>
 
       {/* Readiness table */}
@@ -7265,18 +6935,44 @@ function PrenormingSection() {
           <thead>
             <tr style={{ background: "#f8fafc" }}>
               <th style={{ ...thStyle, textAlign: "left" }}>Test</th>
+              {isNorming && <th style={{ ...thStyle, textAlign: "right", paddingRight: 24 }}>Pre-norming edits complete</th>}
+              {!isNorming && (<>
               <th style={thStyle}>Psychometrics</th>
               <th style={thStyle}>Engineering</th>
               <th style={thStyle}>Other</th>
               <th style={thStyle}>Ready</th>
               <th style={thStyle}>Full QA</th>
               <th style={{ ...thStyle, textAlign: "left", minWidth: 200 }}>Notes</th>
+              </>)}
             </tr>
           </thead>
           <tbody>
             {rows.map((r) => (
-              <tr key={r.test.name} style={{ borderBottom: "1px solid #f1f5f9", background: r.ready && r.qaDone ? "#fafdfb" : "#fff" }}>
+              <tr key={r.test.name} style={{ borderBottom: "1px solid #f1f5f9", background: (isNorming ? !!edits[r.test.name] : r.ready && r.qaDone) ? "#fafdfb" : "#fff" }}>
                 <td style={{ padding: "10px 14px", fontWeight: 600, color: "#1e293b", whiteSpace: "nowrap" }}>{r.test.name}</td>
+                {isNorming && (() => {
+                  const done = !!edits[r.test.name];
+                  return (
+                    <td style={{ padding: "10px 24px 10px 14px", textAlign: "right" }}>
+                      <button
+                        onClick={() => toggleEdit(r.test.name)}
+                        title="Click to change"
+                        style={{
+                          fontFamily: "inherit", cursor: "pointer",
+                          fontSize: 10, fontWeight: 800, letterSpacing: "0.06em",
+                          textTransform: "uppercase", padding: "4px 11px", borderRadius: 999, whiteSpace: "nowrap",
+                          color: done ? "#15803d" : "#b45309",
+                          background: done ? "#dcfce7" : "#fef3c7",
+                          border: `1px solid ${done ? "#bbf7d0" : "#fde68a"}`,
+                          transition: "background 120ms ease, color 120ms ease",
+                        }}
+                      >
+                        {done ? "Done" : "Outstanding"}
+                      </button>
+                    </td>
+                  );
+                })()}
+                {!isNorming && (<>
                 <PrenormStatusCell tickets={r.psych} onOpen={setSelectedIssueId} derivedDone={r.psychDerivedDone} onOpenNone={() => setShowNoTicket(true)} />
                 <PrenormStatusCell tickets={r.eng} onOpen={setSelectedIssueId} none={r.test.engNone} />
                 <PrenormStatusCell tickets={r.other} onOpen={setSelectedIssueId} visibility={r.vis} />
@@ -7307,6 +7003,7 @@ function PrenormingSection() {
                     onBlurCapture={(e) => { e.target.style.border = "1px solid transparent"; e.target.style.background = "transparent"; }}
                   />
                 </td>
+                </>)}
               </tr>
             ))}
           </tbody>
@@ -7339,6 +7036,140 @@ function PrenormingSection() {
             </div>
           </div>
         </div>
+      )}
+    </>
+  );
+}
+
+// Every ticket currently carrying a given label, grouped by its Linear
+// project. Unlike PrenormProjectsSection this curates nothing — whatever is
+// labelled in Linear right now is what shows up.
+function LabelProjectsSection({ label }: { label: string }) {
+  const [issues, setIssues] = useState<LabelProjectIssue[] | null>(null);
+  const [error, setError] = useState(false);
+  const [selectedIssueId, setSelectedIssueId] = useState<string | null>(null);
+
+  const load = useCallback(() => {
+    setError(false);
+    linearQuery<{ issues: { nodes: LabelProjectIssue[] } }>(
+      `query LabelledIssues($label: String!) {
+        issues(first: 250, filter: { labels: { name: { eq: $label } } }) {
+          nodes {
+            id identifier title url
+            state { name type color }
+            assignee { displayName }
+            project { id name }
+          }
+        }
+      }`,
+      { label },
+    )
+      .then((d) => setIssues(d.issues.nodes))
+      .catch(() => setError(true));
+  }, [label]);
+
+  useEffect(() => { load(); }, [load]);
+
+  // Group by project, most work first; cancelled/duplicate tickets are noise.
+  const groups = useMemo(() => {
+    if (!issues) return [];
+    const live = issues.filter((i) => i.state.type !== "canceled" && i.state.type !== "duplicate");
+    const byId: Record<string, { id: string; name: string; issues: LabelProjectIssue[] }> = {};
+    for (const i of live) {
+      const id = i.project?.id ?? "__none__";
+      if (!byId[id]) byId[id] = { id, name: i.project?.name ?? "No project", issues: [] };
+      byId[id].issues.push(i);
+    }
+    return Object.values(byId).sort((a, b) => {
+      if (a.id === "__none__") return 1;
+      if (b.id === "__none__") return -1;
+      if (b.issues.length !== a.issues.length) return b.issues.length - a.issues.length;
+      return a.name.localeCompare(b.name);
+    });
+  }, [issues]);
+
+  const total = groups.reduce((n, g) => n + g.issues.length, 0);
+  const totalDone = groups.reduce((n, g) => n + g.issues.filter((i) => i.state.type === "completed").length, 0);
+
+  // Loaded and empty — show nothing at all for this phase.
+  if (issues && groups.length === 0) return null;
+
+  return (
+    <>
+      <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 18, paddingBottom: 12, borderBottom: "2px solid #1e293b" }}>
+        <div>
+          <div style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 4 }}>Readiness</div>
+          <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: "#0f172a", letterSpacing: "-0.01em" }}>Projects</h2>
+        </div>
+        <span style={{ fontSize: 12, fontWeight: 600, color: "#64748b" }}>
+          Every ticket labelled &ldquo;{label}&rdquo; · {totalDone} / {total} done
+        </span>
+      </div>
+
+      {error && <div style={{ color: "#dc2626", padding: "20px 0", textAlign: "center" }}>Couldn&apos;t load labelled tickets from Linear.</div>}
+      {!error && !issues && <div style={{ color: "#94a3b8", padding: "20px 0", textAlign: "center" }}>Loading tickets from Linear...</div>}
+
+      {groups.map((g) => {
+        const color = projectColorFor(g.id === "__none__" ? null : g.id);
+        const done = g.issues.filter((i) => i.state.type === "completed").length;
+        const pct = g.issues.length > 0 ? Math.round((done / g.issues.length) * 100) : 0;
+        return (
+          <section key={g.id} style={{ marginBottom: 24, background: "#fff", border: "1px solid #e2e8f0", borderRadius: 10, overflow: "hidden", boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
+            <header style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 18px", borderBottom: "1px solid #e2e8f0", borderLeft: `4px solid ${color}`, background: "#f8fafc" }}>
+              <h3 style={{ margin: 0, fontSize: 13, fontWeight: 800, color: "#1e293b", textTransform: "uppercase", letterSpacing: "0.08em", flex: 1 }}>
+                {g.name}
+              </h3>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <div style={{ width: 88, height: 6, borderRadius: 999, background: "#e2e8f0", overflow: "hidden" }}>
+                  <div style={{ width: `${pct}%`, height: "100%", background: color, transition: "width 0.3s ease" }} />
+                </div>
+                <span style={{ fontSize: 12, fontWeight: 700, color: "#475569", fontVariantNumeric: "tabular-nums", minWidth: 42, textAlign: "right" }}>
+                  {done} / {g.issues.length}
+                </span>
+              </div>
+            </header>
+            {g.issues.map((i) => (
+              <div
+                key={i.id}
+                onClick={() => setSelectedIssueId(i.id)}
+                title={`${i.identifier} · ${i.state.name} · ${i.assignee?.displayName ?? "Unassigned"}`}
+                style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 18px", borderBottom: "1px solid #f1f5f9", cursor: "pointer" }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = "#f8fafc"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+              >
+                <span style={{ fontSize: 16, width: 20, textAlign: "center", color: i.state.type === "completed" ? "#16a34a" : i.state.type === "started" ? "#2563eb" : "#cbd5e1" }}>
+                  {i.state.type === "completed" ? "✓" : i.state.type === "started" ? "●" : "○"}
+                </span>
+                <span style={{ flex: 1, fontSize: 14, fontWeight: 600, color: i.state.type === "completed" ? "#94a3b8" : "#1e293b", textDecoration: i.state.type === "completed" ? "line-through" : "none" }}>
+                  {i.title}
+                </span>
+                <span style={{ fontSize: 11, fontWeight: 600, color: "#94a3b8", whiteSpace: "nowrap" }}>
+                  {ownerFirstName(i.assignee?.displayName)}
+                </span>
+                {(() => {
+                  const st = cellStatus([i]);
+                  return st ? (
+                    <span style={{
+                      display: "inline-block", fontSize: 10, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase",
+                      padding: "3px 10px", borderRadius: 999, whiteSpace: "nowrap", color: st.color, background: st.bg,
+                    }}>
+                      {st.label}
+                    </span>
+                  ) : null;
+                })()}
+              </div>
+            ))}
+          </section>
+        );
+      })}
+
+      {selectedIssueId && (
+        <CycleIssueDetailPanel
+          issueId={selectedIssueId}
+          onClose={() => setSelectedIssueId(null)}
+          cycles={[]}
+          onUpdated={() => load()}
+        />
       )}
     </>
   );
@@ -7389,7 +7220,8 @@ const INTERNAL_APP_QUERY = `
   }
 `;
 
-function InternalAppSection({ label, accent }: { label: string; accent: string }) {
+function InternalAppSection({ label, accent, strictLabel = false }:
+  { label: string; accent: string; strictLabel?: boolean }) {
   const [issues, setIssues] = useState<InternalAppIssue[] | null>(null);
   const [error, setError] = useState(false);
   const [selectedIssueId, setSelectedIssueId] = useState<string | null>(null);
@@ -7444,12 +7276,18 @@ function InternalAppSection({ label, accent }: { label: string; accent: string }
   const labeledDone = labeled.filter((i) => i.state.type === "completed").length;
   const pct = labeled.length > 0 ? Math.round((labeledDone / labeled.length) * 100) : 0;
 
-  const byIdent = new Map(active.map((i) => [i.identifier, i]));
+  // With strictLabel the section shows only work carrying this phase's label:
+  // big items keep just their labelled tickets, and any item left with none
+  // drops out entirely rather than showing another phase's progress.
+  const byIdent = new Map((strictLabel ? labeled : active).map((i) => [i.identifier, i]));
   const rocks = INTERNAL_APP_ROCKS.map((r) => {
     const tickets = r.ids.map((id) => byIdent.get(id)).filter((i): i is InternalAppIssue => !!i);
     return { name: r.name, tickets, status: cellStatus(tickets) };
-  });
+  }).filter((r) => !strictLabel || r.tickets.length > 0);
   const rocksDone = rocks.filter((r) => r.status?.done).length;
+
+  // Nothing tagged for this phase — render nothing at all.
+  if (strictLabel && labeled.length === 0) return null;
 
   return (
     <div style={{ marginBottom: 36 }}>
@@ -7469,6 +7307,7 @@ function InternalAppSection({ label, accent }: { label: string; accent: string }
       </div>
 
       {/* Big rocks */}
+      {rocks.length > 0 && (
       <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 10, overflow: "hidden", boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 16px", borderBottom: "1px solid #e2e8f0", background: "#f8fafc" }}>
           <span style={{ fontSize: 13, fontWeight: 800, color: "#1e293b", textTransform: "uppercase", letterSpacing: "0.08em" }}>Big items</span>
@@ -7503,6 +7342,7 @@ function InternalAppSection({ label, accent }: { label: string; accent: string }
           </div>
         ))}
       </div>
+      )}
 
       {selectedIssueId && (
         <CycleIssueDetailPanel
@@ -8125,7 +7965,7 @@ function MetricsView() {
 
 // Examiner/student progress toward the pre-norming goals, live from the prod
 // read replica via /api/norming-progress.
-function GoalProgressBars() {
+function GoalProgressBars({ examinerTarget, studentTarget }: { examinerTarget: number; studentTarget: number }) {
   // undefined = loading, null = error
   const [data, setData] = useState<{ examiners: number; students: number } | null | undefined>(undefined);
 
@@ -8143,14 +7983,14 @@ function GoalProgressBars() {
     {
       label: "Examiners",
       done: data?.examiners ?? 0,
-      total: 12,
+      total: examinerTarget,
       color: "#2563eb",
       tip: "Distinct examiners with at least one completed norming-phase session. Live from the read-only database; stays 0 until the norming study phase exists and sessions complete.",
     },
     {
       label: "Students",
       done: data?.students ?? 0,
-      total: 25,
+      total: studentTarget,
       color: "#16a34a",
       tip: "Students whose norming examination is marked completed. Live from the read-only database; stays 0 until the norming study phase exists and exams complete.",
     },
@@ -8172,7 +8012,7 @@ function GoalProgressBars() {
               </span>
             </span>
             <span style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", fontVariantNumeric: "tabular-nums" }}>
-              {data === undefined ? "…" : data === null ? "–" : g.done} / {g.total}
+              {data === undefined ? "…" : data === null ? "–" : g.done.toLocaleString()} / {g.total.toLocaleString()}
             </span>
           </div>
           <div style={{ height: 8, borderRadius: 999, background: "#f1f5f9", overflow: "hidden" }}>
@@ -8251,6 +8091,22 @@ function NormingCountdownView() {
   // ── Countdown math ──
   const isPrenorm = subView === "prenorming";
   const target = isPrenorm ? PRENORMING_TARGET : NORMING_TARGET;
+  // Both phases render the same sections; only the Linear label they read
+  // from — and the countdown target — differ.
+  const phaseLabel = isPrenorm ? PRENORMING_LABEL : NORMING_LABEL;
+
+  // Goals and study scale differ per phase.
+  const goals: { kind: "Primary" | "Secondary"; text: string }[] = isPrenorm
+    ? [
+        { kind: "Primary", text: "Validate that the assessment player is bug free and ready for norming" },
+        { kind: "Secondary", text: "Prove the internal app ops workflow scales out to all examiners" },
+      ]
+    : [
+        { kind: "Primary", text: "Norm all of our tests and subtests" },
+        { kind: "Primary", text: "Run the validity, reliability and other studies" },
+      ];
+  const examinerTarget = isPrenorm ? 12 : 100;
+  const studentTarget = isPrenorm ? 25 : 2500;
   const msPerDay = 24 * 60 * 60 * 1000;
   const daysRemaining = Math.max(0, Math.ceil((target.getTime() - now.getTime()) / msPerDay));
   const targetLabel = target.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
@@ -8268,7 +8124,7 @@ function NormingCountdownView() {
 
   return (
     <div style={{ fontFamily: "var(--font-sans)", height: "calc(100vh - 80px)", overflow: "auto", background: "#fef9c3", position: "relative" }}>
-      <div style={{ maxWidth: isPrenorm ? 1140 : 820, margin: "0 auto", padding: "32px 32px 80px", position: "relative", zIndex: 1 }}>
+      <div style={{ maxWidth: 1140, margin: "0 auto", padding: "32px 32px 80px", position: "relative", zIndex: 1 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24, flexWrap: "wrap", gap: 12 }}>
           <h1 style={{ margin: 0, fontSize: 24, fontWeight: 800, color: "#0f172a", letterSpacing: "-0.01em" }}>
             {isPrenorm ? "Pre-Norming Countdown" : "Norming Countdown"}
@@ -8305,44 +8161,59 @@ function NormingCountdownView() {
             </div>
             <span style={{ fontSize: 14, fontWeight: 600, color: "#64748b" }}>Target: {targetLabel}</span>
           </div>
-          {isPrenorm && (
-            <div style={{ marginTop: 18, paddingTop: 14, borderTop: "1px solid #f1f5f9" }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>Goals</div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
-                  <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: "#c2410c", background: "#fff7ed", borderRadius: 999, padding: "2px 8px", whiteSpace: "nowrap" }}>Primary</span>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: "#1e293b" }}>Validate that the assessment player is bug free and ready for norming</span>
+          <div style={{ marginTop: 18, paddingTop: 14, borderTop: "1px solid #f1f5f9" }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>Goals</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {goals.map((g) => (
+                <div key={g.text} style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
+                  <span
+                    style={{
+                      fontSize: 9, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase",
+                      borderRadius: 999, padding: "2px 8px", whiteSpace: "nowrap",
+                      color: g.kind === "Primary" ? "#c2410c" : "#475569",
+                      background: g.kind === "Primary" ? "#fff7ed" : "#f1f5f9",
+                    }}
+                  >
+                    {g.kind}
+                  </span>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: "#1e293b" }}>{g.text}</span>
                 </div>
-                <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
-                  <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: "#475569", background: "#f1f5f9", borderRadius: 999, padding: "2px 8px", whiteSpace: "nowrap" }}>Secondary</span>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: "#1e293b" }}>Prove the internal app ops workflow scales out to all examiners</span>
-                </div>
-              </div>
-              <div style={{ fontSize: 13, color: "#475569", marginTop: 10 }}>
-                We will have 12 examiners test 25 monolingual students.
-              </div>
-              <GoalProgressBars />
+              ))}
             </div>
-          )}
-          {isPrenorm && <KeyDatesBar />}
+            <div style={{ fontSize: 13, color: "#475569", marginTop: 10 }}>
+              We will have {examinerTarget} examiners test {studentTarget.toLocaleString()}{isPrenorm ? " monolingual" : ""} students.
+            </div>
+            <GoalProgressBars examinerTarget={examinerTarget} studentTarget={studentTarget} />
+          </div>
+          <KeyDatesBar />
         </div>
 
-        {!isPrenorm && (
-          <div style={{ padding: "60px 0", textAlign: "center", fontSize: 20, fontWeight: 700, color: "#94a3b8" }}>
-            Coming soon
-          </div>
+        {/* Readiness always reads the PRE-norming label: on the norming tab it
+            answers "have the edits raised during pre-norming all landed?" */}
+        <PrenormingSection
+          key={`readiness-${subView}`}
+          label={PRENORMING_LABEL}
+          variant={isPrenorm ? "prenorm" : "norming"}
+        />
+
+        <InternalAppSection
+          key={`app-${phaseLabel}`}
+          label={phaseLabel}
+          accent={accent}
+          strictLabel={!isPrenorm}
+        />
+
+        <ContentReadinessSection />
+
+        <AudioAuditSection />
+
+        {/* Pre-norming keeps its curated project list; norming shows whatever
+            currently carries the label, grouped by project. */}
+        {isPrenorm ? (
+          <PrenormProjectsSection key={`projects-${phaseLabel}`} label={phaseLabel} />
+        ) : (
+          <LabelProjectsSection key={`labelprojects-${phaseLabel}`} label={phaseLabel} />
         )}
-
-        {isPrenorm && <PrenormingSection />}
-
-        {isPrenorm && <InternalAppSection label={PRENORMING_LABEL} accent={accent} />}
-
-        {isPrenorm && <ContentReadinessSection />}
-
-        {isPrenorm && <AudioAuditSection />}
-
-        {/* Pre-norming projects, tracked live from Linear */}
-        {isPrenorm && <PrenormProjectsSection />}
 
       </div>
     </div>
@@ -8511,18 +8382,21 @@ function formatWeekRange(monday: Date): string {
 type LinearIssueLink = { id: string; identifier: string; url: string; title: string };
 type Bullet = { id: string; text: string; linearIssue?: LinearIssueLink };
 
-// Issue assigned to someone for the selected week — used by the auto
-// "From Linear" section in Weekly Planning.
+// One assignee's issue for the selected cycle, as shown in Weekly Planning.
+// teamId is carried because workflow-state IDs are per team — changing status
+// has to pick the state belonging to this issue's own team.
 type WeeklyLinearIssue = {
   id: string;
   identifier: string;
   url: string;
   title: string;
   priority: number;
-  state: { name: string; color: string; type: string };
+  dueDate: string | null;
+  state: { id: string; name: string; color: string; type: string };
+  teamId: string | null;
+  ownerName: string;
   projectId: string | null;
   projectName: string | null;
-  projectColor: string | null;
 };
 
 function newBulletId(): string {
@@ -8687,352 +8561,630 @@ function LinearSearchPopover({
   );
 }
 
-function PersonAutoLinearSection({
-  person,
-  issues,
-  loading,
-  projectOrder,
-  onSaveProjectOrder,
-  ticketOrders,
-  onSaveTicketOrder,
+// Sentinel project key for the flat, cross-project ticket order. Ticket order
+// used to be stored per project; the view is now one ranked list per person
+// per cycle, so everything lives under this single key.
+const ALL_TICKETS_KEY = "__all__";
+// Dropdown sentinel for the "everyone" view. It is only a selection marker —
+// that view renders a section per person, each ranked under its own name, so
+// reordering there edits the same list the individual view shows.
+const ALL_PEOPLE_KEY = "__everyone__";
+
+// Linear's own project colors are mostly muted greys and repeat across
+// projects, so projects get a saturated palette colour hashed off their id —
+// stable across reloads and visually distinct in a long list.
+const PROJECT_PALETTE = [
+  "#6366f1", "#0ea5e9", "#10b981", "#f59e0b", "#ef4444", "#a855f7",
+  "#ec4899", "#14b8a6", "#f97316", "#8b5cf6", "#06b6d4", "#84cc16",
+];
+
+function projectColorFor(projectId: string | null): string {
+  if (!projectId) return "#94a3b8";
+  let h = 0;
+  for (let i = 0; i < projectId.length; i++) h = (h * 31 + projectId.charCodeAt(i)) >>> 0;
+  return PROJECT_PALETTE[h % PROJECT_PALETTE.length];
+}
+
+function priorityMeta(priority: number): { label: string; color: string } {
+  const g = PRIORITY_GROUPS.find((p) => p.key === priority);
+  return g ? { label: g.label, color: g.color } : { label: "No Priority", color: "#cbd5e1" };
+}
+
+// 1=Urgent sorts first, 0=No priority last.
+function priorityRank(priority: number): number {
+  return priority === 0 ? 99 : priority;
+}
+
+function formatDueDate(due: string | null): string {
+  if (!due) return "";
+  const d = new Date(`${due}T00:00:00`);
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+type WorkflowStateOption = { id: string; name: string; color: string; type: string; position: number };
+type ProjectOption = { id: string; name: string };
+
+// Which cell popover is open. Anchored to a viewport rect and rendered at the
+// table level rather than inside a row — rows carry a CSS transform while
+// dragging, which would otherwise become the containing block for `fixed`.
+type OpenMenu = {
+  kind: "priority" | "status" | "project" | "due";
+  issueId: string;
+  rect: DOMRect;
+};
+
+const ROW_H = 40;
+
+function MenuShell({
+  rect,
+  width,
+  children,
 }: {
-  person: Person;
-  issues: WeeklyLinearIssue[];
-  loading: boolean;
-  projectOrder: string[];
-  onSaveProjectOrder: (personName: string, order: string[]) => void;
-  ticketOrders: Record<string, string[]>;
-  onSaveTicketOrder: (personName: string, projectId: string, order: string[]) => void;
+  rect: DOMRect;
+  width: number;
+  children: React.ReactNode;
 }) {
-  // Group issues by project. Use "__no_project__" sentinel for issues with
-  // no project so they still render in one bucket at the end.
-  const groups = useMemo(() => {
-    type Group = {
-      projectId: string;
-      projectName: string;
-      projectColor: string | null;
-      issues: WeeklyLinearIssue[];
-    };
-    const byId: Record<string, Group> = {};
-    for (const i of issues) {
-      const pid = i.projectId ?? "__no_project__";
-      const pname = i.projectName ?? "No project";
-      if (!byId[pid]) {
-        byId[pid] = { projectId: pid, projectName: pname, projectColor: i.projectColor, issues: [] };
-      }
-      byId[pid].issues.push(i);
-    }
-    // Apply saved per-project ticket order; unknown IDs append in priority
-    // order (1=urgent first, 0=No priority last).
-    for (const g of Object.values(byId)) {
-      const saved = ticketOrders[g.projectId] ?? [];
-      const byIdMap: Record<string, WeeklyLinearIssue> = {};
-      for (const t of g.issues) byIdMap[t.id] = t;
-      const orderedIds = saved.filter((id) => byIdMap[id]);
-      const orderedSet = new Set(orderedIds);
-      const rest = g.issues
-        .filter((t) => !orderedSet.has(t.id))
-        .sort((a, b) => {
-          const pa = a.priority === 0 ? 99 : a.priority;
-          const pb = b.priority === 0 ? 99 : b.priority;
-          if (pa !== pb) return pa - pb;
-          return a.title.localeCompare(b.title);
-        });
-      g.issues = [...orderedIds.map((id) => byIdMap[id]), ...rest];
-    }
-    // Apply saved project order; unknown IDs append alphabetically.
-    const orderedIds = projectOrder.filter((id) => byId[id]);
-    const orderedSet = new Set(orderedIds);
-    const rest = Object.values(byId)
-      .filter((g) => !orderedSet.has(g.projectId))
-      .sort((a, b) => {
-        // "__no_project__" goes last; otherwise alphabetical.
-        if (a.projectId === "__no_project__") return 1;
-        if (b.projectId === "__no_project__") return -1;
-        return a.projectName.localeCompare(b.projectName);
-      });
-    return [...orderedIds.map((id) => byId[id]), ...rest];
-  }, [issues, projectOrder, ticketOrders]);
-
-  const [draggingId, setDraggingId] = useState<string | null>(null);
-  const [dragOverId, setDragOverId] = useState<string | null>(null);
-  const [dragOverPos, setDragOverPos] = useState<"before" | "after" | null>(null);
-
-  // Ticket-level drag state — scoped per project to avoid cross-project drops.
-  const [ticketDrag, setTicketDrag] = useState<{ projectId: string; ticketId: string } | null>(null);
-  const [ticketDragOver, setTicketDragOver] = useState<{ projectId: string; ticketId: string; pos: "before" | "after" } | null>(null);
-
-  const reorder = (fromId: string, toId: string, pos: "before" | "after") => {
-    if (fromId === toId) return;
-    const ids = groups.map((g) => g.projectId);
-    const fromIdx = ids.indexOf(fromId);
-    const toIdx = ids.indexOf(toId);
-    if (fromIdx < 0 || toIdx < 0) return;
-    const next = [...ids];
-    const [moved] = next.splice(fromIdx, 1);
-    let insertAt = toIdx + (pos === "after" ? 1 : 0);
-    if (fromIdx < toIdx) insertAt -= 1;
-    next.splice(insertAt, 0, moved);
-    onSaveProjectOrder(person.name, next);
-  };
-
-  const reorderTickets = (projectId: string, fromId: string, toId: string, pos: "before" | "after") => {
-    if (fromId === toId) return;
-    const group = groups.find((g) => g.projectId === projectId);
-    if (!group) return;
-    const ids = group.issues.map((t) => t.id);
-    const fromIdx = ids.indexOf(fromId);
-    const toIdx = ids.indexOf(toId);
-    if (fromIdx < 0 || toIdx < 0) return;
-    const next = [...ids];
-    const [moved] = next.splice(fromIdx, 1);
-    let insertAt = toIdx + (pos === "after" ? 1 : 0);
-    if (fromIdx < toIdx) insertAt -= 1;
-    next.splice(insertAt, 0, moved);
-    onSaveTicketOrder(person.name, projectId, next);
-  };
-
-  if (loading) {
-    return (
-      <div style={{ paddingLeft: 20, marginBottom: 12, fontSize: 12, color: "#94a3b8" }}>
-        Loading tickets…
-      </div>
-    );
-  }
-
-  if (groups.length === 0) {
-    return (
-      <div style={{ paddingLeft: 20, marginBottom: 12, fontSize: 12, color: "#94a3b8" }}>
-        No Linear tickets in this week.
-      </div>
-    );
-  }
-
+  const top = Math.min(rect.bottom + 4, window.innerHeight - 260);
+  const left = Math.min(rect.left, window.innerWidth - width - 16);
   return (
-    <div style={{ paddingLeft: 20, marginBottom: 14 }}>
-      <div style={{
-        fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase",
-        letterSpacing: "0.06em", marginBottom: 8,
-      }}>
-        From Linear
-      </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        {groups.map((g) => {
-          const isDragging = draggingId === g.projectId;
-          const showIndicator = dragOverId === g.projectId && draggingId && draggingId !== g.projectId;
-          return (
-            <div
-              key={g.projectId}
-              onDragOver={(e) => {
-                if (!draggingId || draggingId === g.projectId) return;
-                e.preventDefault();
-                e.dataTransfer.dropEffect = "move";
-                const rect = e.currentTarget.getBoundingClientRect();
-                const pos = e.clientY < rect.top + rect.height / 2 ? "before" : "after";
-                if (dragOverId !== g.projectId || dragOverPos !== pos) {
-                  setDragOverId(g.projectId);
-                  setDragOverPos(pos);
-                }
-              }}
-              onDragLeave={(e) => {
-                if (!e.currentTarget.contains(e.relatedTarget as Node | null)) {
-                  if (dragOverId === g.projectId) {
-                    setDragOverId(null);
-                    setDragOverPos(null);
-                  }
-                }
-              }}
-              onDrop={(e) => {
-                e.preventDefault();
-                const fromId = e.dataTransfer.getData("text/project-id") || draggingId;
-                if (fromId && dragOverPos) reorder(fromId, g.projectId, dragOverPos);
-                setDraggingId(null);
-                setDragOverId(null);
-                setDragOverPos(null);
-              }}
-              style={{
-                opacity: isDragging ? 0.4 : 1,
-                borderTop: showIndicator && dragOverPos === "before" ? "2px solid #6366f1" : "2px solid transparent",
-                borderBottom: showIndicator && dragOverPos === "after" ? "2px solid #6366f1" : "2px solid transparent",
-                transition: "border-color 80ms ease",
-              }}
-            >
-              <div style={{
-                display: "flex", alignItems: "center", gap: 6, padding: "4px 8px",
-                background: "#fef9c3", border: "1px solid #facc15", borderRadius: 6,
-              }}>
-                <span
-                  draggable
-                  onDragStart={(e) => {
-                    setDraggingId(g.projectId);
-                    e.dataTransfer.effectAllowed = "move";
-                    e.dataTransfer.setData("text/project-id", g.projectId);
-                  }}
-                  onDragEnd={() => {
-                    setDraggingId(null);
-                    setDragOverId(null);
-                    setDragOverPos(null);
-                  }}
-                  title="Drag to reorder"
-                  aria-label="Drag to reorder project"
-                  style={{
-                    flexShrink: 0, color: "#94a3b8", cursor: "grab",
-                    userSelect: "none", fontSize: 14, lineHeight: 1,
-                  }}
-                >
-                  ⋮⋮
-                </span>
-                {g.projectColor && (
-                  <span style={{
-                    width: 8, height: 8, borderRadius: "50%", flexShrink: 0,
-                    background: g.projectColor,
-                  }} />
-                )}
-                <span style={{ fontSize: 13, fontWeight: 700, color: "#0f172a" }}>
-                  {g.projectName}
-                </span>
-                <span style={{ fontSize: 11, color: "#94a3b8", marginLeft: "auto" }}>
-                  {g.issues.length} ticket{g.issues.length !== 1 ? "s" : ""}
-                </span>
-              </div>
-              <ul style={{ listStyle: "none", margin: 0, padding: "4px 0 4px 24px" }}>
-                {g.issues.map((i) => {
-                  const isTDragging = ticketDrag?.ticketId === i.id;
-                  const isTOver = ticketDragOver?.projectId === g.projectId && ticketDragOver.ticketId === i.id && ticketDrag?.ticketId !== i.id;
-                  return (
-                  <li
-                    key={i.id}
-                    onDragOver={(e) => {
-                      if (!ticketDrag || ticketDrag.projectId !== g.projectId || ticketDrag.ticketId === i.id) return;
-                      e.preventDefault();
-                      e.dataTransfer.dropEffect = "move";
-                      const rect = e.currentTarget.getBoundingClientRect();
-                      const pos: "before" | "after" = e.clientY < rect.top + rect.height / 2 ? "before" : "after";
-                      if (ticketDragOver?.ticketId !== i.id || ticketDragOver.pos !== pos) {
-                        setTicketDragOver({ projectId: g.projectId, ticketId: i.id, pos });
-                      }
-                    }}
-                    onDragLeave={(e) => {
-                      if (!e.currentTarget.contains(e.relatedTarget as Node | null)) {
-                        if (ticketDragOver?.ticketId === i.id) setTicketDragOver(null);
-                      }
-                    }}
-                    onDrop={(e) => {
-                      e.preventDefault();
-                      const fromId = e.dataTransfer.getData("text/ticket-id") || ticketDrag?.ticketId;
-                      const pos = ticketDragOver?.pos;
-                      if (fromId && pos) reorderTickets(g.projectId, fromId, i.id, pos);
-                      setTicketDrag(null);
-                      setTicketDragOver(null);
-                    }}
-                    style={{
-                      display: "flex", alignItems: "center", gap: 6, padding: "3px 0",
-                      fontSize: 12, color: "#1e293b",
-                      opacity: isTDragging ? 0.4 : 1,
-                      borderTop: isTOver && ticketDragOver?.pos === "before" ? "2px solid #6366f1" : "2px solid transparent",
-                      borderBottom: isTOver && ticketDragOver?.pos === "after" ? "2px solid #6366f1" : "2px solid transparent",
-                      transition: "border-color 80ms ease",
-                    }}
-                  >
-                    <span
-                      draggable
-                      onDragStart={(e) => {
-                        setTicketDrag({ projectId: g.projectId, ticketId: i.id });
-                        e.dataTransfer.effectAllowed = "move";
-                        e.dataTransfer.setData("text/ticket-id", i.id);
-                      }}
-                      onDragEnd={() => {
-                        setTicketDrag(null);
-                        setTicketDragOver(null);
-                      }}
-                      title="Drag to reorder"
-                      aria-label="Drag to reorder ticket"
-                      style={{
-                        flexShrink: 0, color: "#cbd5e1", cursor: "grab",
-                        userSelect: "none", fontSize: 12, lineHeight: 1,
-                      }}
-                    >
-                      ⋮⋮
-                    </span>
-                    <span style={{
-                      width: 6, height: 6, borderRadius: "50%", flexShrink: 0,
-                      backgroundColor: i.state.color,
-                    }} />
-                    <a
-                      href={i.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{ color: "#475569", fontSize: 10, textDecoration: "none", flexShrink: 0 }}
-                    >
-                      {i.identifier}
-                    </a>
-                    <a
-                      href={i.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{
-                        color: "#1e293b", textDecoration: "none", flex: 1,
-                        overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-                      }}
-                      title={i.title}
-                    >
-                      {i.title}
-                    </a>
-                    <span style={{
-                      fontSize: 10, fontWeight: 600, padding: "1px 6px", borderRadius: 999,
-                      backgroundColor: hexToRgba(i.state.color, 0.15), color: i.state.color,
-                      flexShrink: 0,
-                    }}>
-                      {i.state.name}
-                    </span>
-                  </li>
-                  );
-                })}
-              </ul>
-            </div>
-          );
-        })}
-      </div>
+    <div
+      data-row-menu
+      style={{
+        position: "fixed", top, left, width, zIndex: 1200,
+        background: "#fff", border: "1px solid #e2e8f0", borderRadius: 10,
+        boxShadow: "0 12px 32px rgba(15,23,42,0.18)", padding: 5,
+        maxHeight: 250, overflowY: "auto",
+      }}
+    >
+      {children}
     </div>
   );
 }
 
-function PersonWeekSection({
-  person,
-  weekKey,
-  onSavedStateChange,
-  autoIssues,
-  autoIssuesLoading,
-  projectOrder,
-  onSaveProjectOrder,
-  ticketOrders,
-  onSaveTicketOrder,
-  initialNote,
+function MenuItem({
+  color,
+  label,
+  selected,
+  onClick,
 }: {
-  person: Person;
+  color: string;
+  label: string;
+  selected: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        display: "flex", alignItems: "center", gap: 7, width: "100%",
+        textAlign: "left", padding: "6px 8px", borderRadius: 6, border: "none",
+        background: selected ? "#f1f5f9" : "transparent", cursor: "pointer",
+        fontFamily: "var(--font-sans)", fontSize: 12, fontWeight: 600, color: "#1e293b",
+      }}
+      onMouseEnter={(e) => (e.currentTarget.style.background = "#f1f5f9")}
+      onMouseLeave={(e) => (e.currentTarget.style.background = selected ? "#f1f5f9" : "transparent")}
+    >
+      <span style={{ width: 8, height: 8, borderRadius: "50%", background: color, flexShrink: 0 }} />
+      <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{label}</span>
+      {selected && <span style={{ marginLeft: "auto", color: "#94a3b8" }}>✓</span>}
+    </button>
+  );
+}
+
+// A pill that opens a cell popover. Kept non-draggable so grabbing it doesn't
+// start a row drag.
+function CellPill({
+  label,
+  color,
+  tone,
+  busy,
+  active,
+  onOpen,
+}: {
+  label: string;
+  color: string;
+  tone: "solid" | "soft";
+  busy: boolean;
+  active: boolean;
+  onOpen: (rect: DOMRect) => void;
+}) {
+  return (
+    <button
+      draggable={false}
+      onMouseDown={(e) => e.stopPropagation()}
+      onClick={(e) => {
+        e.stopPropagation();
+        onOpen(e.currentTarget.getBoundingClientRect());
+      }}
+      disabled={busy}
+      style={{
+        fontFamily: "var(--font-sans)", fontSize: 10, fontWeight: 700,
+        padding: "3px 8px", borderRadius: 999, maxWidth: "100%",
+        background: tone === "solid" ? color : hexToRgba(color, 0.14),
+        color: tone === "solid" ? "#fff" : color,
+        border: `1px solid ${active ? color : "transparent"}`,
+        cursor: busy ? "wait" : "pointer", opacity: busy ? 0.5 : 1,
+        display: "inline-flex", alignItems: "center", gap: 4, minWidth: 0,
+        transition: "background 120ms ease, border-color 120ms ease",
+      }}
+    >
+      <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{label}</span>
+      <span style={{ fontSize: 7, opacity: 0.75, flexShrink: 0 }}>▼</span>
+    </button>
+  );
+}
+
+// One ranked list of tickets. Rank is local (stored in overrides) and changed
+// only by dragging a row; priority, status, project and due date all write
+// straight through to Linear.
+function PersonCycleTickets({
+  orderKey,
+  issues,
+  loading,
+  order,
+  onSaveOrder,
+  workflowStates,
+  projects,
+  onSetPriority,
+  onSetStatus,
+  onSetProject,
+  onSetDueDate,
+}: {
+  orderKey: string;
+  issues: WeeklyLinearIssue[];
+  loading: boolean;
+  order: string[];
+  onSaveOrder: (orderKey: string, order: string[]) => void;
+  workflowStates: Record<string, WorkflowStateOption[]>;
+  projects: ProjectOption[];
+  onSetPriority: (issueId: string, priority: number) => Promise<void>;
+  onSetStatus: (issue: WeeklyLinearIssue, stateId: string) => Promise<void>;
+  onSetProject: (issueId: string, projectId: string | null) => Promise<void>;
+  onSetDueDate: (issueId: string, dueDate: string | null) => Promise<void>;
+}) {
+  // Saved rank first; anything new appends in priority order so fresh tickets
+  // land in a sensible place instead of at a random spot.
+  const ranked = useMemo(() => {
+    const byId: Record<string, WeeklyLinearIssue> = {};
+    for (const i of issues) byId[i.id] = i;
+    const orderedIds = order.filter((id) => byId[id]);
+    const orderedSet = new Set(orderedIds);
+    const rest = issues
+      .filter((i) => !orderedSet.has(i.id))
+      .sort((a, b) => {
+        const pa = priorityRank(a.priority);
+        const pb = priorityRank(b.priority);
+        if (pa !== pb) return pa - pb;
+        if (a.dueDate && b.dueDate && a.dueDate !== b.dueDate) return a.dueDate.localeCompare(b.dueDate);
+        if (a.dueDate && !b.dueDate) return -1;
+        if (!a.dueDate && b.dueDate) return 1;
+        return a.title.localeCompare(b.title);
+      });
+    return [...orderedIds.map((id) => byId[id]), ...rest];
+  }, [issues, order]);
+
+  type DragState = { idx: number; dy: number; target: number };
+  const [drag, setDrag] = useState<DragState | null>(null);
+  // Mirrors `drag` so the mouseup handler can read the final position without
+  // being re-created (and re-bound) on every mousemove.
+  const dragRef = useRef<DragState | null>(null);
+  const [suppressAnim, setSuppressAnim] = useState(false);
+  const [hoverId, setHoverId] = useState<string | null>(null);
+  const listRef = useRef<HTMLDivElement | null>(null);
+
+  // A drag in progress owns document-level listeners and body styles; make
+  // sure an unmount mid-gesture doesn't leave the page unselectable.
+  useEffect(() => {
+    return () => {
+      document.body.style.userSelect = "";
+      document.body.style.cursor = "";
+    };
+  }, []);
+  const [menu, setMenu] = useState<OpenMenu | null>(null);
+  const [savingId, setSavingId] = useState<string | null>(null);
+
+  // Dismiss any open cell popover on outside click, Escape, or scroll — it is
+  // pinned to a viewport rect, so scrolling would leave it stranded.
+  useEffect(() => {
+    if (!menu) return;
+    const onDocClick = (e: MouseEvent) => {
+      if (!(e.target as HTMLElement).closest("[data-row-menu]")) setMenu(null);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMenu(null);
+    };
+    const t = setTimeout(() => document.addEventListener("mousedown", onDocClick), 0);
+    document.addEventListener("keydown", onKey);
+    window.addEventListener("scroll", () => setMenu(null), { once: true, capture: true });
+    return () => {
+      clearTimeout(t);
+      document.removeEventListener("mousedown", onDocClick);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [menu]);
+
+  const runUpdate = async (issueId: string, fn: () => Promise<void>) => {
+    setMenu(null);
+    setSavingId(issueId);
+    try {
+      await fn();
+    } finally {
+      setSavingId(null);
+    }
+  };
+
+  const moveByIndex = (fromIdx: number, toIdx: number) => {
+    if (fromIdx === toIdx || toIdx < 0 || toIdx >= ranked.length) return;
+    const next = ranked.map((i) => i.id);
+    const [moved] = next.splice(fromIdx, 1);
+    next.splice(toIdx, 0, moved);
+    onSaveOrder(orderKey, next);
+  };
+
+  // Offset for each row while a drag is in flight. The grabbed row tracks the
+  // cursor 1:1; the rows it displaces slide the other way, opening a gap where
+  // the ticket will land.
+  const offsetFor = (j: number): number => {
+    if (!drag) return 0;
+    if (j === drag.idx) return drag.dy;
+    const withoutDragged = j < drag.idx ? j : j - 1;
+    const finalIdx = withoutDragged + (withoutDragged >= drag.target ? 1 : 0);
+    return (finalIdx - j) * ROW_H;
+  };
+
+  // Dragging runs on plain pointer events rather than HTML5 drag-and-drop.
+  // Native DnD paints its own translucent snapshot of the row under the cursor
+  // — a second copy moving independently of the list — and only reports
+  // position on coarse `dragover` ticks. Owning the gesture means the row moves
+  // exactly with the pointer and the target updates every frame.
+  const beginPress = (e: React.MouseEvent, idx: number) => {
+    if (e.button !== 0) return;
+    // Only the cell controls are excluded. Links are NOT: the title link spans
+    // most of the row, so skipping them would leave barely anything to grab.
+    // A drag that starts on a link swallows the click that follows instead.
+    if ((e.target as HTMLElement).closest("button,input,select,textarea")) return;
+
+    const startY = e.clientY;
+    const count = ranked.length;
+    let started = false;
+
+    const move = (ev: MouseEvent) => {
+      const dy = ev.clientY - startY;
+      if (!started) {
+        // Small threshold so a plain click isn't read as a drag.
+        if (Math.abs(dy) < 4) return;
+        started = true;
+        window.getSelection()?.removeAllRanges();
+        document.body.style.userSelect = "none";
+        document.body.style.cursor = "grabbing";
+        setMenu(null);
+      }
+      // Target slot follows the centre of the row as drawn, so the gap sits
+      // wherever the row visually overlaps most.
+      const centre = idx * ROW_H + ROW_H / 2 + dy;
+      const target = Math.max(0, Math.min(count - 1, Math.floor(centre / ROW_H)));
+      const next = { idx, dy, target };
+      dragRef.current = next;
+      setDrag(next);
+    };
+
+    const up = () => {
+      document.removeEventListener("mousemove", move);
+      document.removeEventListener("mouseup", up);
+      document.body.style.userSelect = "";
+      document.body.style.cursor = "";
+      const d = dragRef.current;
+      dragRef.current = null;
+      setDrag(null);
+      if (started && d) {
+        // Releasing over a link would otherwise navigate; eat the click that
+        // this gesture is about to produce.
+        const swallow = (ev: MouseEvent) => {
+          ev.preventDefault();
+          ev.stopPropagation();
+        };
+        document.addEventListener("click", swallow, { capture: true, once: true });
+        setTimeout(() => document.removeEventListener("click", swallow, { capture: true }), 350);
+
+        moveByIndex(d.idx, d.target);
+        // The DOM reorders while stale transforms are still applied, so drop
+        // the animation for a frame to avoid a flash.
+        setSuppressAnim(true);
+        requestAnimationFrame(() => requestAnimationFrame(() => setSuppressAnim(false)));
+      }
+    };
+
+    document.addEventListener("mousemove", move);
+    document.addEventListener("mouseup", up);
+  };
+
+  const COLS = {
+    rank: "0 0 26px",
+    id: "0 0 76px",
+    title: "1 1 0",
+    project: "0 0 168px",
+    priority: "0 0 104px",
+    status: "0 0 116px",
+    due: "0 0 74px",
+  };
+
+  if (loading) {
+    return <div style={{ padding: "32px 0", textAlign: "center", color: "#94a3b8", fontSize: 13 }}>Loading tickets…</div>;
+  }
+
+  if (ranked.length === 0) {
+    return (
+      <div style={{ padding: "32px 0", textAlign: "center", color: "#94a3b8", fontSize: 13 }}>
+        No open tickets in this cycle.
+      </div>
+    );
+  }
+
+  const menuIssue = menu ? ranked.find((i) => i.id === menu.issueId) ?? null : null;
+
+  return (
+    <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, overflow: "hidden" }}>
+      <div
+        style={{
+          display: "flex", alignItems: "center", gap: 8, padding: "9px 14px",
+          background: "linear-gradient(180deg,#f8fafc,#f1f5f9)", borderBottom: "1px solid #e2e8f0",
+          fontSize: 10, fontWeight: 700, color: "#94a3b8",
+          textTransform: "uppercase", letterSpacing: "0.05em",
+        }}
+      >
+        <span style={{ flex: "0 0 16px" }} />
+        <span style={{ flex: COLS.rank }}>#</span>
+        <span style={{ flex: COLS.id }}>Ticket</span>
+        <span style={{ flex: COLS.title }}>Title</span>
+        <span style={{ flex: COLS.project }}>Project</span>
+        <span style={{ flex: COLS.priority }}>Priority</span>
+        <span style={{ flex: COLS.status }}>Status</span>
+        <span style={{ flex: COLS.due, textAlign: "right" }}>Due</span>
+      </div>
+
+      <div ref={listRef} style={{ position: "relative" }}>
+        {/* Landing slot. Rendered first so the rows paint over it — it only
+            shows through the gap the sliding rows open up. */}
+        {drag && (
+          <div
+            aria-hidden
+            style={{
+              position: "absolute", left: 6, right: 6, height: ROW_H - 6,
+              top: drag.target * ROW_H + 3, borderRadius: 7,
+              border: "2px dashed #c7d2fe", background: "#eef2ff",
+              pointerEvents: "none", zIndex: 0,
+              transition: "top 160ms cubic-bezier(0.2,0,0,1)",
+            }}
+          />
+        )}
+        {ranked.map((issue, idx) => {
+          const pm = priorityMeta(issue.priority);
+          const pc = projectColorFor(issue.projectId);
+          const isDragging = drag?.idx === idx;
+          const isHovered = hoverId === issue.id && !drag;
+          const offset = offsetFor(idx);
+          return (
+            <div
+              key={issue.id}
+              // The whole row is the grab target; interactive children are
+              // excluded inside beginPress.
+              onMouseDown={(e) => beginPress(e, idx)}
+              onMouseEnter={() => setHoverId(issue.id)}
+              onMouseLeave={() => setHoverId((h) => (h === issue.id ? null : h))}
+              style={{
+                display: "flex", alignItems: "center", gap: 8,
+                height: ROW_H, boxSizing: "border-box", padding: "0 14px", fontSize: 12,
+                borderLeft: `3px solid ${pc}`,
+                background: isDragging ? "#fff" : isHovered ? hexToRgba(pc, 0.06) : idx % 2 === 0 ? "#fff" : "#fcfcfd",
+                borderTop: idx === 0 || isDragging ? "none" : "1px solid #f1f5f9",
+                borderRadius: isDragging ? 8 : 0,
+                cursor: isDragging ? "grabbing" : "grab",
+                transform: `translateY(${offset}px)`,
+                // The grabbed row must sit exactly under the cursor, so it gets
+                // no transition; only the rows it displaces glide.
+                transition: isDragging || suppressAnim
+                  ? "none"
+                  : "transform 160ms cubic-bezier(0.2,0,0,1), background 120ms ease",
+                willChange: drag ? "transform" : "auto",
+                boxShadow: isDragging ? "0 10px 26px rgba(15,23,42,0.18)" : "none",
+                position: "relative",
+                zIndex: isDragging ? 20 : 1,
+              }}
+            >
+              <span
+                aria-hidden
+                style={{
+                  flex: "0 0 16px", color: isHovered || isDragging ? "#64748b" : "#cbd5e1",
+                  userSelect: "none", fontSize: 14, lineHeight: 1, transition: "color 120ms ease",
+                }}
+              >
+                ⋮⋮
+              </span>
+              <span style={{ flex: COLS.rank, fontWeight: 700, color: "#94a3b8", fontVariantNumeric: "tabular-nums" }}>
+                {idx + 1}
+              </span>
+              <a
+                href={issue.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                draggable={false}
+                onClick={(e) => e.stopPropagation()}
+                style={{ flex: COLS.id, color: "#6366f1", fontSize: 11, fontWeight: 600, textDecoration: "none" }}
+              >
+                {issue.identifier}
+              </a>
+              <a
+                href={issue.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                draggable={false}
+                onClick={(e) => e.stopPropagation()}
+                title={issue.title}
+                style={{
+                  flex: COLS.title, color: "#1e293b", textDecoration: "none", fontWeight: 500,
+                  minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                }}
+              >
+                {issue.title}
+              </a>
+              <span style={{ flex: COLS.project, minWidth: 0 }}>
+                <CellPill
+                  label={issue.projectName ?? "No project"}
+                  color={pc}
+                  tone="soft"
+                  busy={savingId === issue.id}
+                  active={menu?.issueId === issue.id && menu.kind === "project"}
+                  onOpen={(rect) => setMenu({ kind: "project", issueId: issue.id, rect })}
+                />
+              </span>
+              <span style={{ flex: COLS.priority, minWidth: 0 }}>
+                <CellPill
+                  label={pm.label}
+                  color={pm.color}
+                  tone={issue.priority === 1 ? "solid" : "soft"}
+                  busy={savingId === issue.id}
+                  active={menu?.issueId === issue.id && menu.kind === "priority"}
+                  onOpen={(rect) => setMenu({ kind: "priority", issueId: issue.id, rect })}
+                />
+              </span>
+              <span style={{ flex: COLS.status, minWidth: 0 }}>
+                <CellPill
+                  label={issue.state.name}
+                  color={issue.state.color}
+                  tone="soft"
+                  busy={savingId === issue.id}
+                  active={menu?.issueId === issue.id && menu.kind === "status"}
+                  onOpen={(rect) => setMenu({ kind: "status", issueId: issue.id, rect })}
+                />
+              </span>
+              <span style={{ flex: COLS.due, textAlign: "right" }}>
+                <button
+                  draggable={false}
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setMenu({ kind: "due", issueId: issue.id, rect: e.currentTarget.getBoundingClientRect() });
+                  }}
+                  style={{
+                    fontFamily: "var(--font-sans)", fontSize: 11, fontWeight: 600,
+                    padding: "3px 7px", borderRadius: 6, cursor: "pointer",
+                    border: `1px solid ${menu?.issueId === issue.id && menu.kind === "due" ? "#6366f1" : "transparent"}`,
+                    background: issue.dueDate ? "#f1f5f9" : "transparent",
+                    color: issue.dueDate ? "#475569" : "#cbd5e1",
+                  }}
+                >
+                  {issue.dueDate ? formatDueDate(issue.dueDate) : "+"}
+                </button>
+              </span>
+            </div>
+          );
+        })}
+      </div>
+
+      {menu && menuIssue && menu.kind === "priority" && (
+        <MenuShell rect={menu.rect} width={150}>
+          {PRIORITY_GROUPS.map((g) => (
+            <MenuItem
+              key={g.key}
+              color={g.color}
+              label={g.label}
+              selected={menuIssue.priority === g.key}
+              onClick={() => runUpdate(menuIssue.id, () => onSetPriority(menuIssue.id, g.key))}
+            />
+          ))}
+        </MenuShell>
+      )}
+
+      {menu && menuIssue && menu.kind === "status" && (
+        <MenuShell rect={menu.rect} width={170}>
+          {(workflowStates[menuIssue.teamId ?? ""] ?? []).length === 0 ? (
+            <div style={{ padding: "8px 10px", fontSize: 11, color: "#94a3b8" }}>No states available</div>
+          ) : (
+            (workflowStates[menuIssue.teamId ?? ""] ?? []).map((s) => (
+              <MenuItem
+                key={s.id}
+                color={s.color}
+                label={s.name}
+                selected={menuIssue.state.id === s.id}
+                onClick={() => runUpdate(menuIssue.id, () => onSetStatus(menuIssue, s.id))}
+              />
+            ))
+          )}
+        </MenuShell>
+      )}
+
+      {menu && menuIssue && menu.kind === "project" && (
+        <MenuShell rect={menu.rect} width={240}>
+          <MenuItem
+            color="#94a3b8"
+            label="No project"
+            selected={menuIssue.projectId === null}
+            onClick={() => runUpdate(menuIssue.id, () => onSetProject(menuIssue.id, null))}
+          />
+          {projects.map((p) => (
+            <MenuItem
+              key={p.id}
+              color={projectColorFor(p.id)}
+              label={p.name}
+              selected={menuIssue.projectId === p.id}
+              onClick={() => runUpdate(menuIssue.id, () => onSetProject(menuIssue.id, p.id))}
+            />
+          ))}
+        </MenuShell>
+      )}
+
+      {menu && menuIssue && menu.kind === "due" && (
+        <MenuShell rect={menu.rect} width={190}>
+          <input
+            type="date"
+            autoFocus
+            defaultValue={menuIssue.dueDate ?? ""}
+            onChange={(e) => runUpdate(menuIssue.id, () => onSetDueDate(menuIssue.id, e.target.value || null))}
+            style={{
+              fontFamily: "var(--font-sans)", fontSize: 12, width: "100%",
+              padding: "6px 8px", border: "1px solid #e2e8f0", borderRadius: 6, outline: "none",
+            }}
+          />
+          {menuIssue.dueDate && (
+            <button
+              onClick={() => runUpdate(menuIssue.id, () => onSetDueDate(menuIssue.id, null))}
+              style={{
+                marginTop: 5, width: "100%", padding: "5px 8px", borderRadius: 6,
+                border: "1px solid #fecaca", background: "#fef2f2", color: "#dc2626",
+                fontFamily: "var(--font-sans)", fontSize: 11, fontWeight: 600, cursor: "pointer",
+              }}
+            >
+              Clear due date
+            </button>
+          )}
+        </MenuShell>
+      )}
+    </div>
+  );
+}
+
+// Free-form weekly note for the selected person, keyed by cycle week + person.
+function PersonCycleNote({
+  personName,
+  weekKey,
+  initialNote,
+  onSavedStateChange,
+}: {
+  personName: string;
   weekKey: string;
-  onSavedStateChange: (state: "saving" | "saved" | "error") => void;
-  autoIssues: WeeklyLinearIssue[];
-  autoIssuesLoading: boolean;
-  projectOrder: string[];
-  onSaveProjectOrder: (personName: string, order: string[]) => void;
-  ticketOrders: Record<string, string[]>;
-  onSaveTicketOrder: (personName: string, projectId: string, order: string[]) => void;
   initialNote: string;
+  onSavedStateChange: (state: "saving" | "saved" | "error") => void;
 }) {
   const [noteDraft, setNoteDraft] = useState(initialNote);
   const noteSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // Holds a typed-but-not-yet-saved value so it can be flushed on unmount
-  // and so background refetches don't clobber in-progress typing.
+  // Holds a typed-but-not-yet-saved value so it can be flushed on unmount and
+  // so background refetches don't clobber in-progress typing.
   const pendingNote = useRef<string | null>(null);
 
-  // Reset note when switching weeks/people — but never while the user has
-  // unsaved typing: the post-save refetch fires `initialNote` updates that
-  // would otherwise overwrite newer keystrokes.
   useEffect(() => {
     if (pendingNote.current !== null) return;
     setNoteDraft(initialNote);
-  }, [weekKey, person.name, initialNote]);
+  }, [weekKey, personName, initialNote]);
 
   const onNoteChange = (value: string) => {
     setNoteDraft(value);
@@ -9041,7 +9193,7 @@ function PersonWeekSection({
     onSavedStateChange("saving");
     noteSaveTimer.current = setTimeout(() => {
       pendingNote.current = null;
-      saveOverride("saveWeeklyPersonNote", { weekKey, personName: person.name, note: value })
+      saveOverride("saveWeeklyPersonNote", { weekKey, personName, note: value })
         .then(() => onSavedStateChange("saved"))
         .catch(() => onSavedStateChange("error"));
     }, 500);
@@ -9050,76 +9202,124 @@ function PersonWeekSection({
   useEffect(() => {
     return () => {
       if (noteSaveTimer.current) clearTimeout(noteSaveTimer.current);
-      // Flush instead of dropping: switching weeks within the debounce window
-      // must not lose the note. (Keyed by week+person, so these captures are
-      // correct for this instance's whole lifetime.)
+      // Flush instead of dropping: switching cycles/people within the debounce
+      // window must not lose the note. (Keyed by week+person, so these captures
+      // are correct for this instance's whole lifetime.)
       if (pendingNote.current !== null) {
-        saveOverride("saveWeeklyPersonNote", {
-          weekKey,
-          personName: person.name,
-          note: pendingNote.current,
-        }).catch(() => {});
+        saveOverride("saveWeeklyPersonNote", { weekKey, personName, note: pendingNote.current }).catch(() => {});
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
-    <section style={{ marginBottom: 28 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-        <div
-          style={{
-            width: 10, height: 10, borderRadius: 999, background: person.color,
-          }}
-        />
-        <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "#0f172a" }}>{person.name}</h3>
-        <span style={{ fontSize: 12, color: "#94a3b8" }}>{person.team}</span>
-      </div>
-      <PersonAutoLinearSection
-        person={person}
-        issues={autoIssues}
-        loading={autoIssuesLoading}
-        projectOrder={projectOrder}
-        onSaveProjectOrder={onSaveProjectOrder}
-        ticketOrders={ticketOrders}
-        onSaveTicketOrder={onSaveTicketOrder}
+    <div style={{ marginTop: 20 }}>
+      <label
+        style={{
+          fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase",
+          letterSpacing: "0.06em", display: "block", marginBottom: 6,
+        }}
+      >
+        Notes
+      </label>
+      <textarea
+        value={noteDraft}
+        onChange={(e) => onNoteChange(e.target.value)}
+        placeholder="Add notes for this cycle…"
+        style={{
+          fontFamily: "var(--font-sans)", fontSize: 13, lineHeight: 1.5,
+          width: "100%", minHeight: 70, padding: "8px 10px",
+          border: "1px solid #e2e8f0", borderRadius: 8,
+          background: "#fff", color: "#1e293b", outline: "none",
+          resize: "vertical",
+        }}
       />
-      <div style={{ paddingLeft: 20, marginTop: 10 }}>
-        <label style={{ fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 6 }}>
-          Notes
-        </label>
-        <textarea
-          value={noteDraft}
-          onChange={(e) => onNoteChange(e.target.value)}
-          placeholder="Add notes for this week…"
-          style={{
-            fontFamily: "var(--font-sans)", fontSize: 13, lineHeight: 1.5,
-            width: "100%", minHeight: 60, padding: "8px 10px",
-            border: "1px solid #e2e8f0", borderRadius: 8,
-            background: "#fff", color: "#1e293b", outline: "none",
-            resize: "vertical",
-          }}
-        />
-      </div>
-    </section>
+    </div>
   );
 }
 
-function WeeklyPlanningView({ people }: { people: Person[] }) {
-  const [weekKey, setWeekKey] = useState<string>(() => formatWeekKey(getMondayOfWeek(new Date())));
-  const [projectOrders, setProjectOrders] = useState<Record<string, Record<string, string[]>>>({});
+function WeeklyPlanningView({ people, cycles }: { people: Person[]; cycles: LinearCycle[] }) {
+  const plannablePeople = useMemo(
+    () =>
+      WEEKLY_PLANNING_TEAMS.flatMap((teamName) => people.filter((p) => p.team === teamName)),
+    [people],
+  );
+
+  const [selectedPersonName, setSelectedPersonName] = useState<string | null>(null);
+  const [selectedCycleId, setSelectedCycleId] = useState<string | null>(null);
   const [ticketOrders, setTicketOrders] = useState<Record<string, Record<string, Record<string, string[]>>>>({});
   const [personNotes, setPersonNotes] = useState<Record<string, Record<string, string>>>({});
   const [loading, setLoading] = useState(true);
   const [saveState, setSaveState] = useState<"saving" | "saved" | "error" | "idle">("idle");
 
-  // Linear issues for the selected week, grouped by normalized assignee name.
-  const [weeklyIssues, setWeeklyIssues] = useState<Record<string, WeeklyLinearIssue[]>>({});
-  const [weeklyIssuesLoading, setWeeklyIssuesLoading] = useState(false);
+  const [cycleIssues, setCycleIssues] = useState<Record<string, WeeklyLinearIssue[]>>({});
+  const [cycleIssuesLoading, setCycleIssuesLoading] = useState(false);
+
+  // Workflow states are per team (same names, different IDs), so they're kept
+  // keyed by team id and looked up per issue.
+  const [workflowStates, setWorkflowStates] = useState<Record<string, WorkflowStateOption[]>>({});
+  const [projectOptions, setProjectOptions] = useState<ProjectOption[]>([]);
+
+  useEffect(() => {
+    linearQuery<{
+      teams: { nodes: { id: string; states: { nodes: WorkflowStateOption[] } }[] };
+    }>(
+      `query WeeklyStates {
+        teams(first: 20) {
+          nodes { id states { nodes { id name color type position } } }
+        }
+      }`,
+    )
+      .then((data) => {
+        const byTeam: Record<string, WorkflowStateOption[]> = {};
+        for (const t of data.teams.nodes) {
+          byTeam[t.id] = [...t.states.nodes]
+            // Drop the states nobody sets by hand from a planning view.
+            .filter((s) => s.type !== "duplicate")
+            .sort((a, b) => a.position - b.position);
+        }
+        setWorkflowStates(byTeam);
+      })
+      .catch((err) => console.error("Failed to load workflow states:", err));
+
+    linearQuery<{ projects: { nodes: ProjectOption[] } }>(
+      `query WeeklyProjects { projects(first: 100) { nodes { id name } } }`,
+    )
+      .then((data) => setProjectOptions([...data.projects.nodes].sort((a, b) => a.name.localeCompare(b.name))))
+      .catch((err) => console.error("Failed to load projects:", err));
+  }, []);
+
+  // Cycles oldest → newest, so ‹ / › step backwards and forwards in time.
+  const orderedCycles = useMemo(
+    () => [...cycles].sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime()),
+    [cycles],
+  );
+
+  // The cycle containing today; falls back to the next upcoming one, then the
+  // most recent, so the view always opens somewhere sensible.
+  const currentCycleIndex = useMemo(() => {
+    if (orderedCycles.length === 0) return -1;
+    const now = new Date();
+    const inFlight = orderedCycles.findIndex((c) => now >= new Date(c.startsAt) && now <= new Date(c.endsAt));
+    if (inFlight !== -1) return inFlight;
+    const upcoming = orderedCycles.findIndex((c) => new Date(c.startsAt) > now);
+    return upcoming !== -1 ? upcoming : orderedCycles.length - 1;
+  }, [orderedCycles]);
+
+  useEffect(() => {
+    if (!selectedPersonName && plannablePeople.length > 0) {
+      setSelectedPersonName(plannablePeople[0].name);
+    }
+  }, [plannablePeople, selectedPersonName]);
+
+  useEffect(() => {
+    if (!selectedCycleId && currentCycleIndex >= 0) {
+      setSelectedCycleId(orderedCycles[currentCycleIndex].id);
+    }
+  }, [orderedCycles, currentCycleIndex, selectedCycleId]);
 
   useEffect(() => {
     fetchOverrides().then((ov) => {
-      setProjectOrders(ov.projectOrders ?? {});
       setTicketOrders(ov.weeklyTicketOrders ?? {});
       setPersonNotes(ov.weeklyPersonNotes ?? {});
       setLoading(false);
@@ -9130,7 +9330,6 @@ function WeeklyPlanningView({ people }: { people: Person[] }) {
   useEffect(() => {
     const onSaved = () => {
       fetchOverrides().then((ov) => {
-        setProjectOrders(ov.projectOrders ?? {});
         setTicketOrders(ov.weeklyTicketOrders ?? {});
         setPersonNotes(ov.weeklyPersonNotes ?? {});
       });
@@ -9139,63 +9338,72 @@ function WeeklyPlanningView({ people }: { people: Person[] }) {
     return () => window.removeEventListener("roadmap-saved", onSaved);
   }, []);
 
-  // Fetch Linear issues whose cycle covers the selected week (or whose
-  // dueDate falls within Mon–Sun for teams without cycles). Grouped by
-  // assignee using normalizeAssigneeName so they match roadmap people.
-  useEffect(() => {
-    let cancelled = false;
-    // Identify the cycle for the selected week by cycle.startsAt being within
-    // ±24h of the selected Monday. Linear stores cycle.startsAt in the team's
-    // local timezone, so a tighter Mon→Sun UTC window still overlaps the
-    // previous cycle. The ±24h window picks exactly one cycle per team — the
-    // one that "starts on this Monday" regardless of timezone.
-    const mondayUtc = new Date(`${weekKey}T00:00:00.000Z`);
-    const windowStart = new Date(mondayUtc.getTime() - 24 * 3600 * 1000).toISOString();
-    const windowEnd = new Date(mondayUtc.getTime() + 24 * 3600 * 1000).toISOString();
-    // Mon–Sun dueDate range for teams that don't use cycles.
-    const weekStartDate = weekKey;
-    const weekEndDate = toIsoDate(new Date(new Date(`${weekKey}T00:00:00`).getTime() + 6 * 24 * 3600 * 1000));
+  const selectedIndex = orderedCycles.findIndex((c) => c.id === selectedCycleId);
+  const selectedCycle = selectedIndex >= 0 ? orderedCycles[selectedIndex] : null;
 
-    setWeeklyIssuesLoading(true);
-    linearQuery<{
-      issues: {
-        nodes: {
-          id: string;
-          identifier: string;
-          url: string;
-          title: string;
-          priority: number;
-          state: { name: string; color: string; type: string };
-          assignee: { displayName: string } | null;
-          project: { id: string; name: string; color: string | null } | null;
-        }[];
-      };
-    }>(
-      `query WeeklyAssigneeIssues($windowStart: DateTimeOrDuration!, $windowEnd: DateTimeOrDuration!, $weekStart: TimelessDateOrDuration!, $weekEnd: TimelessDateOrDuration!) {
-        issues(
-          first: 100,
-          filter: {
-            or: [
-              { cycle: { startsAt: { gte: $windowStart, lt: $windowEnd } } },
-              { dueDate: { gte: $weekStart, lte: $weekEnd } }
-            ]
-          }
-        ) {
-          nodes {
-            id identifier url title priority
-            state { name color type }
-            assignee { displayName }
-            project { id name color }
-          }
+  // Orders and notes stay keyed by the Monday of the cycle's start week, which
+  // is what the storage layer already expects.
+  const weekKey = selectedCycle
+    ? formatWeekKey(getMondayOfWeek(new Date(selectedCycle.startsAt)))
+    : formatWeekKey(getMondayOfWeek(new Date()));
+
+  // Two queries: issues attached to the cycle, plus issues merely *due* inside
+  // the cycle's date range — teams without cycles (e.g. Psychometrics) only
+  // ever match the second. Merged by id.
+  useEffect(() => {
+    if (!selectedCycle) return;
+    let cancelled = false;
+    setCycleIssuesLoading(true);
+
+    type RawIssue = {
+      id: string;
+      identifier: string;
+      url: string;
+      title: string;
+      priority: number;
+      dueDate: string | null;
+      state: { id: string; name: string; color: string; type: string };
+      team: { id: string } | null;
+      assignee: { displayName: string } | null;
+      project: { id: string; name: string } | null;
+    };
+    const ISSUE_FIELDS = `
+      id identifier url title priority dueDate
+      state { id name color type }
+      team { id }
+      assignee { displayName }
+      project { id name }
+    `;
+
+    const fromCycle = linearQuery<{ cycle: { issues: { nodes: RawIssue[] } } | null }>(
+      `query CycleTickets($id: String!) {
+        cycle(id: $id) { issues(first: 250) { nodes { ${ISSUE_FIELDS} } } }
+      }`,
+      { id: selectedCycle.id },
+    )
+      .then((d) => d.cycle?.issues.nodes ?? [])
+      .catch(() => [] as RawIssue[]);
+
+    const fromDueDate = linearQuery<{ issues: { nodes: RawIssue[] } }>(
+      `query DueTickets($start: TimelessDateOrDuration!, $end: TimelessDateOrDuration!) {
+        issues(first: 250, filter: { dueDate: { gte: $start, lte: $end } }) {
+          nodes { ${ISSUE_FIELDS} }
         }
       }`,
-      { windowStart, windowEnd, weekStart: weekStartDate, weekEnd: weekEndDate },
+      { start: toIsoDate(new Date(selectedCycle.startsAt)), end: toIsoDate(new Date(selectedCycle.endsAt)) },
     )
-      .then((data) => {
+      .then((d) => d.issues.nodes)
+      .catch(() => [] as RawIssue[]);
+
+    Promise.all([fromCycle, fromDueDate])
+      .then(([cycleNodes, dueNodes]) => {
         if (cancelled) return;
+        const seen = new Set<string>();
         const byPerson: Record<string, WeeklyLinearIssue[]> = {};
-        for (const issue of data.issues.nodes) {
-          // Skip completed/canceled — we only want open work for the week.
+        for (const issue of [...cycleNodes, ...dueNodes]) {
+          if (seen.has(issue.id)) continue;
+          seen.add(issue.id);
+          // Only open work — completed/canceled tickets aren't worth ranking.
           if (issue.state.type === "completed" || issue.state.type === "canceled") continue;
           if (!issue.assignee) continue;
           const name = normalizeAssigneeName(issue.assignee.displayName);
@@ -9207,138 +9415,362 @@ function WeeklyPlanningView({ people }: { people: Person[] }) {
             url: issue.url,
             title: issue.title,
             priority: issue.priority,
+            dueDate: issue.dueDate,
             state: issue.state,
+            teamId: issue.team?.id ?? null,
+            ownerName: name,
             projectId: issue.project?.id ?? null,
             projectName: issue.project?.name ?? null,
-            projectColor: issue.project?.color ?? null,
           });
         }
-        setWeeklyIssues(byPerson);
-      })
-      .catch((err) => {
-        if (!cancelled) console.error("Failed to fetch weekly issues:", err);
+        setCycleIssues(byPerson);
       })
       .finally(() => {
-        if (!cancelled) setWeeklyIssuesLoading(false);
+        if (!cancelled) setCycleIssuesLoading(false);
       });
 
-    return () => { cancelled = true; };
-  }, [weekKey]);
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedCycle]);
 
-  const saveProjectOrder = (personName: string, order: string[]) => {
-    setProjectOrders((prev) => {
-      const copy = { ...prev };
-      if (!copy[weekKey]) copy[weekKey] = {};
-      else copy[weekKey] = { ...copy[weekKey] };
-      copy[weekKey][personName] = order;
-      return copy;
-    });
-    setSaveState("saving");
-    saveOverride("saveProjectOrder", { weekKey, personName, order })
-      .then(() => setSaveState("saved"))
-      .catch(() => setSaveState("error"));
-  };
-
-  const saveTicketOrderForProject = (personName: string, projectId: string, order: string[]) => {
+  const saveTicketOrder = (orderKey: string, order: string[]) => {
     setTicketOrders((prev) => {
       const copy = { ...prev };
-      if (!copy[weekKey]) copy[weekKey] = {};
-      else copy[weekKey] = { ...copy[weekKey] };
-      if (!copy[weekKey][personName]) copy[weekKey][personName] = {};
-      else copy[weekKey][personName] = { ...copy[weekKey][personName] };
-      copy[weekKey][personName][projectId] = order;
+      copy[weekKey] = { ...(copy[weekKey] ?? {}) };
+      copy[weekKey][orderKey] = { ...(copy[weekKey][orderKey] ?? {}) };
+      copy[weekKey][orderKey][ALL_TICKETS_KEY] = order;
       return copy;
     });
     setSaveState("saving");
-    saveOverride("saveWeeklyTicketOrder", { weekKey, personName, projectId, order })
+    saveOverride("saveWeeklyTicketOrder", { weekKey, personName: orderKey, projectId: ALL_TICKETS_KEY, order })
       .then(() => setSaveState("saved"))
       .catch(() => setSaveState("error"));
   };
 
-  const monday = parseWeekKey(weekKey);
-
-  const handleDateChange = (value: string) => {
-    if (!value) return;
-    const picked = new Date(value + "T00:00:00");
-    const mon = getMondayOfWeek(picked);
-    setWeekKey(formatWeekKey(mon));
+  // Push one field to Linear, then patch the issue locally from the response so
+  // the row (and the default ordering) update without a refetch.
+  const patchIssue = async (
+    issueId: string,
+    body: Record<string, unknown>,
+    apply: (issue: WeeklyLinearIssue, updated: Record<string, unknown>) => WeeklyLinearIssue,
+  ) => {
+    setSaveState("saving");
+    try {
+      const res = await fetch("/api/linear/update", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ issueId, ...body }),
+      });
+      const json = await res.json();
+      if (!res.ok || json.error || !json.success) {
+        throw new Error(json.error || `API error: ${res.status}`);
+      }
+      setCycleIssues((prev) => {
+        const next: Record<string, WeeklyLinearIssue[]> = {};
+        for (const [name, list] of Object.entries(prev)) {
+          next[name] = list.map((i) => (i.id === issueId ? apply(i, json.issue ?? {}) : i));
+        }
+        return next;
+      });
+      setSaveState("saved");
+    } catch (err) {
+      console.error("Failed to update issue in Linear:", err);
+      setSaveState("error");
+    }
   };
 
-  const shiftWeek = (deltaDays: number) => {
-    const d = parseWeekKey(weekKey);
-    d.setDate(d.getDate() + deltaDays);
-    setWeekKey(formatWeekKey(getMondayOfWeek(d)));
+  const setIssuePriority = (issueId: string, priority: number) =>
+    patchIssue(issueId, { priority }, (i, u) => ({
+      ...i,
+      priority: typeof u.priority === "number" ? u.priority : priority,
+    }));
+
+  const setIssueStatus = (issue: WeeklyLinearIssue, stateId: string) => {
+    const target = (workflowStates[issue.teamId ?? ""] ?? []).find((s) => s.id === stateId);
+    return patchIssue(issue.id, { stateId }, (i, u) => {
+      const returned = u.state as { id: string; name: string; color: string } | undefined;
+      return {
+        ...i,
+        state: {
+          id: returned?.id ?? stateId,
+          name: returned?.name ?? target?.name ?? i.state.name,
+          color: returned?.color ?? target?.color ?? i.state.color,
+          // issueUpdate doesn't return state.type, so keep the option's type.
+          type: target?.type ?? i.state.type,
+        },
+      };
+    });
   };
 
-  const peopleByTeam = WEEKLY_PLANNING_TEAMS.map((teamName) => ({
-    team: teamName,
-    members: people.filter((p) => p.team === teamName),
-  })).filter((g) => g.members.length > 0);
+  const setIssueProject = (issueId: string, projectId: string | null) => {
+    const target = projectOptions.find((p) => p.id === projectId) ?? null;
+    return patchIssue(issueId, { projectId: projectId ?? "" }, (i) => ({
+      ...i,
+      projectId,
+      projectName: target?.name ?? null,
+    }));
+  };
 
-  const saveStateLabel = saveState === "saving" ? "Saving…" : saveState === "saved" ? "Saved" : saveState === "error" ? "Save failed" : "";
+  const setIssueDueDate = (issueId: string, dueDate: string | null) =>
+    patchIssue(issueId, { dueDate }, (i, u) => ({
+      ...i,
+      dueDate: (u.dueDate as string | null | undefined) ?? dueDate,
+    }));
+
+  const isAll = selectedPersonName === ALL_PEOPLE_KEY;
+  const selectedPerson = plannablePeople.find((p) => p.name === selectedPersonName) ?? null;
+
+  const visibleIssues = selectedPerson ? cycleIssues[selectedPerson.name] ?? [] : [];
+
+  // "Everyone" renders one section per person who has tickets this cycle, in
+  // team order. People with nothing assigned are left out rather than shown as
+  // empty tables.
+  const sections = useMemo(() => {
+    if (!isAll) return [];
+    return plannablePeople
+      .map((person) => ({ person, issues: cycleIssues[person.name] ?? [] }))
+      .filter((s) => s.issues.length > 0);
+  }, [isAll, plannablePeople, cycleIssues]);
+
+  const totalSectionIssues = sections.reduce((n, s) => n + s.issues.length, 0);
+  const saveStateLabel =
+    saveState === "saving" ? "Saving…" : saveState === "saved" ? "Saved" : saveState === "error" ? "Save failed" : "";
   const saveStateColor = saveState === "error" ? "#dc2626" : saveState === "saving" ? "#94a3b8" : "#22c55e";
+
+  const stepCycle = (delta: number) => {
+    if (selectedIndex < 0) return;
+    const next = selectedIndex + delta;
+    if (next < 0 || next >= orderedCycles.length) return;
+    setSelectedCycleId(orderedCycles[next].id);
+  };
+
+  const cycleRangeLabel = selectedCycle
+    ? formatWeekRange(getMondayOfWeek(new Date(selectedCycle.startsAt)))
+    : "";
+  const isCurrentCycle = selectedIndex >= 0 && selectedIndex === currentCycleIndex;
+
+  const controlStyle: React.CSSProperties = {
+    fontFamily: "var(--font-sans)", fontSize: 13, fontWeight: 500,
+    padding: "7px 10px", border: "1px solid #e2e8f0", borderRadius: 8,
+    background: "#fff", color: "#1e293b", outline: "none", cursor: "pointer",
+  };
+  const stepButtonStyle: React.CSSProperties = {
+    fontSize: 14, fontWeight: 600, padding: "6px 11px",
+    border: "1px solid #e2e8f0", borderRadius: 8, background: "#fff",
+    cursor: "pointer", color: "#475569",
+  };
 
   return (
     <div style={{ fontFamily: "var(--font-sans)", height: "calc(100vh - 80px)", overflow: "auto", background: "#fafafa" }}>
-      <div style={{ maxWidth: 820, margin: "0 auto", padding: "32px 32px 80px" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24, flexWrap: "wrap", gap: 12 }}>
+      <div style={{ maxWidth: 1120, margin: "0 auto", padding: "32px 32px 80px" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
           <h1 style={{ margin: 0, fontSize: 24, fontWeight: 800, color: "#0f172a", letterSpacing: "-0.01em" }}>Weekly Planning</h1>
-          {saveStateLabel && (
-            <span style={{ fontSize: 12, color: saveStateColor, fontWeight: 500 }}>{saveStateLabel}</span>
-          )}
+          {saveStateLabel && <span style={{ fontSize: 12, color: saveStateColor, fontWeight: 500 }}>{saveStateLabel}</span>}
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 28, padding: "10px 12px", background: "#fff", borderRadius: 10, border: "1px solid #e2e8f0" }}>
+        <div
+          style={{
+            display: "flex", alignItems: "center", gap: 8, marginBottom: 24, flexWrap: "wrap",
+            padding: "10px 12px", background: "#fff", borderRadius: 10, border: "1px solid #e2e8f0",
+          }}
+        >
+          <select
+            value={selectedPersonName ?? ""}
+            onChange={(e) => setSelectedPersonName(e.target.value || null)}
+            style={{ ...controlStyle, fontWeight: 700, minWidth: 180 }}
+          >
+            {plannablePeople.length === 0 && <option value="">No people</option>}
+            <option value={ALL_PEOPLE_KEY}>All — everyone</option>
+            {WEEKLY_PLANNING_TEAMS.map((teamName) => {
+              const members = people.filter((p) => p.team === teamName);
+              if (members.length === 0) return null;
+              return (
+                <optgroup key={teamName} label={teamName}>
+                  {members.map((p) => (
+                    <option key={p.name} value={p.name}>
+                      {p.name}
+                    </option>
+                  ))}
+                </optgroup>
+              );
+            })}
+          </select>
+
+          <span style={{ width: 1, height: 24, background: "#e2e8f0", margin: "0 4px" }} />
+
+          <button onClick={() => stepCycle(-1)} disabled={selectedIndex <= 0} style={{ ...stepButtonStyle, opacity: selectedIndex <= 0 ? 0.4 : 1 }}>
+            ‹
+          </button>
+          <select
+            value={selectedCycleId ?? ""}
+            onChange={(e) => setSelectedCycleId(e.target.value || null)}
+            style={{ ...controlStyle, minWidth: 210 }}
+          >
+            {orderedCycles.length === 0 && <option value="">No cycles</option>}
+            {[...orderedCycles].reverse().map((c) => (
+              <option key={c.id} value={c.id}>
+                {formatCycleLabel(c)}
+              </option>
+            ))}
+          </select>
           <button
-            onClick={() => shiftWeek(-7)}
-            style={{ fontSize: 14, fontWeight: 600, padding: "6px 10px", border: "1px solid #e2e8f0", borderRadius: 6, background: "white", cursor: "pointer", color: "#475569" }}
-          >‹</button>
-          <input
-            type="date"
-            value={weekKey}
-            onChange={(e) => handleDateChange(e.target.value)}
-            style={{ fontFamily: "var(--font-sans)", fontSize: 14, padding: "6px 10px", border: "1px solid #e2e8f0", borderRadius: 6, outline: "none" }}
-          />
-          <button
-            onClick={() => shiftWeek(7)}
-            style={{ fontSize: 14, fontWeight: 600, padding: "6px 10px", border: "1px solid #e2e8f0", borderRadius: 6, background: "white", cursor: "pointer", color: "#475569" }}
-          >›</button>
-          <button
-            onClick={() => setWeekKey(formatWeekKey(getMondayOfWeek(new Date())))}
-            style={{ fontSize: 12, fontWeight: 600, padding: "6px 10px", border: "1px solid #e2e8f0", borderRadius: 6, background: "white", cursor: "pointer", color: "#475569", marginLeft: 4 }}
-          >This week</button>
-          <span style={{ marginLeft: "auto", fontSize: 14, color: "#475569", fontWeight: 600 }}>
-            Week of {formatWeekRange(monday)}
+            onClick={() => stepCycle(1)}
+            disabled={selectedIndex < 0 || selectedIndex >= orderedCycles.length - 1}
+            style={{ ...stepButtonStyle, opacity: selectedIndex < 0 || selectedIndex >= orderedCycles.length - 1 ? 0.4 : 1 }}
+          >
+            ›
+          </button>
+          {!isCurrentCycle && currentCycleIndex >= 0 && (
+            <button
+              onClick={() => setSelectedCycleId(orderedCycles[currentCycleIndex].id)}
+              style={{ ...stepButtonStyle, fontSize: 12 }}
+            >
+              Current cycle
+            </button>
+          )}
+
+          <span style={{ marginLeft: "auto", fontSize: 13, color: "#475569", fontWeight: 600 }}>
+            {isCurrentCycle && (
+              <span
+                style={{
+                  fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 999,
+                  background: "#dcfce7", color: "#16a34a", marginRight: 8,
+                  textTransform: "uppercase", letterSpacing: "0.04em",
+                }}
+              >
+                Current
+              </span>
+            )}
+            {cycleRangeLabel}
           </span>
         </div>
 
         {loading ? (
-          <div style={{ color: "#94a3b8", padding: "40px 0", textAlign: "center" }}>Loading...</div>
+          <div style={{ color: "#94a3b8", padding: "40px 0", textAlign: "center" }}>Loading…</div>
+        ) : !selectedPerson && !isAll ? (
+          <div style={{ color: "#94a3b8", padding: "40px 0", textAlign: "center" }}>Select a person to plan their cycle.</div>
+        ) : !selectedCycle ? (
+          <div style={{ color: "#94a3b8", padding: "40px 0", textAlign: "center" }}>No Linear cycles available.</div>
         ) : (
-          peopleByTeam.map((group) => (
-            <div key={group.team} style={{ marginBottom: 36 }}>
-              <h2 style={{ margin: "0 0 16px", fontSize: 13, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.06em" }}>
-                {group.team}
+          <>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+              {isAll ? (
+                <span style={{ display: "flex", alignItems: "center" }}>
+                  {plannablePeople.slice(0, 5).map((p, i) => (
+                    <span
+                      key={p.name}
+                      title={p.name}
+                      style={{
+                        width: 18, height: 18, borderRadius: "50%", background: p.color,
+                        border: "2px solid #fafafa", marginLeft: i === 0 ? 0 : -7,
+                        color: "#fff", fontSize: 9, fontWeight: 800,
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                      }}
+                    >
+                      {p.name.slice(0, 1).toUpperCase()}
+                    </span>
+                  ))}
+                </span>
+              ) : (
+                <span style={{ width: 10, height: 10, borderRadius: 999, background: selectedPerson!.color }} />
+              )}
+              <h2 style={{ margin: 0, fontSize: 17, fontWeight: 700, color: "#0f172a" }}>
+                {isAll ? "Everyone" : selectedPerson!.name}
               </h2>
-              <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, padding: "20px 24px" }}>
-                {group.members.map((person) => (
-                  <PersonWeekSection
-                    key={`${weekKey}-${person.name}`}
-                    person={person}
-                    weekKey={weekKey}
-                    onSavedStateChange={(s) => setSaveState(s)}
-                    autoIssues={weeklyIssues[person.name] ?? []}
-                    autoIssuesLoading={weeklyIssuesLoading}
-                    projectOrder={projectOrders[weekKey]?.[person.name] ?? []}
-                    onSaveProjectOrder={saveProjectOrder}
-                    ticketOrders={ticketOrders[weekKey]?.[person.name] ?? {}}
-                    onSaveTicketOrder={saveTicketOrderForProject}
-                    initialNote={personNotes[weekKey]?.[person.name] ?? ""}
-                  />
-                ))}
-              </div>
+              <span style={{ fontSize: 12, color: "#94a3b8" }}>
+                {isAll
+                  ? `${totalSectionIssues} open ticket${totalSectionIssues !== 1 ? "s" : ""} across ${sections.length} ${sections.length === 1 ? "person" : "people"}`
+                  : selectedPerson!.team}
+              </span>
+              <span style={{ marginLeft: "auto", fontSize: 11, color: "#94a3b8" }}>
+                Drag a row to rank · click any pill to change it in Linear
+              </span>
             </div>
-          ))
+
+            {isAll ? (
+              cycleIssuesLoading ? (
+                <div style={{ color: "#94a3b8", padding: "40px 0", textAlign: "center", fontSize: 13 }}>Loading tickets…</div>
+              ) : sections.length === 0 ? (
+                <div style={{ color: "#94a3b8", padding: "40px 0", textAlign: "center", fontSize: 13 }}>
+                  Nobody has open tickets in this cycle.
+                </div>
+              ) : (
+                sections.map(({ person, issues }) => (
+                  <section key={person.name} style={{ marginBottom: 28 }}>
+                    <div
+                      style={{
+                        display: "flex", alignItems: "center", gap: 8, marginBottom: 8,
+                        paddingLeft: 2,
+                      }}
+                    >
+                      <span
+                        style={{
+                          width: 22, height: 22, borderRadius: "50%", background: person.color,
+                          color: "#fff", fontSize: 10, fontWeight: 800,
+                          display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+                        }}
+                      >
+                        {person.name.slice(0, 1).toUpperCase()}
+                      </span>
+                      <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: "#0f172a" }}>{person.name}</h3>
+                      <span
+                        style={{
+                          fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 999,
+                          background: hexToRgba(person.color, 0.14), color: person.color,
+                          textTransform: "uppercase", letterSpacing: "0.04em",
+                        }}
+                      >
+                        {person.team}
+                      </span>
+                      <span style={{ fontSize: 11, color: "#94a3b8", marginLeft: "auto" }}>
+                        {issues.length} ticket{issues.length !== 1 ? "s" : ""}
+                      </span>
+                    </div>
+                    <PersonCycleTickets
+                      key={`${selectedCycle.id}-${person.name}`}
+                      orderKey={person.name}
+                      issues={issues}
+                      loading={false}
+                      order={ticketOrders[weekKey]?.[person.name]?.[ALL_TICKETS_KEY] ?? []}
+                      onSaveOrder={saveTicketOrder}
+                      workflowStates={workflowStates}
+                      projects={projectOptions}
+                      onSetPriority={setIssuePriority}
+                      onSetStatus={setIssueStatus}
+                      onSetProject={setIssueProject}
+                      onSetDueDate={setIssueDueDate}
+                    />
+                  </section>
+                ))
+              )
+            ) : (
+              <PersonCycleTickets
+                key={`${selectedCycle.id}-${selectedPerson!.name}`}
+                orderKey={selectedPerson!.name}
+                issues={visibleIssues}
+                loading={cycleIssuesLoading}
+                order={ticketOrders[weekKey]?.[selectedPerson!.name]?.[ALL_TICKETS_KEY] ?? []}
+                onSaveOrder={saveTicketOrder}
+                workflowStates={workflowStates}
+                projects={projectOptions}
+                onSetPriority={setIssuePriority}
+                onSetStatus={setIssueStatus}
+                onSetProject={setIssueProject}
+                onSetDueDate={setIssueDueDate}
+              />
+            )}
+
+            {!isAll && (
+              <PersonCycleNote
+                key={`note-${weekKey}-${selectedPerson!.name}`}
+                personName={selectedPerson!.name}
+                weekKey={weekKey}
+                initialNote={personNotes[weekKey]?.[selectedPerson!.name] ?? ""}
+                onSavedStateChange={setSaveState}
+              />
+            )}
+          </>
         )}
       </div>
     </div>
@@ -10595,7 +11027,7 @@ function CyclesView({ cycles, people }: { cycles: LinearCycle[]; people: Person[
 
 export function RoadmapView({ people, months, phases, teams, initialOverrides }: RoadmapViewProps) {
   const [search, setSearch] = useState("");
-  const [viewMode, setViewMode] = useState<"projects" | "subtestEdits" | "cycles" | "futureProjects" | "weeklyPlanning" | "normingCountdown" | "metrics">("projects");
+  const [viewMode, setViewMode] = useState<"projects" | "cycles" | "futureProjects" | "weeklyPlanning" | "normingCountdown" | "metrics">("projects");
 
   // Keep the active view in the URL hash so reloads stay on the same page and
   // links like #prenorming are shareable. The norming view writes its own
@@ -10603,11 +11035,19 @@ export function RoadmapView({ people, months, phases, teams, initialOverrides }:
   useEffect(() => {
     const h = window.location.hash.slice(1);
     if (h === "norming" || h === "prenorming") setViewMode("normingCountdown");
-    else if (["projects", "subtestEdits", "cycles", "futureProjects", "weeklyPlanning", "metrics"].includes(h)) {
-      setViewMode(h as "projects" | "subtestEdits" | "cycles" | "futureProjects" | "weeklyPlanning" | "metrics");
+    else if (["projects", "cycles", "futureProjects", "weeklyPlanning", "metrics"].includes(h)) {
+      setViewMode(h as "projects" | "cycles" | "futureProjects" | "weeklyPlanning" | "metrics");
     }
   }, []);
+  // Skip the first run: on the initial render viewMode is still the "projects"
+  // default, so writing the hash here would erase an incoming #norming deep
+  // link before the effect above has read it.
+  const hashWriteArmed = useRef(false);
   useEffect(() => {
+    if (!hashWriteArmed.current) {
+      hashWriteArmed.current = true;
+      return;
+    }
     if (viewMode !== "normingCountdown") {
       window.history.replaceState(null, "", `#${viewMode}`);
     }
@@ -11213,9 +11653,8 @@ export function RoadmapView({ people, months, phases, teams, initialOverrides }:
       if (!isCollapsed) {
         members.forEach((person, idx) => {
           const { lanes, laneCount } = packLanes(person.projects);
-          const linearCount = viewMode === "subtestEdits" ? (linearBarsPerPerson[person.name] || []).length : 0;
           const effectiveLaneCount = viewMode === "projects" ? laneCount : 0;
-          const totalHeight = Math.max(1, effectiveLaneCount + linearCount) * ROW_HEIGHT;
+          const totalHeight = Math.max(1, effectiveLaneCount) * ROW_HEIGHT;
           entries.push({
             kind: "person",
             person,
@@ -11235,9 +11674,8 @@ export function RoadmapView({ people, months, phases, teams, initialOverrides }:
     // Ungrouped people at the end
     teamGroups.ungrouped.forEach((person, idx) => {
       const { lanes, laneCount } = packLanes(person.projects);
-      const linearCount = viewMode === "subtestEdits" ? (linearBarsPerPerson[person.name] || []).length : 0;
       const effectiveLaneCount = viewMode === "projects" ? laneCount : 0;
-      const totalHeight = Math.max(1, effectiveLaneCount + linearCount) * ROW_HEIGHT;
+      const totalHeight = Math.max(1, effectiveLaneCount) * ROW_HEIGHT;
       entries.push({
         kind: "person",
         person,
@@ -12322,10 +12760,8 @@ export function RoadmapView({ people, months, phases, teams, initialOverrides }:
 
       {viewMode === "cycles" ? (
         <CyclesView cycles={cycles} people={localPeople} />
-      ) : viewMode === "subtestEdits" ? (
-        <TasksView people={localPeople} onIssueClick={setSelectedLinearIssueId} />
       ) : viewMode === "weeklyPlanning" ? (
-        <WeeklyPlanningView people={localPeople} />
+        <WeeklyPlanningView people={localPeople} cycles={cycles} />
       ) : viewMode === "normingCountdown" ? (
         <NormingCountdownView />
       ) : viewMode === "metrics" ? (

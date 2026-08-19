@@ -76,6 +76,11 @@ export type RoadmapOverrides = {
   // prenormQa[testName] = true when full QA is manually checked off in the
   // pre-norming Form Updates readiness table.
   prenormQa?: Record<string, boolean>;
+  // normingEdits[testName] = true when the pre-norming edits for that test are
+  // manually marked complete in the norming Test Readiness table. Manual, not
+  // derived: "the edits raised during pre-norming" is a judgement call that
+  // ticket state alone doesn't capture.
+  normingEdits?: Record<string, boolean>;
   // prenormNotes[testName] = free-form note shown in the readiness table.
   prenormNotes?: Record<string, string>;
   // audioAudit[testName] = manually-updated status for the audio content
