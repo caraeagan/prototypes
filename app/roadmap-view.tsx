@@ -6870,26 +6870,26 @@ const NORMING_PHASES: NormingPhase[] = [
     ],
   },
   {
-    id: "np3", code: "NP3", name: "Final Lap", start: "2027-01-04", end: "2027-03-26", color: "#0EA5E9",
+    id: "np3", code: "NP3", name: "Final Lap", start: "2027-01-04", end: "2027-04-02", color: "#0EA5E9",
     goal: "Fill the remaining cells, wrap the correlation studies, and land the data for analysis.",
     milestones: [
       { date: "2027-01-04", title: "Final examiner recruiting push based on remaining sessions left in Norming" },
       { date: "2027-01-04", title: "Evaluate participant recruiting needs for remaining demographics needed in Study" },
       { date: "2027-01-15", title: "Initial psychometrics structural analysis" },
       { date: "2027-02-01", title: "Hard-to-reach audit and game plan" },
-      { date: "2027-03-26", title: "Done!" },
+      { date: "2027-04-02", title: "Done!" },
     ],
   },
 ];
 
 // Month-scale timeline the phase bars are positioned against.
 const NP_RANGE_START = new Date(2026, 8, 1); // Sep 1, 2026
-const NP_RANGE_END = new Date(2027, 3, 1); // Apr 1, 2027
+const NP_RANGE_END = new Date(2027, 4, 1); // May 1, 2027
 function npPct(d: Date): number {
   const pct = ((d.getTime() - NP_RANGE_START.getTime()) / (NP_RANGE_END.getTime() - NP_RANGE_START.getTime())) * 100;
   return Math.min(100, Math.max(0, pct));
 }
-const NP_MONTHS = ["Sep", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar"].map((label, i) => ({
+const NP_MONTHS = ["Sep", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar", "Apr"].map((label, i) => ({
   label,
   date: new Date(2026, 8 + i, 1),
 }));
@@ -6912,7 +6912,7 @@ function NormingPhasesSection() {
           <div style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 4 }}>Roadmap</div>
           <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: "#0f172a", letterSpacing: "-0.01em" }}>Phases</h2>
         </div>
-        <span style={{ fontSize: 12, fontWeight: 600, color: "#64748b" }}>Sep 28, 2026 → Mar 26, 2027</span>
+        <span style={{ fontSize: 12, fontWeight: 600, color: "#64748b" }}>Sep 28, 2026 → Apr 2, 2027</span>
       </div>
 
       {/* Month-scale timeline: phase bars sized by duration, targets flagged */}
