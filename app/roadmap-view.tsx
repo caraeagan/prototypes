@@ -6870,7 +6870,7 @@ const NORMING_PHASES: NormingPhase[] = [
     ],
   },
   {
-    id: "np3", code: "NP3", name: "Close Out", start: "2027-01-04", end: "2027-03-26", color: "#0EA5E9",
+    id: "np3", code: "NP3", name: "Final Lap", start: "2027-01-04", end: "2027-03-26", color: "#0EA5E9",
     goal: "Fill the remaining cells, wrap the correlation studies, and land the data for analysis.",
     milestones: [
       { date: "2027-01-04", title: "Final examiner recruiting push based on remaining sessions left in Norming" },
