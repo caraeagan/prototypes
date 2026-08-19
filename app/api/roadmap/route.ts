@@ -56,7 +56,6 @@ export async function POST(request: NextRequest) {
       "saveWeeklyTicketOrder",
       "saveNormingChecklist",
       "setPrenormQa",
-      "setNormingEdit",
       "setPrenormNote",
       "setAudioAuditStatus",
       "saveKeyDates",
@@ -392,16 +391,6 @@ export async function POST(request: NextRequest) {
             overrides.prenormQa[test] = true;
           } else {
             delete overrides.prenormQa[test];
-          }
-          break;
-        }
-        case "setNormingEdit": {
-          const { test, done } = payload as { test: string; done: boolean };
-          if (!overrides.normingEdits) overrides.normingEdits = {};
-          if (done) {
-            overrides.normingEdits[test] = true;
-          } else {
-            delete overrides.normingEdits[test];
           }
           break;
         }

@@ -6235,20 +6235,8 @@ type PrenormProjectIssue = {
 
 type CountNode = { id: string; state: { type: string }; project: { name: string } | null };
 
-type LabelProjectIssue = {
-  id: string;
-  identifier: string;
-  title: string;
-  url: string;
-  state: { name: string; type: string; color: string };
-  assignee: { displayName: string } | null;
-  project: { id: string; name: string } | null;
-};
-
 // Auto-tracked project cards: tickets load live from Linear per project.
-function PrenormProjectsSection({ label }: { label: string }) {
-  // "Pre-norming (Sep 8)" -> "Pre-norming"; "Norming (Sep 28)" -> "Norming".
-  const phase = label.split(" (")[0];
+function PrenormProjectsSection() {
   const [issues, setIssues] = useState<PrenormProjectIssue[] | null>(null);
   // Per-project norming-label and total ticket counts for the label-only cards' hover hint.
   const [labelCounts, setLabelCounts] = useState<Record<string, { norming?: number; total?: number }>>({});
@@ -6285,7 +6273,7 @@ function PrenormProjectsSection({ label }: { label: string }) {
       {
         names: PRENORM_PROJECTS.filter((p) => !p.prenormLabelOnly).map((p) => p.name),
         labeledNames,
-        label,
+        label: PRENORMING_LABEL,
       },
     )
       .then((d) => {
@@ -6334,7 +6322,7 @@ function PrenormProjectsSection({ label }: { label: string }) {
         return next;
       });
     })().catch(() => {});
-  }, [label]);
+  }, []);
 
   useEffect(() => {
     load();
@@ -6375,7 +6363,7 @@ function PrenormProjectsSection({ label }: { label: string }) {
               </h3>
               {p.prenormLabelOnly && (
                 <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, fontWeight: 600, color: "#94a3b8", whiteSpace: "nowrap" }}>
-                  {phase} tickets only
+                  Pre-norming tickets only
                   <span style={{ position: "relative", display: "inline-flex" }}>
                     <span
                       onMouseEnter={() => setHoveredHint(p.name)}
@@ -6415,7 +6403,7 @@ function PrenormProjectsSection({ label }: { label: string }) {
             </header>
             {projIssues.length === 0 && (
               <div style={{ color: "#94a3b8", fontSize: 13, fontStyle: "italic", padding: "16px 18px" }}>
-                {p.prenormLabelOnly ? `No ${phase.toLowerCase()} tickets in this project yet.` : "No tickets in this project yet."}
+                {p.prenormLabelOnly ? "No pre-norming tickets in this project yet." : "No tickets in this project yet."}
               </div>
             )}
             {projIssues.map((i) => (
@@ -6796,13 +6784,11 @@ function computePrenormReadiness(issues: PrenormIssue[], qa: Record<string, bool
   return { rows, withEng, engNoneCount, engDone, psychDone, readyCount, qaCount };
 }
 
-function PrenormingSection({ label, variant }: { label: string; variant: "prenorm" | "norming" }) {
+function PrenormingSection() {
   const [issues, setIssues] = useState<PrenormIssue[] | null>(null);
   const [error, setError] = useState(false);
   const [qa, setQa] = useState<Record<string, boolean>>({});
   const [notes, setNotes] = useState<Record<string, string>>({});
-  // Manually-ticked "pre-norming edits complete" state for the norming table.
-  const [edits, setEdits] = useState<Record<string, boolean>>({});
   const [selectedIssueId, setSelectedIssueId] = useState<string | null>(null);
   const [showNoTicket, setShowNoTicket] = useState(false);
 
@@ -6810,7 +6796,7 @@ function PrenormingSection({ label, variant }: { label: string; variant: "prenor
     fetch("/api/linear", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ query: PRENORM_ISSUES_QUERY, variables: { label } }),
+      body: JSON.stringify({ query: PRENORM_ISSUES_QUERY, variables: { label: PRENORMING_LABEL } }),
     })
       .then((r) => r.json())
       .then((j) => {
@@ -6824,27 +6810,18 @@ function PrenormingSection({ label, variant }: { label: string; variant: "prenor
         setIssues([...byId.values()]);
       })
       .catch(() => setError(true));
-  }, [label]);
+  }, []);
 
   useEffect(() => {
     loadIssues();
     fetchOverrides().then((ov) => {
       setQa(ov.prenormQa ?? {});
       setNotes(ov.prenormNotes ?? {});
-      setEdits(ov.normingEdits ?? {});
     });
   }, [loadIssues]);
 
   const saveNote = (test: string, note: string) => {
     saveOverride("setPrenormNote", { test, note }).catch(() => {});
-  };
-
-  const toggleEdit = (test: string) => {
-    const done = !edits[test];
-    setEdits((prev) => ({ ...prev, [test]: done }));
-    saveOverride("setNormingEdit", { test, done }).catch(() => {
-      setEdits((prev) => ({ ...prev, [test]: !done }));
-    });
   };
 
   const toggleQa = (test: string) => {
@@ -6863,10 +6840,6 @@ function PrenormingSection({ label, variant }: { label: string; variant: "prenor
   }
 
   const { rows, withEng, engNoneCount, engDone, psychDone, readyCount, qaCount } = computePrenormReadiness(issues, qa);
-  // The norming tab tracks one thing only: whether each test's pre-norming
-  // edits have all landed. That's a manual call, not derived from ticket state.
-  const isNorming = variant === "norming";
-  const editsDoneCount = rows.filter((r) => edits[r.test.name]).length;
 
   const thStyle: React.CSSProperties = {
     padding: "10px 14px", fontSize: 11, fontWeight: 800, color: "#94a3b8",
@@ -6879,25 +6852,13 @@ function PrenormingSection({ label, variant }: { label: string; variant: "prenor
       <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 18, paddingBottom: 12, borderBottom: "2px solid #1e293b" }}>
         <div>
           <div style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 4 }}>Readiness</div>
-          <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: "#0f172a", letterSpacing: "-0.01em" }}>
-            {isNorming ? "Test Readiness" : "Form Updates"}
-          </h2>
+          <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: "#0f172a", letterSpacing: "-0.01em" }}>Form Updates</h2>
         </div>
-        <span style={{ fontSize: 12, fontWeight: 600, color: "#64748b" }}>Live from Linear · label &ldquo;{label}&rdquo;</span>
+        <span style={{ fontSize: 12, fontWeight: 600, color: "#64748b" }}>Live from Linear · label &ldquo;{PRENORMING_LABEL}&rdquo;</span>
       </div>
 
       {/* Counters */}
       <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 24 }}>
-        {isNorming && (
-          <PrenormStat
-            label="Pre-norming edits complete"
-            done={editsDoneCount}
-            total={rows.length}
-            color="#16a34a"
-            hint={`Ticked by hand as each test's pre-norming edits are signed off. ${rows.length - editsDoneCount} of ${rows.length} still outstanding.`}
-          />
-        )}
-        {!isNorming && (<>
         <PrenormStat
           label="Tests ready"
           done={readyCount}
@@ -6926,7 +6887,6 @@ function PrenormingSection({ label, variant }: { label: string; variant: "prenor
           color="#7C3AED"
           hint="Cara working on defining QA process, update coming soon"
         />
-        </>)}
       </div>
 
       {/* Readiness table */}
@@ -6935,44 +6895,18 @@ function PrenormingSection({ label, variant }: { label: string; variant: "prenor
           <thead>
             <tr style={{ background: "#f8fafc" }}>
               <th style={{ ...thStyle, textAlign: "left" }}>Test</th>
-              {isNorming && <th style={{ ...thStyle, textAlign: "right", paddingRight: 24 }}>Pre-norming edits complete</th>}
-              {!isNorming && (<>
               <th style={thStyle}>Psychometrics</th>
               <th style={thStyle}>Engineering</th>
               <th style={thStyle}>Other</th>
               <th style={thStyle}>Ready</th>
               <th style={thStyle}>Full QA</th>
               <th style={{ ...thStyle, textAlign: "left", minWidth: 200 }}>Notes</th>
-              </>)}
             </tr>
           </thead>
           <tbody>
             {rows.map((r) => (
-              <tr key={r.test.name} style={{ borderBottom: "1px solid #f1f5f9", background: (isNorming ? !!edits[r.test.name] : r.ready && r.qaDone) ? "#fafdfb" : "#fff" }}>
+              <tr key={r.test.name} style={{ borderBottom: "1px solid #f1f5f9", background: r.ready && r.qaDone ? "#fafdfb" : "#fff" }}>
                 <td style={{ padding: "10px 14px", fontWeight: 600, color: "#1e293b", whiteSpace: "nowrap" }}>{r.test.name}</td>
-                {isNorming && (() => {
-                  const done = !!edits[r.test.name];
-                  return (
-                    <td style={{ padding: "10px 24px 10px 14px", textAlign: "right" }}>
-                      <button
-                        onClick={() => toggleEdit(r.test.name)}
-                        title="Click to change"
-                        style={{
-                          fontFamily: "inherit", cursor: "pointer",
-                          fontSize: 10, fontWeight: 800, letterSpacing: "0.06em",
-                          textTransform: "uppercase", padding: "4px 11px", borderRadius: 999, whiteSpace: "nowrap",
-                          color: done ? "#15803d" : "#b45309",
-                          background: done ? "#dcfce7" : "#fef3c7",
-                          border: `1px solid ${done ? "#bbf7d0" : "#fde68a"}`,
-                          transition: "background 120ms ease, color 120ms ease",
-                        }}
-                      >
-                        {done ? "Done" : "Outstanding"}
-                      </button>
-                    </td>
-                  );
-                })()}
-                {!isNorming && (<>
                 <PrenormStatusCell tickets={r.psych} onOpen={setSelectedIssueId} derivedDone={r.psychDerivedDone} onOpenNone={() => setShowNoTicket(true)} />
                 <PrenormStatusCell tickets={r.eng} onOpen={setSelectedIssueId} none={r.test.engNone} />
                 <PrenormStatusCell tickets={r.other} onOpen={setSelectedIssueId} visibility={r.vis} />
@@ -7003,7 +6937,6 @@ function PrenormingSection({ label, variant }: { label: string; variant: "prenor
                     onBlurCapture={(e) => { e.target.style.border = "1px solid transparent"; e.target.style.background = "transparent"; }}
                   />
                 </td>
-                </>)}
               </tr>
             ))}
           </tbody>
@@ -7036,140 +6969,6 @@ function PrenormingSection({ label, variant }: { label: string; variant: "prenor
             </div>
           </div>
         </div>
-      )}
-    </>
-  );
-}
-
-// Every ticket currently carrying a given label, grouped by its Linear
-// project. Unlike PrenormProjectsSection this curates nothing — whatever is
-// labelled in Linear right now is what shows up.
-function LabelProjectsSection({ label }: { label: string }) {
-  const [issues, setIssues] = useState<LabelProjectIssue[] | null>(null);
-  const [error, setError] = useState(false);
-  const [selectedIssueId, setSelectedIssueId] = useState<string | null>(null);
-
-  const load = useCallback(() => {
-    setError(false);
-    linearQuery<{ issues: { nodes: LabelProjectIssue[] } }>(
-      `query LabelledIssues($label: String!) {
-        issues(first: 250, filter: { labels: { name: { eq: $label } } }) {
-          nodes {
-            id identifier title url
-            state { name type color }
-            assignee { displayName }
-            project { id name }
-          }
-        }
-      }`,
-      { label },
-    )
-      .then((d) => setIssues(d.issues.nodes))
-      .catch(() => setError(true));
-  }, [label]);
-
-  useEffect(() => { load(); }, [load]);
-
-  // Group by project, most work first; cancelled/duplicate tickets are noise.
-  const groups = useMemo(() => {
-    if (!issues) return [];
-    const live = issues.filter((i) => i.state.type !== "canceled" && i.state.type !== "duplicate");
-    const byId: Record<string, { id: string; name: string; issues: LabelProjectIssue[] }> = {};
-    for (const i of live) {
-      const id = i.project?.id ?? "__none__";
-      if (!byId[id]) byId[id] = { id, name: i.project?.name ?? "No project", issues: [] };
-      byId[id].issues.push(i);
-    }
-    return Object.values(byId).sort((a, b) => {
-      if (a.id === "__none__") return 1;
-      if (b.id === "__none__") return -1;
-      if (b.issues.length !== a.issues.length) return b.issues.length - a.issues.length;
-      return a.name.localeCompare(b.name);
-    });
-  }, [issues]);
-
-  const total = groups.reduce((n, g) => n + g.issues.length, 0);
-  const totalDone = groups.reduce((n, g) => n + g.issues.filter((i) => i.state.type === "completed").length, 0);
-
-  // Loaded and empty — show nothing at all for this phase.
-  if (issues && groups.length === 0) return null;
-
-  return (
-    <>
-      <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 18, paddingBottom: 12, borderBottom: "2px solid #1e293b" }}>
-        <div>
-          <div style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 4 }}>Readiness</div>
-          <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: "#0f172a", letterSpacing: "-0.01em" }}>Projects</h2>
-        </div>
-        <span style={{ fontSize: 12, fontWeight: 600, color: "#64748b" }}>
-          Every ticket labelled &ldquo;{label}&rdquo; · {totalDone} / {total} done
-        </span>
-      </div>
-
-      {error && <div style={{ color: "#dc2626", padding: "20px 0", textAlign: "center" }}>Couldn&apos;t load labelled tickets from Linear.</div>}
-      {!error && !issues && <div style={{ color: "#94a3b8", padding: "20px 0", textAlign: "center" }}>Loading tickets from Linear...</div>}
-
-      {groups.map((g) => {
-        const color = projectColorFor(g.id === "__none__" ? null : g.id);
-        const done = g.issues.filter((i) => i.state.type === "completed").length;
-        const pct = g.issues.length > 0 ? Math.round((done / g.issues.length) * 100) : 0;
-        return (
-          <section key={g.id} style={{ marginBottom: 24, background: "#fff", border: "1px solid #e2e8f0", borderRadius: 10, overflow: "hidden", boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
-            <header style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 18px", borderBottom: "1px solid #e2e8f0", borderLeft: `4px solid ${color}`, background: "#f8fafc" }}>
-              <h3 style={{ margin: 0, fontSize: 13, fontWeight: 800, color: "#1e293b", textTransform: "uppercase", letterSpacing: "0.08em", flex: 1 }}>
-                {g.name}
-              </h3>
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <div style={{ width: 88, height: 6, borderRadius: 999, background: "#e2e8f0", overflow: "hidden" }}>
-                  <div style={{ width: `${pct}%`, height: "100%", background: color, transition: "width 0.3s ease" }} />
-                </div>
-                <span style={{ fontSize: 12, fontWeight: 700, color: "#475569", fontVariantNumeric: "tabular-nums", minWidth: 42, textAlign: "right" }}>
-                  {done} / {g.issues.length}
-                </span>
-              </div>
-            </header>
-            {g.issues.map((i) => (
-              <div
-                key={i.id}
-                onClick={() => setSelectedIssueId(i.id)}
-                title={`${i.identifier} · ${i.state.name} · ${i.assignee?.displayName ?? "Unassigned"}`}
-                style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 18px", borderBottom: "1px solid #f1f5f9", cursor: "pointer" }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = "#f8fafc"; }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
-              >
-                <span style={{ fontSize: 16, width: 20, textAlign: "center", color: i.state.type === "completed" ? "#16a34a" : i.state.type === "started" ? "#2563eb" : "#cbd5e1" }}>
-                  {i.state.type === "completed" ? "✓" : i.state.type === "started" ? "●" : "○"}
-                </span>
-                <span style={{ flex: 1, fontSize: 14, fontWeight: 600, color: i.state.type === "completed" ? "#94a3b8" : "#1e293b", textDecoration: i.state.type === "completed" ? "line-through" : "none" }}>
-                  {i.title}
-                </span>
-                <span style={{ fontSize: 11, fontWeight: 600, color: "#94a3b8", whiteSpace: "nowrap" }}>
-                  {ownerFirstName(i.assignee?.displayName)}
-                </span>
-                {(() => {
-                  const st = cellStatus([i]);
-                  return st ? (
-                    <span style={{
-                      display: "inline-block", fontSize: 10, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase",
-                      padding: "3px 10px", borderRadius: 999, whiteSpace: "nowrap", color: st.color, background: st.bg,
-                    }}>
-                      {st.label}
-                    </span>
-                  ) : null;
-                })()}
-              </div>
-            ))}
-          </section>
-        );
-      })}
-
-      {selectedIssueId && (
-        <CycleIssueDetailPanel
-          issueId={selectedIssueId}
-          onClose={() => setSelectedIssueId(null)}
-          cycles={[]}
-          onUpdated={() => load()}
-        />
       )}
     </>
   );
@@ -7220,8 +7019,7 @@ const INTERNAL_APP_QUERY = `
   }
 `;
 
-function InternalAppSection({ label, accent, strictLabel = false }:
-  { label: string; accent: string; strictLabel?: boolean }) {
+function InternalAppSection({ label, accent }: { label: string; accent: string }) {
   const [issues, setIssues] = useState<InternalAppIssue[] | null>(null);
   const [error, setError] = useState(false);
   const [selectedIssueId, setSelectedIssueId] = useState<string | null>(null);
@@ -7276,18 +7074,12 @@ function InternalAppSection({ label, accent, strictLabel = false }:
   const labeledDone = labeled.filter((i) => i.state.type === "completed").length;
   const pct = labeled.length > 0 ? Math.round((labeledDone / labeled.length) * 100) : 0;
 
-  // With strictLabel the section shows only work carrying this phase's label:
-  // big items keep just their labelled tickets, and any item left with none
-  // drops out entirely rather than showing another phase's progress.
-  const byIdent = new Map((strictLabel ? labeled : active).map((i) => [i.identifier, i]));
+  const byIdent = new Map(active.map((i) => [i.identifier, i]));
   const rocks = INTERNAL_APP_ROCKS.map((r) => {
     const tickets = r.ids.map((id) => byIdent.get(id)).filter((i): i is InternalAppIssue => !!i);
     return { name: r.name, tickets, status: cellStatus(tickets) };
-  }).filter((r) => !strictLabel || r.tickets.length > 0);
+  });
   const rocksDone = rocks.filter((r) => r.status?.done).length;
-
-  // Nothing tagged for this phase — render nothing at all.
-  if (strictLabel && labeled.length === 0) return null;
 
   return (
     <div style={{ marginBottom: 36 }}>
@@ -7307,7 +7099,6 @@ function InternalAppSection({ label, accent, strictLabel = false }:
       </div>
 
       {/* Big rocks */}
-      {rocks.length > 0 && (
       <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 10, overflow: "hidden", boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 16px", borderBottom: "1px solid #e2e8f0", background: "#f8fafc" }}>
           <span style={{ fontSize: 13, fontWeight: 800, color: "#1e293b", textTransform: "uppercase", letterSpacing: "0.08em" }}>Big items</span>
@@ -7342,7 +7133,6 @@ function InternalAppSection({ label, accent, strictLabel = false }:
           </div>
         ))}
       </div>
-      )}
 
       {selectedIssueId && (
         <CycleIssueDetailPanel
@@ -7965,7 +7755,7 @@ function MetricsView() {
 
 // Examiner/student progress toward the pre-norming goals, live from the prod
 // read replica via /api/norming-progress.
-function GoalProgressBars({ examinerTarget, studentTarget }: { examinerTarget: number; studentTarget: number }) {
+function GoalProgressBars() {
   // undefined = loading, null = error
   const [data, setData] = useState<{ examiners: number; students: number } | null | undefined>(undefined);
 
@@ -7983,14 +7773,14 @@ function GoalProgressBars({ examinerTarget, studentTarget }: { examinerTarget: n
     {
       label: "Examiners",
       done: data?.examiners ?? 0,
-      total: examinerTarget,
+      total: 12,
       color: "#2563eb",
       tip: "Distinct examiners with at least one completed norming-phase session. Live from the read-only database; stays 0 until the norming study phase exists and sessions complete.",
     },
     {
       label: "Students",
       done: data?.students ?? 0,
-      total: studentTarget,
+      total: 25,
       color: "#16a34a",
       tip: "Students whose norming examination is marked completed. Live from the read-only database; stays 0 until the norming study phase exists and exams complete.",
     },
@@ -8012,7 +7802,7 @@ function GoalProgressBars({ examinerTarget, studentTarget }: { examinerTarget: n
               </span>
             </span>
             <span style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", fontVariantNumeric: "tabular-nums" }}>
-              {data === undefined ? "…" : data === null ? "–" : g.done.toLocaleString()} / {g.total.toLocaleString()}
+              {data === undefined ? "…" : data === null ? "–" : g.done} / {g.total}
             </span>
           </div>
           <div style={{ height: 8, borderRadius: 999, background: "#f1f5f9", overflow: "hidden" }}>
@@ -8091,22 +7881,6 @@ function NormingCountdownView() {
   // ── Countdown math ──
   const isPrenorm = subView === "prenorming";
   const target = isPrenorm ? PRENORMING_TARGET : NORMING_TARGET;
-  // Both phases render the same sections; only the Linear label they read
-  // from — and the countdown target — differ.
-  const phaseLabel = isPrenorm ? PRENORMING_LABEL : NORMING_LABEL;
-
-  // Goals and study scale differ per phase.
-  const goals: { kind: "Primary" | "Secondary"; text: string }[] = isPrenorm
-    ? [
-        { kind: "Primary", text: "Validate that the assessment player is bug free and ready for norming" },
-        { kind: "Secondary", text: "Prove the internal app ops workflow scales out to all examiners" },
-      ]
-    : [
-        { kind: "Primary", text: "Norm all of our tests and subtests" },
-        { kind: "Primary", text: "Run the validity, reliability and other studies" },
-      ];
-  const examinerTarget = isPrenorm ? 12 : 100;
-  const studentTarget = isPrenorm ? 25 : 2500;
   const msPerDay = 24 * 60 * 60 * 1000;
   const daysRemaining = Math.max(0, Math.ceil((target.getTime() - now.getTime()) / msPerDay));
   const targetLabel = target.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
@@ -8124,7 +7898,7 @@ function NormingCountdownView() {
 
   return (
     <div style={{ fontFamily: "var(--font-sans)", height: "calc(100vh - 80px)", overflow: "auto", background: "#fef9c3", position: "relative" }}>
-      <div style={{ maxWidth: 1140, margin: "0 auto", padding: "32px 32px 80px", position: "relative", zIndex: 1 }}>
+      <div style={{ maxWidth: isPrenorm ? 1140 : 820, margin: "0 auto", padding: "32px 32px 80px", position: "relative", zIndex: 1 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24, flexWrap: "wrap", gap: 12 }}>
           <h1 style={{ margin: 0, fontSize: 24, fontWeight: 800, color: "#0f172a", letterSpacing: "-0.01em" }}>
             {isPrenorm ? "Pre-Norming Countdown" : "Norming Countdown"}
@@ -8161,59 +7935,44 @@ function NormingCountdownView() {
             </div>
             <span style={{ fontSize: 14, fontWeight: 600, color: "#64748b" }}>Target: {targetLabel}</span>
           </div>
-          <div style={{ marginTop: 18, paddingTop: 14, borderTop: "1px solid #f1f5f9" }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>Goals</div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              {goals.map((g) => (
-                <div key={g.text} style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
-                  <span
-                    style={{
-                      fontSize: 9, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase",
-                      borderRadius: 999, padding: "2px 8px", whiteSpace: "nowrap",
-                      color: g.kind === "Primary" ? "#c2410c" : "#475569",
-                      background: g.kind === "Primary" ? "#fff7ed" : "#f1f5f9",
-                    }}
-                  >
-                    {g.kind}
-                  </span>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: "#1e293b" }}>{g.text}</span>
+          {isPrenorm && (
+            <div style={{ marginTop: 18, paddingTop: 14, borderTop: "1px solid #f1f5f9" }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>Goals</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
+                  <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: "#c2410c", background: "#fff7ed", borderRadius: 999, padding: "2px 8px", whiteSpace: "nowrap" }}>Primary</span>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: "#1e293b" }}>Validate that the assessment player is bug free and ready for norming</span>
                 </div>
-              ))}
+                <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
+                  <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: "#475569", background: "#f1f5f9", borderRadius: 999, padding: "2px 8px", whiteSpace: "nowrap" }}>Secondary</span>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: "#1e293b" }}>Prove the internal app ops workflow scales out to all examiners</span>
+                </div>
+              </div>
+              <div style={{ fontSize: 13, color: "#475569", marginTop: 10 }}>
+                We will have 12 examiners test 25 monolingual students.
+              </div>
+              <GoalProgressBars />
             </div>
-            <div style={{ fontSize: 13, color: "#475569", marginTop: 10 }}>
-              We will have {examinerTarget} examiners test {studentTarget.toLocaleString()}{isPrenorm ? " monolingual" : ""} students.
-            </div>
-            <GoalProgressBars examinerTarget={examinerTarget} studentTarget={studentTarget} />
-          </div>
-          <KeyDatesBar />
+          )}
+          {isPrenorm && <KeyDatesBar />}
         </div>
 
-        {/* Readiness always reads the PRE-norming label: on the norming tab it
-            answers "have the edits raised during pre-norming all landed?" */}
-        <PrenormingSection
-          key={`readiness-${subView}`}
-          label={PRENORMING_LABEL}
-          variant={isPrenorm ? "prenorm" : "norming"}
-        />
-
-        <InternalAppSection
-          key={`app-${phaseLabel}`}
-          label={phaseLabel}
-          accent={accent}
-          strictLabel={!isPrenorm}
-        />
-
-        <ContentReadinessSection />
-
-        <AudioAuditSection />
-
-        {/* Pre-norming keeps its curated project list; norming shows whatever
-            currently carries the label, grouped by project. */}
-        {isPrenorm ? (
-          <PrenormProjectsSection key={`projects-${phaseLabel}`} label={phaseLabel} />
-        ) : (
-          <LabelProjectsSection key={`labelprojects-${phaseLabel}`} label={phaseLabel} />
+        {!isPrenorm && (
+          <div style={{ padding: "60px 0", textAlign: "center", fontSize: 20, fontWeight: 700, color: "#94a3b8" }}>
+            Coming soon
+          </div>
         )}
+
+        {isPrenorm && <PrenormingSection />}
+
+        {isPrenorm && <InternalAppSection label={PRENORMING_LABEL} accent={accent} />}
+
+        {isPrenorm && <ContentReadinessSection />}
+
+        {isPrenorm && <AudioAuditSection />}
+
+        {/* Pre-norming projects, tracked live from Linear */}
+        {isPrenorm && <PrenormProjectsSection />}
 
       </div>
     </div>
