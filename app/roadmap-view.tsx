@@ -9070,7 +9070,7 @@ function GoalProgressBars() {
     {
       label: "Examiners",
       done: data?.examiners ?? 0,
-      total: 12,
+      total: 14,
       color: "#2563eb",
       tip: "Distinct examiners with at least one completed norming-phase session. Live from the read-only database; stays 0 until the norming study phase exists and sessions complete.",
     },
@@ -9255,7 +9255,7 @@ function NormingCountdownView() {
                 </div>
               </div>
               <div style={{ fontSize: 13, color: "#475569", marginTop: 10 }}>
-                We will have 12 examiners test 25 monolingual students.
+                We will have 14 examiners test 25 monolingual students.
               </div>
               <GoalProgressBars />
             </div>
