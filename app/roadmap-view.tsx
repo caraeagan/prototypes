@@ -6860,6 +6860,7 @@ const NORMING_PHASES: NormingPhase[] = [
     milestones: [
       { date: "2026-09-28", title: "Launch!" },
       { date: "2026-10-05", title: "Spanish launches" },
+      { date: "2026-10-26", title: "NP1 complete" },
     ],
   },
   {
@@ -6869,6 +6870,7 @@ const NORMING_PHASES: NormingPhase[] = [
       { date: "2026-10-26", title: "Correlation studies begin" },
       { date: "2026-10-26", title: "Ops evaluate staffing needs and actuals for scaling recruiting push" },
       { date: "2026-12-07", title: "Arabic + Mandarin launch" },
+      { date: "2026-12-24", title: "NP2 complete" },
     ],
   },
   {
