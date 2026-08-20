@@ -8021,6 +8021,7 @@ const AUDIO_AUDIT_SHEET_URL =
 const AUDIO_STAGES = [
   { name: "Pending", color: "#cbd5e1" },
   { name: "Planned", color: "#f59e0b" },
+  { name: "In Progress", color: "#0ea5e9" },
   { name: "In Review", color: "#2563eb" },
   { name: "Final Edit", color: "#7c3aed" },
   { name: "Ready for Upload", color: "#4ade80" },
@@ -8119,10 +8120,15 @@ function AudioAuditSection() {
     );
   }
 
-  const counts = AUDIO_STAGES.map((s) => ({
+  const counts: { name: string; color: string; count: number }[] = AUDIO_STAGES.map((s) => ({
     ...s,
     count: tests.filter((t) => statusOf(t) === s.name).length,
   }));
+  // Sheet statuses we don't recognize still show up instead of silently
+  // falling out of the bar and key.
+  const knownNames = new Set<string>(AUDIO_STAGES.map((s) => s.name));
+  const unknownCount = tests.filter((t) => !knownNames.has(statusOf(t))).length;
+  if (unknownCount > 0) counts.unshift({ name: "Other", color: "#94a3b8", count: unknownCount });
   const liveCount = counts.find((c) => c.name === "Live")?.count ?? 0;
 
   return (
