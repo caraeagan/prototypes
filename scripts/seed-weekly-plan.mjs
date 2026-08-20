@@ -7,7 +7,7 @@ const WEEK_KEY = process.env.WEEK_KEY || "2026-05-04";
 
 const NOTE = `Hey team! Canceled our EOW sync because of board meeting but wanted to throw plan for next week here. Let me know what you all think and I can start to make sure that the board for next cycle reflects all of this work. Please note that the items here are not including backlog items for everyone. So this is meant to be just top priorities for everyone next week.`;
 
-// personName must match data; "Liuda" in the message is "Luida" in the roster.
+// personName must match the roster in app/roadmap-data.ts.
 const PLAN = {
   Alex: [
     { text: "Audio issues", identifier: "MAR2-1533" },
@@ -20,7 +20,7 @@ const PLAN = {
     { text: "iPad video instructions", identifier: "MAR2-1386" },
     { text: "Sizing problems", identifier: "MAR2-1146" },
   ],
-  Luida: [
+  Liuda: [
     { text: "Score Review (NWD, Oral Expression Fluency, Sentence Composition Fluency)", identifier: "MAR2-1529" },
     { text: "Custom components for scoring box", identifier: "MAR2-1534" },
     { text: "Audio playing before image", identifier: "MAR2-1500" },
