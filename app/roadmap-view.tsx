@@ -6969,8 +6969,9 @@ function NormingPhasesSection({ selected, onSelect }: { selected: NormingPhaseId
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
         {NORMING_PHASES.map((p) => {
           const isSelected = selected === p.id;
-          // The player section only shows under NP1, so it counts as one more item there.
-          const itemCount = NORMING_INTERNAL_APP[p.id as NormingPhaseId].chunks.length + (p.id === "np1" ? 1 : 0);
+          // Count of sections shown below for this phase: NP1 has Internal App
+          // + Assessment Player, the others just Internal App.
+          const projectCount = p.id === "np1" ? 2 : 1;
           return (
             <div
               key={p.id}
@@ -6988,7 +6989,7 @@ function NormingPhasesSection({ selected, onSelect }: { selected: NormingPhaseId
               </div>
               <div style={{ fontSize: 11, fontWeight: 700, color: "#64748b", marginBottom: 6 }}>{npFmt(p.start)} → {npFmt(p.end)} · {npDays(p.start, p.end)} days</div>
               <div style={{ display: "inline-block", fontSize: 10, fontWeight: 800, letterSpacing: "0.05em", textTransform: "uppercase", color: isSelected ? "#fff" : p.color, background: isSelected ? p.color : `${p.color}1a`, borderRadius: 999, padding: "3px 10px", marginBottom: 10 }}>
-                {itemCount} work items {isSelected ? "· shown below" : ""}
+                {projectCount} {projectCount === 1 ? "project" : "projects"} {isSelected ? "· shown below" : ""}
               </div>
               <div style={{ fontSize: 12, color: "#64748b", lineHeight: 1.5, marginBottom: 12 }}>{p.goal}</div>
               <div style={{ fontSize: 10, fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>Key dates</div>
