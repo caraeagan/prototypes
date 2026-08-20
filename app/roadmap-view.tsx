@@ -8059,6 +8059,81 @@ function weekLabels(eng: EngMetrics): string[] {
   return eng.series.weekStarts.map((d) => parseDateLocal(d).toLocaleDateString("en-US", { month: "short", day: "numeric" }));
 }
 
+// Eng side of the audio replacement work: the "Content Updates" Linear
+// project (Molly files per-subtest replacement tickets, eng swaps them in).
+function AudioEngDependencies() {
+  const [issues, setIssues] = useState<PrenormProjectIssue[] | null>(null);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    linearQuery<{ issues: { nodes: PrenormProjectIssue[] } }>(
+      `query AudioEngDeps {
+        issues(first: 50, filter: { project: { name: { eq: "Content Updates" } } }) {
+          nodes {
+            id identifier title url
+            state { name type color }
+            assignee { displayName }
+            project { name }
+          }
+        }
+      }`,
+    )
+      .then((d) => setIssues(d.issues.nodes.filter((i) => i.state.type !== "canceled" && i.state.type !== "duplicate")))
+      .catch(() => setError(true));
+  }, []);
+
+  const stateOrder: Record<string, number> = { started: 0, unstarted: 1, backlog: 2, completed: 3 };
+  const rows = issues ? [...issues].sort((a, b) => (stateOrder[a.state.type] ?? 9) - (stateOrder[b.state.type] ?? 9)) : null;
+
+  return (
+    <div style={{ marginTop: 20 }}>
+      <div style={{ fontSize: 11, fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>
+        Eng Dependencies
+        <span style={{ fontWeight: 600, textTransform: "none", letterSpacing: 0, marginLeft: 8 }}>Content Updates project · live from Linear</span>
+      </div>
+      {error && <div style={{ color: "#dc2626", fontSize: 13, padding: "12px 0" }}>Couldn&apos;t load Content Updates tickets from Linear.</div>}
+      {!error && !rows && <div style={{ color: "#94a3b8", fontSize: 13, padding: "12px 0" }}>Loading tickets from Linear...</div>}
+      {rows && rows.length === 0 && <div style={{ color: "#94a3b8", fontSize: 13, fontStyle: "italic", padding: "12px 0" }}>No open tickets.</div>}
+      {rows && rows.length > 0 && (
+        <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 10, overflow: "hidden", boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
+          {rows.map((i) => {
+            const s = cellStatus([i]);
+            return (
+              <a
+                key={i.id}
+                href={i.url}
+                target="_blank"
+                rel="noreferrer"
+                style={{ display: "flex", alignItems: "center", gap: 12, padding: "9px 16px", borderBottom: "1px solid #f1f5f9", textDecoration: "none" }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = "#f8fafc"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+              >
+                <span style={{ fontSize: 15, width: 18, textAlign: "center", color: i.state.type === "completed" ? "#16a34a" : i.state.type === "started" ? "#2563eb" : "#cbd5e1" }}>
+                  {i.state.type === "completed" ? "✓" : i.state.type === "started" ? "●" : "○"}
+                </span>
+                <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: i.state.type === "completed" ? "#94a3b8" : "#1e293b", textDecoration: i.state.type === "completed" ? "line-through" : "none" }}>
+                  {i.title}
+                </span>
+                <span style={{ fontSize: 11, fontWeight: 600, color: "#94a3b8", whiteSpace: "nowrap" }}>
+                  {ownerFirstName(i.assignee?.displayName)}
+                </span>
+                {s && (
+                  <span style={{
+                    display: "inline-block", fontSize: 10, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase",
+                    padding: "3px 10px", borderRadius: 999, whiteSpace: "nowrap", color: s.color, background: s.bg,
+                  }}>
+                    {s.label}
+                  </span>
+                )}
+              </a>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function AudioAuditSection() {
   const [tests, setTests] = useState<AudioAuditTest[] | null>(null);
   const [edits, setEdits] = useState<Record<string, string> | null>(null);
@@ -8181,6 +8256,8 @@ function AudioAuditSection() {
           );
         })}
       </div>
+
+      <AudioEngDependencies />
     </div>
   );
 }
