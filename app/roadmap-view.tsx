@@ -6246,7 +6246,7 @@ type CountNode = { id: string; state: { type: string }; project: { name: string 
 
 // Auto-tracked project cards: tickets load live from Linear per project.
 // `label` scopes the labelOnly cards' tickets (pre-norming by default).
-function PrenormProjectsSection({ label = PRENORMING_LABEL, projects = PRENORM_PROJECTS }: { label?: string; projects?: typeof PRENORM_PROJECTS }) {
+function PrenormProjectsSection({ label = PRENORMING_LABEL, projects = PRENORM_PROJECTS, title = "Projects", description }: { label?: string; projects?: typeof PRENORM_PROJECTS; title?: string; description?: string }) {
   // "Pre-norming (Sep 8)" -> "Pre-norming", for the card's badge text.
   const labelShort = label.replace(/\s*\(.*\)$/, "");
   const [issues, setIssues] = useState<PrenormProjectIssue[] | null>(null);
@@ -6345,10 +6345,12 @@ function PrenormProjectsSection({ label = PRENORMING_LABEL, projects = PRENORM_P
       <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 18, paddingBottom: 12, borderBottom: "2px solid #1e293b" }}>
         <div>
           <div style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 4 }}>Readiness</div>
-          <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: "#0f172a", letterSpacing: "-0.01em" }}>Projects</h2>
+          <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: "#0f172a", letterSpacing: "-0.01em" }}>{title}</h2>
         </div>
         <span style={{ fontSize: 12, fontWeight: 600, color: "#64748b" }}>Live from Linear · click a project name for details</span>
       </div>
+
+      {description && <div style={{ fontSize: 13, color: "#475569", lineHeight: 1.6, marginBottom: 14 }}>{description}</div>}
 
       {error && <div style={{ color: "#dc2626", padding: "20px 0", textAlign: "center" }}>Couldn&apos;t load project tickets from Linear.</div>}
       {!error && !issues && <div style={{ color: "#94a3b8", padding: "20px 0", textAlign: "center" }}>Loading tickets from Linear...</div>}
@@ -6472,70 +6474,214 @@ function PrenormProjectsSection({ label = PRENORMING_LABEL, projects = PRENORM_P
 // The norming run as a sequence of gates: each phase lists what unlocks it.
 // Ticket-backed unblockers derive status live from Linear; the rest are
 // manual red/yellow/green chips (click the dot). "Current" is a manual call.
-type PhaseStatus = "red" | "yellow" | "green";
-type PhaseUnblocker = { id: string; text: string; owner?: string; tickets?: string[]; defaultStatus?: PhaseStatus };
-type NormingPhase = { id: string; name: string; window: string; color: string; description: string; unblockers: PhaseUnblocker[] };
+// Each phase is its goal plus date-led key dates ("Sep 28: Launch!") — the
+// milestone dates are the deadlines we run on. Line-item tracking lives in
+// Linear (the norming label), not here.
+type PhaseMilestone = { date: string; title: string };
+type NormingPhase = { id: string; code: string; name: string; start: string; end: string; color: string; goal: string; milestones: PhaseMilestone[] };
 
+// Restructured 8/19: Spanish folds into NP1 (turn-on Oct 5 per Eleanor);
+// NP2 scales everything at once incl. the Dec 7 Arabic + Mandarin launch with
+// a few weeks to prove out those groups; NP3 is the Jan–Mar close out.
 const NORMING_PHASES: NormingPhase[] = [
   {
-    id: "p1", name: "Initial launch", window: "Sep 28", color: "#eab308",
-    description: "Norming opens with monolingual and high English-exposure multilingual students while examiner ops scales.",
-    unblockers: [
-      { id: "p1-intake", text: "Intake survey sent to norming group", owner: "Lucie", defaultStatus: "yellow" },
-      { id: "p1-recruiting", text: "Monolingual recruiting under way", owner: "Erin", defaultStatus: "yellow" },
-      { id: "p1-examiners", text: "Examiner scaling on pace", owner: "Erin", defaultStatus: "yellow" },
-      { id: "p1-tickets", text: "Internal app norming tickets", tickets: ["MAR2-1688", "MAR2-1793"] },
+    id: "np1", code: "NP1", name: "Initial Launch", start: "2026-09-28", end: "2026-10-26", color: "#eab308",
+    goal: "Open norming to monolingual and high English-exposure multilingual students, prove the machine at volume, and turn Spanish on mid-phase to lay the foundation of our multilingual ops and tech.",
+    milestones: [
+      { date: "2026-09-28", title: "Launch!" },
+      { date: "2026-10-05", title: "Spanish launches" },
+      { date: "2026-10-26", title: "NP1 complete" },
     ],
   },
   {
-    id: "p2", name: "Spanish expansion", window: "Oct 12", color: "#16a34a",
-    description: "Low-LEI Spanish speakers open up once instructions and routing are live.",
-    unblockers: [
-      { id: "p2-instructions", text: "Spanish instructions shipped", owner: "Eleanor", defaultStatus: "yellow" },
-      { id: "p2-calendar", text: "Spanish Calendly live", owner: "Erin", defaultStatus: "green" },
-      { id: "p2-lei", text: "LEI computed + low-LEI examiner routing", tickets: ["MAR2-2095", "PSY-42"] },
+    id: "np2", code: "NP2", name: "Scaling", start: "2026-10-26", end: "2026-12-24", color: "#9333EA",
+    goal: "Scale the run to every group: external batteries and rating scales start, scheduling machinery runs at volume, and Arabic + Mandarin launch with a few weeks to prove out recruiting.",
+    milestones: [
+      { date: "2026-10-26", title: "Correlation studies begin" },
+      { date: "2026-10-26", title: "Ops evaluate staffing needs and actuals for scaling recruiting push" },
+      { date: "2026-12-07", title: "Arabic + Mandarin launch" },
+      { date: "2026-12-24", title: "NP2 complete" },
     ],
   },
   {
-    id: "p3", name: "Correlation studies", window: "Oct 26", color: "#9333EA",
-    description: "WISC / WIAT / KTEA sessions start once examiner tooling and the score workflow exist.",
-    unblockers: [
-      { id: "p3-assignment", text: "Multi-battery assignment + booking", tickets: ["MAR2-1875"] },
-      { id: "p3-external", text: "External battery completion flow", tickets: ["MAR2-1877"] },
-      { id: "p3-wrapper", text: "Examiner companion tool (timing + raw scores) · no ticket yet", defaultStatus: "red" },
-      { id: "p3-qglobal", text: "Q Global score workflow · no ticket yet", defaultStatus: "red" },
-      { id: "p3-rating", text: "Rating scales link queue + reminders · no ticket yet", defaultStatus: "red" },
-    ],
-  },
-  {
-    id: "p4", name: "Arabic + Mandarin", window: "Dec 7", color: "#0EA5E9",
-    description: "Remaining low-LEI languages open when translated instructions land.",
-    unblockers: [
-      { id: "p4-instructions", text: "Arabic + Mandarin instructions", owner: "Eleanor", defaultStatus: "yellow" },
-      { id: "p4-calendars", text: "Arabic + Mandarin Calendlys", owner: "Erin", defaultStatus: "yellow" },
-      { id: "p4-examiners", text: "Arabic-speaking examiners recruited", owner: "Erin", defaultStatus: "red" },
+    id: "np3", code: "NP3", name: "Final Lap", start: "2027-01-04", end: "2027-04-02", color: "#0EA5E9",
+    goal: "Fill the remaining cells, wrap the correlation studies, and land the data for analysis.",
+    milestones: [
+      { date: "2027-01-04", title: "Final examiner recruiting push based on remaining sessions left in Norming" },
+      { date: "2027-01-04", title: "Evaluate participant recruiting needs for remaining demographics needed in Study" },
+      { date: "2027-01-15", title: "Initial psychometrics structural analysis" },
+      { date: "2027-02-01", title: "Hard-to-reach audit and game plan" },
+      { date: "2027-04-02", title: "Done!" },
     ],
   },
 ];
 
+// Month-scale timeline the phase bars are positioned against.
+const NP_RANGE_START = new Date(2026, 8, 1); // Sep 1, 2026
+const NP_RANGE_END = new Date(2027, 4, 1); // May 1, 2027
+function npPct(d: Date): number {
+  const pct = ((d.getTime() - NP_RANGE_START.getTime()) / (NP_RANGE_END.getTime() - NP_RANGE_START.getTime())) * 100;
+  return Math.min(100, Math.max(0, pct));
+}
+const NP_MONTHS = ["Sep", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar", "Apr"].map((label, i) => ({
+  label,
+  date: new Date(2026, 8 + i, 1),
+}));
+function npFmt(dateStr: string): string {
+  return parseDateLocal(dateStr).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+function npDays(start: string, end: string): number {
+  return Math.round((parseDateLocal(end).getTime() - parseDateLocal(start).getTime()) / (24 * 60 * 60 * 1000));
+}
+
 function NormingPhasesSection() {
-  const [statuses, setStatuses] = useState<Record<string, PhaseStatus>>({});
-  // No phase is current until someone marks one (norming hasn't started).
-  const [current, setCurrent] = useState<string | null>(null);
-  // identifier -> live Linear issue, null while loading.
+  // Line-item readiness tracking lives in Linear via the norming label, not
+  // on these cards; the red today line marks where we are in the run.
+  const todayPct = npPct(new Date());
+
+  return (
+    <div style={{ marginBottom: 36 }}>
+      <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 18, paddingBottom: 12, borderBottom: "2px solid #1e293b" }}>
+        <div>
+          <div style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 4 }}>Roadmap</div>
+          <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: "#0f172a", letterSpacing: "-0.01em" }}>Phases</h2>
+        </div>
+        <span style={{ fontSize: 12, fontWeight: 600, color: "#64748b" }}>Sep 28, 2026 → Apr 2, 2027</span>
+      </div>
+
+      {/* Month-scale timeline: phase bars sized by duration, targets flagged */}
+      <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, padding: "14px 18px 10px", marginBottom: 16 }}>
+        <div style={{ position: "relative", height: 88 }}>
+          {NP_MONTHS.map((m) => (
+            <div key={m.label} style={{ position: "absolute", left: `${npPct(m.date)}%`, top: 0, bottom: 0 }}>
+              <div style={{ position: "absolute", top: 18, bottom: 0, borderLeft: "1px dashed #e2e8f0" }} />
+              <div style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.06em", paddingLeft: 4 }}>{m.label}</div>
+            </div>
+          ))}
+          {NORMING_PHASES.map((p) => {
+            const left = npPct(parseDateLocal(p.start));
+            const width = npPct(parseDateLocal(p.end)) - left;
+            return (
+              <div
+                key={p.id}
+                title={`${p.code} · ${p.name}: ${npFmt(p.start)} → ${npFmt(p.end)} (${npDays(p.start, p.end)} days)`}
+                style={{
+                  position: "absolute", left: `${left}%`, width: `${width}%`, top: 28, height: 30,
+                  background: p.color, borderRadius: 8, display: "flex", alignItems: "center", paddingLeft: 8,
+                  color: "#fff", fontSize: 11, fontWeight: 800, letterSpacing: "0.04em",
+                  whiteSpace: "nowrap", overflow: "hidden",
+                }}
+              >
+                {p.code}
+              </div>
+            );
+          })}
+          {/* Target-date callouts under each phase's end */}
+          {NORMING_PHASES.map((p) => (
+            <div key={`${p.id}-target`} style={{ position: "absolute", left: `${npPct(parseDateLocal(p.end))}%`, top: 58 }}>
+              <div style={{ position: "absolute", top: 0, height: 7, borderLeft: `2px solid ${p.color}`, transform: "translateX(-1px)" }} />
+              <div style={{ position: "absolute", top: 9, transform: "translateX(-50%)", fontSize: 10, fontWeight: 800, color: p.color, whiteSpace: "nowrap" }}>{npFmt(p.end)}</div>
+            </div>
+          ))}
+          {todayPct > 0 && todayPct < 100 && (
+            <div title="Today" style={{ position: "absolute", left: `${todayPct}%`, top: 18, height: 44, borderLeft: "2px solid #ef4444" }} />
+          )}
+        </div>
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
+        {NORMING_PHASES.map((p) => {
+          return (
+            <div
+              key={p.id}
+              style={{
+                textAlign: "left", fontFamily: "inherit",
+                background: "#fff", borderRadius: 12, padding: "14px 16px",
+                border: "1px solid #e2e8f0",
+                borderTop: `4px solid ${p.color}`,
+                boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
+              }}
+            >
+              <div style={{ fontSize: 14, fontWeight: 800, color: "#0f172a", marginBottom: 4 }}>
+                <span style={{ color: p.color }}>{p.code}:</span> {p.name}
+              </div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "#64748b", marginBottom: 6 }}>{npFmt(p.start)} → {npFmt(p.end)} · {npDays(p.start, p.end)} days</div>
+              <div style={{ fontSize: 12, color: "#64748b", lineHeight: 1.5, marginBottom: 12 }}>{p.goal}</div>
+              <div style={{ fontSize: 10, fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>Key dates</div>
+              {p.milestones.map((m) => (
+                <div key={`${m.date}-${m.title}`} style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "3px 0", fontSize: 12, lineHeight: 1.45 }}>
+                  <span style={{ width: 7, height: 7, borderRadius: "50%", background: p.color, flexShrink: 0, marginTop: 5 }} />
+                  <span style={{ color: "#1e293b" }}>
+                    <span style={{ fontWeight: 800, color: p.color }}>{npFmt(m.date)}:</span>{" "}
+                    <span style={{ fontWeight: 600 }}>{m.title}</span>
+                  </span>
+                </div>
+              ))}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ── Norming Internal App (per-phase big chunks) ─────────────────────────
+// The big chunks of internal-app work landing before or during each phase.
+// Ticket-backed rows derive status live from Linear; note rows are manual
+// ops or not-yet-ticketed work. Hacky internal v1 by design (Aug 18 call).
+type NormingChunk = { name: string; ids?: string[]; note?: string };
+
+const NORMING_INTERNAL_APP: Record<"np1" | "np2" | "np3", { description: string; chunks: NormingChunk[] }> = {
+  np1: {
+    description:
+      "Unlike the player, the internal app keeps shipping through norming — it's where recruiting, scheduling, and study ops actually run. These are the big chunks landing before or during NP1.",
+    chunks: [
+      { name: "LEI compute + language calendar surfacing (due Sep 20, before norming intake send)", note: "no ticket yet" },
+      { name: "Low-LEI examiner routing", ids: ["MAR2-2095"] },
+      { name: "Multilingual definition + waitlist hold", ids: ["MAR2-2037"] },
+      { name: "Session packing + predicted minutes", ids: ["MAR2-1918", "MAR2-2121"] },
+      { name: "Pre-booked sessions + no-show cascade", ids: ["MAR2-1917"] },
+      { name: "Norming consent updates (due Sep 14)", ids: ["MAR2-1512", "MAR2-1513"] },
+      { name: "Clinical cell attribution writer", ids: ["MAR2-2066"] },
+      { name: "Launch app items (editable fields, note stamps)", ids: ["MAR2-1688", "MAR2-1793"] },
+    ],
+  },
+  np2: {
+    description:
+      "Correlation-study tooling and scale machinery. Deliberately hacky internal v1: research-only, ~200 kids. Weigh manual effort against building at Eleanor's $40/hour examiner heuristic.",
+    chunks: [
+      { name: "Multi-battery assignment + booking", ids: ["MAR2-1875"] },
+      { name: "External battery completion flow", ids: ["MAR2-1877"] },
+      { name: "Examiner companion tool (prescribed order, timers, raw score entry)", note: "no ticket yet" },
+      { name: "Rating scales queue + reminders (50 ADHD + 50 autism)", note: "no ticket yet" },
+      { name: "Battery close-out under 30 predicted minutes", ids: ["MAR2-1919"] },
+      { name: "Q Global score workflow", note: "manual ops · Erin/Lucie" },
+      { name: "Arabic + Mandarin calendar routing", note: "config on MAR2-2095's build" },
+    ],
+  },
+  np3: {
+    description:
+      "Mostly ops and analysis: eng supports data pulls, targeted fixes, and the retention policy. New build only if the hard-to-reach audit demands it.",
+    chunks: [
+      { name: "Retention & destruction policy live", ids: ["MAR2-2116"] },
+      { name: "Data QA + freeze support for psychometrics", note: "scoped with Erica during NP2" },
+    ],
+  },
+};
+
+function NormingInternalAppSection({ phase }: { phase: "np1" | "np2" | "np3" }) {
+  // identifier -> live Linear issue, null while loading. Fetched by number
+  // across all phases once, so tab switches don't refetch.
   const [tickets, setTickets] = useState<Record<string, PrenormProjectIssue> | null>(null);
+  const [selectedIssueId, setSelectedIssueId] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchOverrides().then((ov) => {
-      setStatuses(ov.normingPhases?.statuses ?? {});
-      if (ov.normingPhases?.current) setCurrent(ov.normingPhases.current);
-    });
-    const ids = NORMING_PHASES.flatMap((p) => p.unblockers.flatMap((u) => u.tickets ?? []));
+    const ids = Object.values(NORMING_INTERNAL_APP).flatMap((s) => s.chunks.flatMap((c) => c.ids ?? []));
     // Linear filters by issue number, not identifier; the number-in query can
     // return same-numbered issues from other teams, so match identifiers after.
     const nums = [...new Set(ids.map((i) => Number(i.split("-")[1])))];
     linearQuery<{ issues: { nodes: PrenormProjectIssue[] } }>(
-      `query PhaseTickets($nums: [Float!]) {
+      `query NormingChunkTickets($nums: [Float!]) {
         issues(first: 100, filter: { number: { in: $nums } }) {
           nodes { id identifier title url state { name type color } assignee { displayName } project { name } }
         }
@@ -6551,53 +6697,68 @@ function NormingPhasesSection() {
       .catch(() => setTickets({}));
   }, []);
 
-  const unblockerStatus = (u: PhaseUnblocker): PhaseStatus => {
-    if (u.tickets) {
-      if (!tickets) return "yellow";
-      const ts = u.tickets.map((id) => tickets[id]).filter(Boolean);
-      if (ts.length === 0) return "red";
-      if (ts.every((t) => t.state.type === "completed")) return "green";
-      if (ts.some((t) => t.state.type === "started" || t.state.type === "completed")) return "yellow";
-      return "red";
-    }
-    return statuses[u.id] ?? u.defaultStatus ?? "yellow";
-  };
+  const section = NORMING_INTERNAL_APP[phase];
+  const phaseMeta = NORMING_PHASES.find((p) => p.id === phase);
+  const rows = section.chunks.map((c) => {
+    const ts = (c.ids ?? []).map((id) => tickets?.[id]).filter((t): t is PrenormProjectIssue => !!t);
+    return { ...c, tickets: ts, status: c.ids ? cellStatus(ts) : null };
+  });
+  const done = rows.filter((r) => r.status?.done).length;
+  const tracked = rows.filter((r) => r.ids).length;
 
   return (
     <div style={{ marginBottom: 36 }}>
-      <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 18, paddingBottom: 12, borderBottom: "2px solid #1e293b" }}>
+      <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 12, paddingBottom: 12, borderBottom: "2px solid #1e293b" }}>
         <div>
-          <div style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 4 }}>Roadmap</div>
-          <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: "#0f172a", letterSpacing: "-0.01em" }}>Phases</h2>
+          <div style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 4 }}>{phaseMeta?.code} readiness</div>
+          <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: "#0f172a", letterSpacing: "-0.01em" }}>Internal App</h2>
         </div>
+        <span style={{ fontSize: 12, fontWeight: 600, color: "#64748b" }}>Live from Linear</span>
+      </div>
+      <div style={{ fontSize: 13, color: "#475569", lineHeight: 1.6, marginBottom: 14 }}>{section.description}</div>
+
+      <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 10, overflow: "hidden", boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 16px", borderBottom: "1px solid #e2e8f0", background: "#f8fafc" }}>
+          <span style={{ fontSize: 13, fontWeight: 800, color: "#1e293b", textTransform: "uppercase", letterSpacing: "0.08em" }}>Big items</span>
+          <span style={{ fontSize: 12, fontWeight: 700, color: "#475569" }}>{done} / {tracked} tracked done</span>
+        </div>
+        {rows.map((r) => (
+          <div
+            key={r.name}
+            onClick={r.tickets.length > 0 ? () => setSelectedIssueId((r.tickets.find((t) => t.state.type !== "completed") ?? r.tickets[0]).id) : undefined}
+            title={r.tickets.map((t) => `${t.identifier} · ${t.state.name} · ${t.assignee?.displayName ?? "Unassigned"}`).join("\n") || r.note}
+            style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 16px", borderBottom: "1px solid #f1f5f9", cursor: r.tickets.length > 0 ? "pointer" : "default" }}
+            onMouseEnter={(e) => { if (r.tickets.length > 0) e.currentTarget.style.background = "#f8fafc"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+          >
+            <span style={{ fontSize: 16, width: 20, textAlign: "center", color: r.status?.done ? "#16a34a" : r.status?.label === "In Progress" ? "#2563eb" : "#cbd5e1" }}>
+              {r.status?.done ? "✓" : r.status?.label === "In Progress" ? "●" : "○"}
+            </span>
+            <span style={{ flex: 1, fontSize: 14, fontWeight: 600, color: r.status?.done ? "#94a3b8" : "#1e293b", textDecoration: r.status?.done ? "line-through" : "none" }}>
+              {r.name}
+            </span>
+            {r.ids ? (
+              tickets === null ? (
+                <span style={{ fontSize: 12, color: "#94a3b8" }}>loading…</span>
+              ) : r.status ? (
+                <span style={{ display: "inline-block", fontSize: 10, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", padding: "3px 10px", borderRadius: 999, whiteSpace: "nowrap", color: r.status.color, background: r.status.bg }}>
+                  {r.status.label} · {r.tickets.filter((t) => t.state.type === "completed").length}/{r.tickets.length}
+                </span>
+              ) : (
+                <span style={{ fontSize: 12, color: "#dc2626" }}>tickets not found</span>
+              )
+            ) : r.note === "no ticket yet" ? (
+              <span style={{ display: "inline-block", fontSize: 10, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", padding: "3px 10px", borderRadius: 999, whiteSpace: "nowrap", color: "#b91c1c", background: "#fee2e2" }}>No ticket yet</span>
+            ) : (
+              <span style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", whiteSpace: "nowrap" }}>{r.note}</span>
+            )}
+          </div>
+        ))}
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: 12 }}>
-        {NORMING_PHASES.map((p, idx) => {
-          const isCurrent = current === p.id;
-          return (
-            <div
-              key={p.id}
-              style={{
-                textAlign: "left", fontFamily: "inherit",
-                background: "#fff", borderRadius: 12, padding: "14px 16px",
-                border: "1px solid #e2e8f0",
-                borderTop: `4px solid ${p.color}`,
-                boxShadow: isCurrent ? `0 2px 8px ${p.color}33` : "0 1px 2px rgba(0,0,0,0.04)",
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
-                <span style={{ fontSize: 10, fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.08em" }}>Phase {idx + 1}</span>
-                {isCurrent && (
-                  <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: "#fff", background: p.color, borderRadius: 999, padding: "2px 7px" }}>Current</span>
-                )}
-              </div>
-              <div style={{ fontSize: 14, fontWeight: 800, color: "#0f172a", marginBottom: 2 }}>{p.name}</div>
-              <div style={{ fontSize: 12, fontWeight: 600, color: "#64748b" }}>{p.window}</div>
-            </div>
-          );
-        })}
-      </div>
+      {selectedIssueId && (
+        <CycleIssueDetailPanel issueId={selectedIssueId} onClose={() => setSelectedIssueId(null)} cycles={[]} onUpdated={() => {}} />
+      )}
     </div>
   );
 }
@@ -8510,6 +8671,8 @@ function NormingCountdownView() {
   useEffect(() => {
     window.history.replaceState(null, "", `#${subView}`);
   }, [subView]);
+  // Which norming phase's work is shown below the phase cards.
+  const [phaseTab, setPhaseTab] = useState<"np1" | "np2" | "np3">("np1");
   const [checklist, setChecklist] = useState<Record<string, NormingItem[]>>({});
   const [loading, setLoading] = useState(true);
   const [saveState, setSaveState] = useState<"saving" | "saved" | "error" | "idle">("idle");
@@ -8655,7 +8818,37 @@ function NormingCountdownView() {
 
         {!isPrenorm && <NormingPhasesSection />}
 
-        {!isPrenorm && <PrenormProjectsSection label={NORMING_LABEL} projects={NORMING_PROJECTS} />}
+        {/* Phase tabs: pick a phase to see the work landing before or during it */}
+        {!isPrenorm && (
+          <div style={{ display: "flex", gap: 8, marginBottom: 24 }}>
+            {NORMING_PHASES.map((p) => (
+              <button
+                key={p.id}
+                onClick={() => setPhaseTab(p.id as "np1" | "np2" | "np3")}
+                style={{
+                  flex: 1, padding: "9px 12px", borderRadius: 10, cursor: "pointer", fontFamily: "inherit",
+                  fontSize: 12, fontWeight: 800, letterSpacing: "0.04em",
+                  border: phaseTab === p.id ? `2px solid ${p.color}` : "1px solid #e2e8f0",
+                  background: phaseTab === p.id ? `${p.color}1a` : "#fff",
+                  color: phaseTab === p.id ? "#0f172a" : "#64748b",
+                }}
+              >
+                {p.code}: {p.name}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {!isPrenorm && <NormingInternalAppSection phase={phaseTab} />}
+
+        {!isPrenorm && phaseTab === "np1" && (
+          <PrenormProjectsSection
+            label={NORMING_LABEL}
+            projects={NORMING_PROJECTS}
+            title="Assessment Player"
+            description="The assessment player is locked before norming starts — these are the final player tickets to land before Sep 28. After launch, player changes freeze so every student takes the same test."
+          />
+        )}
 
         {isPrenorm && <PrenormingSection />}
 
