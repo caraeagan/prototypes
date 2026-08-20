@@ -6904,9 +6904,12 @@ function npDays(start: string, end: string): number {
   return Math.round((parseDateLocal(end).getTime() - parseDateLocal(start).getTime()) / (24 * 60 * 60 * 1000));
 }
 
-function NormingPhasesSection() {
+type NormingPhaseId = "np1" | "np2" | "np3";
+
+function NormingPhasesSection({ selected, onSelect }: { selected: NormingPhaseId; onSelect: (p: NormingPhaseId) => void }) {
   // Line-item readiness tracking lives in Linear via the norming label, not
   // on these cards; the red today line marks where we are in the run.
+  // Cards (and timeline bars) are the phase selector for the sections below.
   const todayPct = npPct(new Date());
 
   return (
@@ -6931,15 +6934,19 @@ function NormingPhasesSection() {
           {NORMING_PHASES.map((p) => {
             const left = npPct(parseDateLocal(p.start));
             const width = npPct(parseDateLocal(p.end)) - left;
+            const isSelected = selected === p.id;
             return (
               <div
                 key={p.id}
+                onClick={() => onSelect(p.id as NormingPhaseId)}
                 title={`${p.code} · ${p.name}: ${npFmt(p.start)} → ${npFmt(p.end)} (${npDays(p.start, p.end)} days)`}
                 style={{
                   position: "absolute", left: `${left}%`, width: `${width}%`, top: 28, height: 30,
                   background: p.color, borderRadius: 8, display: "flex", alignItems: "center", paddingLeft: 8,
                   color: "#fff", fontSize: 11, fontWeight: 800, letterSpacing: "0.04em",
-                  whiteSpace: "nowrap", overflow: "hidden",
+                  whiteSpace: "nowrap", overflow: "hidden", cursor: "pointer",
+                  opacity: isSelected ? 1 : 0.55,
+                  boxShadow: isSelected ? `0 0 0 2px #fff, 0 0 0 4px ${p.color}` : "none",
                 }}
               >
                 {p.code}
@@ -6961,21 +6968,28 @@ function NormingPhasesSection() {
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
         {NORMING_PHASES.map((p) => {
+          const isSelected = selected === p.id;
+          // The player section only shows under NP1, so it counts as one more item there.
+          const itemCount = NORMING_INTERNAL_APP[p.id as NormingPhaseId].chunks.length + (p.id === "np1" ? 1 : 0);
           return (
             <div
               key={p.id}
+              onClick={() => onSelect(p.id as NormingPhaseId)}
               style={{
-                textAlign: "left", fontFamily: "inherit",
-                background: "#fff", borderRadius: 12, padding: "14px 16px",
-                border: "1px solid #e2e8f0",
+                textAlign: "left", fontFamily: "inherit", cursor: "pointer",
+                background: isSelected ? `${p.color}0d` : "#fff", borderRadius: 12, padding: "14px 16px",
+                border: isSelected ? `2px solid ${p.color}` : "1px solid #e2e8f0",
                 borderTop: `4px solid ${p.color}`,
-                boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
+                boxShadow: isSelected ? `0 2px 10px ${p.color}33` : "0 1px 2px rgba(0,0,0,0.04)",
               }}
             >
               <div style={{ fontSize: 14, fontWeight: 800, color: "#0f172a", marginBottom: 4 }}>
                 <span style={{ color: p.color }}>{p.code}:</span> {p.name}
               </div>
               <div style={{ fontSize: 11, fontWeight: 700, color: "#64748b", marginBottom: 6 }}>{npFmt(p.start)} → {npFmt(p.end)} · {npDays(p.start, p.end)} days</div>
+              <div style={{ display: "inline-block", fontSize: 10, fontWeight: 800, letterSpacing: "0.05em", textTransform: "uppercase", color: isSelected ? "#fff" : p.color, background: isSelected ? p.color : `${p.color}1a`, borderRadius: 999, padding: "3px 10px", marginBottom: 10 }}>
+                {itemCount} work items {isSelected ? "· shown below" : ""}
+              </div>
               <div style={{ fontSize: 12, color: "#64748b", lineHeight: 1.5, marginBottom: 12 }}>{p.goal}</div>
               <div style={{ fontSize: 10, fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>Key dates</div>
               {p.milestones.map((m) => (
@@ -9269,28 +9283,7 @@ function NormingCountdownView() {
           <KeyDatesBar key={subView} scope={isPrenorm ? undefined : "norming"} />
         </div>
 
-        {!isPrenorm && <NormingPhasesSection />}
-
-        {/* Phase tabs: pick a phase to see the work landing before or during it */}
-        {!isPrenorm && (
-          <div style={{ display: "flex", gap: 8, marginBottom: 24 }}>
-            {NORMING_PHASES.map((p) => (
-              <button
-                key={p.id}
-                onClick={() => setPhaseTab(p.id as "np1" | "np2" | "np3")}
-                style={{
-                  flex: 1, padding: "9px 12px", borderRadius: 10, cursor: "pointer", fontFamily: "inherit",
-                  fontSize: 12, fontWeight: 800, letterSpacing: "0.04em",
-                  border: phaseTab === p.id ? `2px solid ${p.color}` : "1px solid #e2e8f0",
-                  background: phaseTab === p.id ? `${p.color}1a` : "#fff",
-                  color: phaseTab === p.id ? "#0f172a" : "#64748b",
-                }}
-              >
-                {p.code}: {p.name}
-              </button>
-            ))}
-          </div>
-        )}
+        {!isPrenorm && <NormingPhasesSection selected={phaseTab} onSelect={setPhaseTab} />}
 
         {!isPrenorm && <NormingInternalAppSection phase={phaseTab} />}
 
