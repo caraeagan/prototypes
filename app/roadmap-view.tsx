@@ -6979,7 +6979,9 @@ function NormingPhasesSection({ selected, onSelect }: { selected: NormingPhaseId
               style={{
                 textAlign: "left", fontFamily: "inherit", cursor: "pointer",
                 background: isSelected ? `${p.color}0d` : "#fff", borderRadius: 12, padding: "14px 16px",
-                border: isSelected ? `2px solid ${p.color}` : "1px solid #e2e8f0",
+                borderLeft: isSelected ? `2px solid ${p.color}` : "1px solid #e2e8f0",
+                borderRight: isSelected ? `2px solid ${p.color}` : "1px solid #e2e8f0",
+                borderBottom: isSelected ? `2px solid ${p.color}` : "1px solid #e2e8f0",
                 borderTop: `4px solid ${p.color}`,
                 boxShadow: isSelected ? `0 2px 10px ${p.color}33` : "0 1px 2px rgba(0,0,0,0.04)",
               }}
