@@ -7896,6 +7896,155 @@ const NONE_BADGE = (
   </span>
 );
 
+// Eng dependencies for instructions & corrective feedback, split into launch
+// blockers and nice-to-haves. Seed tickets are hardcoded; anyone can add a
+// ticket (identifier like MAR2-123 or a Linear URL) or a free-text note —
+// additions persist in the shared overrides blob via the checklist store.
+const CF_DEP_GROUPS = [
+  { key: "CF Blockers", title: "Blockers", accent: "#dc2626", seeds: ["MAR2-2005", "MAR2-2046", "MAR2-2133", "MAR2-2131"] },
+  { key: "CF Nice to have", title: "Nice to have", accent: "#64748b", seeds: ["MAR2-2045", "MAR2-2106", "MAR2-2132"] },
+] as const;
+
+function CfEngDependencies() {
+  const [items, setItems] = useState<Record<string, NormingItem[]> | null>(null);
+  const [tickets, setTickets] = useState<Record<string, PrenormProjectIssue> | null>(null);
+  const [selectedIssueId, setSelectedIssueId] = useState<string | null>(null);
+  const [drafts, setDrafts] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    fetchOverrides().then((ov) => setItems(ov.normingChecklist ?? {}));
+  }, []);
+
+  // Seeds plus any ticket identifiers people added later.
+  const idsKey = JSON.stringify(
+    [...new Set([
+      ...CF_DEP_GROUPS.flatMap((g) => [...g.seeds]),
+      ...CF_DEP_GROUPS.flatMap((g) => (items?.[g.key] ?? []).flatMap((it) => checklistTicketIds(it.text))),
+    ])].sort(),
+  );
+  const itemsLoaded = items !== null;
+
+  useEffect(() => {
+    if (!itemsLoaded) return;
+    const ids: string[] = JSON.parse(idsKey);
+    if (ids.length === 0) { setTickets({}); return; }
+    // Linear filters by issue number, not identifier; match identifiers after.
+    const nums = [...new Set(ids.map((i) => Number(i.split("-")[1])))];
+    linearQuery<{ issues: { nodes: PrenormProjectIssue[] } }>(
+      `query CfDepTickets($nums: [Float!]) {
+        issues(first: 100, filter: { number: { in: $nums } }) {
+          nodes { id identifier title url state { name type color } assignee { displayName } project { name } }
+        }
+      }`,
+      { nums },
+    )
+      .then((d) => {
+        const wanted = new Set(ids);
+        const map: Record<string, PrenormProjectIssue> = {};
+        for (const n of d.issues.nodes) if (wanted.has(n.identifier)) map[n.identifier] = n;
+        setTickets(map);
+      })
+      .catch(() => setTickets({}));
+  }, [idsKey, itemsLoaded]);
+
+  const persist = (key: string, next: NormingItem[]) => {
+    setItems((prev) => ({ ...(prev ?? {}), [key]: next }));
+    saveOverride("saveNormingChecklist", { team: key, items: next }).catch(() => {});
+  };
+  const addItem = (key: string) => {
+    const text = (drafts[key] ?? "").trim();
+    if (!text) return;
+    persist(key, [...(items?.[key] ?? []), { id: newNormingItemId(), text, done: false }]);
+    setDrafts((d) => ({ ...d, [key]: "" }));
+  };
+  const removeItem = (key: string, id: string) => {
+    persist(key, (items?.[key] ?? []).filter((it) => it.id !== id));
+  };
+
+  const ticketRow = (ident: string, onRemove?: () => void, rowKey?: string) => {
+    const t = tickets?.[ident];
+    const s = t ? cellStatus([t]) : null;
+    return (
+      <div
+        key={rowKey ?? ident}
+        onClick={t ? () => setSelectedIssueId(t.id) : undefined}
+        style={{ display: "flex", alignItems: "center", gap: 12, padding: "9px 16px", borderBottom: "1px solid #f1f5f9", cursor: t ? "pointer" : "default" }}
+        onMouseEnter={(e) => { if (t) e.currentTarget.style.background = "#f8fafc"; }}
+        onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+      >
+        <span style={{ fontSize: 15, width: 18, textAlign: "center", color: t?.state.type === "completed" ? "#16a34a" : t?.state.type === "started" ? "#2563eb" : "#cbd5e1" }}>
+          {t?.state.type === "completed" ? "✓" : t?.state.type === "started" ? "●" : "○"}
+        </span>
+        <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: t?.state.type === "completed" ? "#94a3b8" : "#1e293b", textDecoration: t?.state.type === "completed" ? "line-through" : "none" }}>
+          {t ? t.title : tickets === null ? `${ident} · loading…` : `${ident} · not found`}
+        </span>
+        {t && <span style={{ fontSize: 11, fontWeight: 600, color: "#94a3b8", whiteSpace: "nowrap" }}>{ownerFirstName(t.assignee?.displayName)}</span>}
+        {s && (
+          <span style={{ display: "inline-block", fontSize: 10, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", padding: "3px 10px", borderRadius: 999, whiteSpace: "nowrap", color: s.color, background: s.bg }}>
+            {s.label}
+          </span>
+        )}
+        {onRemove && (
+          <button onClick={(e) => { e.stopPropagation(); onRemove(); }} title="Remove from this list (doesn't touch Linear)" style={{ border: "none", background: "transparent", color: "#cbd5e1", cursor: "pointer", fontSize: 14, padding: 0 }}>×</button>
+        )}
+      </div>
+    );
+  };
+
+  return (
+    <div style={{ marginTop: 20 }}>
+      <div style={{ fontSize: 11, fontWeight: 800, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>
+        Eng Dependencies
+        <span style={{ fontWeight: 600, textTransform: "none", letterSpacing: 0, marginLeft: 8 }}>live from Linear · add a ticket (MAR2-123) or a note</span>
+      </div>
+      {CF_DEP_GROUPS.map((g) => {
+        const added = items?.[g.key] ?? [];
+        return (
+          <div key={g.key} style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 10, overflow: "hidden", boxShadow: "0 1px 2px rgba(0,0,0,0.04)", marginBottom: 12 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 16px", borderBottom: "1px solid #e2e8f0", background: "#f8fafc" }}>
+              <span style={{ width: 8, height: 8, borderRadius: "50%", background: g.accent }} />
+              <span style={{ fontSize: 12, fontWeight: 800, color: "#1e293b", textTransform: "uppercase", letterSpacing: "0.08em" }}>{g.title}</span>
+            </div>
+            {g.seeds.map((ident) => ticketRow(ident))}
+            {added.map((it) => {
+              const tids = checklistTicketIds(it.text);
+              return tids.length > 0 ? (
+                ticketRow(tids[0], () => removeItem(g.key, it.id), it.id)
+              ) : (
+                <div key={it.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "9px 16px", borderBottom: "1px solid #f1f5f9" }}>
+                  <span style={{ fontSize: 15, width: 18, textAlign: "center", color: "#cbd5e1" }}>–</span>
+                  <span style={{ flex: 1, fontSize: 13, color: "#475569" }}>{it.text}</span>
+                  <button onClick={() => removeItem(g.key, it.id)} title="Remove note" style={{ border: "none", background: "transparent", color: "#cbd5e1", cursor: "pointer", fontSize: 14, padding: 0 }}>×</button>
+                </div>
+              );
+            })}
+            <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 12px 8px 14px", background: "#f8fafc" }}>
+              <input
+                type="text"
+                placeholder={`Add a ticket or note to ${g.title.toLowerCase()}...`}
+                value={drafts[g.key] ?? ""}
+                onChange={(e) => setDrafts((d) => ({ ...d, [g.key]: e.target.value }))}
+                onKeyDown={(e) => { if (e.key === "Enter") addItem(g.key); }}
+                style={{ flex: 1, fontFamily: "var(--font-sans)", fontSize: 12, padding: "6px 10px", border: "1px solid #e2e8f0", borderRadius: 6, outline: "none", background: "#fff" }}
+              />
+              <button
+                onClick={() => addItem(g.key)}
+                disabled={!(drafts[g.key] ?? "").trim()}
+                style={{ fontFamily: "var(--font-sans)", fontSize: 12, fontWeight: 700, padding: "6px 12px", border: "none", borderRadius: 6, cursor: (drafts[g.key] ?? "").trim() ? "pointer" : "default", background: (drafts[g.key] ?? "").trim() ? "#2563eb" : "#cbd5e1", color: "#fff" }}
+              >
+                Add
+              </button>
+            </div>
+          </div>
+        );
+      })}
+      {selectedIssueId && (
+        <CycleIssueDetailPanel issueId={selectedIssueId} onClose={() => setSelectedIssueId(null)} cycles={[]} onUpdated={() => {}} />
+      )}
+    </div>
+  );
+}
+
 function ContentReadinessSection() {
   const [data, setData] = useState<{ instructions: AiRow[]; cfBuilt: CfRow[]; cfReleased: CfRow[] } | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -8018,6 +8167,7 @@ function ContentReadinessSection() {
         <span style={{ fontSize: 12, fontWeight: 600, color: "#64748b" }}>Live from marker-method prod (read-only)</span>
       </div>
       {body}
+      <CfEngDependencies />
     </div>
   );
 }
@@ -8145,9 +8295,9 @@ function AudioEngDependencies() {
       {error && <div style={{ color: "#dc2626", fontSize: 13, padding: "12px 0" }}>Couldn&apos;t load Content Updates tickets from Linear.</div>}
       {!error && !rows && <div style={{ color: "#94a3b8", fontSize: 13, padding: "12px 0" }}>Loading tickets from Linear...</div>}
       {rows && rows.length === 0 && <div style={{ color: "#94a3b8", fontSize: 13, fontStyle: "italic", padding: "12px 0" }}>No open tickets.</div>}
-      {rows && rows.length > 0 && (
+      {((rows && rows.length > 0) || ids) && (
         <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 10, overflow: "hidden", boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
-          {rows.map((i) => {
+          {rows && rows.map((i) => {
             const s = cellStatus([i]);
             return (
               <a
@@ -8179,25 +8329,25 @@ function AudioEngDependencies() {
               </a>
             );
           })}
-        </div>
-      )}
-      {ids && (
-        <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 8 }}>
-          <input
-            type="text"
-            placeholder="Add a ticket to Content Updates..."
-            value={newTitle}
-            onChange={(e) => setNewTitle(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter") createTicket(); }}
-            style={{ flex: 1, fontFamily: "var(--font-sans)", fontSize: 13, padding: "7px 10px", border: "1px solid #e2e8f0", borderRadius: 8, outline: "none", background: "#fff" }}
-          />
-          <button
-            onClick={createTicket}
-            disabled={!newTitle.trim() || creating}
-            style={{ fontFamily: "var(--font-sans)", fontSize: 12, fontWeight: 700, padding: "7px 14px", border: "none", borderRadius: 8, cursor: newTitle.trim() && !creating ? "pointer" : "default", background: newTitle.trim() && !creating ? "#2563eb" : "#cbd5e1", color: "#fff" }}
-          >
-            {creating ? "Adding..." : "Add"}
-          </button>
+          {ids && (
+            <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 12px 8px 14px", background: "#f8fafc" }}>
+              <input
+                type="text"
+                placeholder="Add an eng dependency to Audio Content Updates..."
+                value={newTitle}
+                onChange={(e) => setNewTitle(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") createTicket(); }}
+                style={{ flex: 1, fontFamily: "var(--font-sans)", fontSize: 12, padding: "6px 10px", border: "1px solid #e2e8f0", borderRadius: 6, outline: "none", background: "#fff" }}
+              />
+              <button
+                onClick={createTicket}
+                disabled={!newTitle.trim() || creating}
+                style={{ fontFamily: "var(--font-sans)", fontSize: 12, fontWeight: 700, padding: "6px 12px", border: "none", borderRadius: 6, cursor: newTitle.trim() && !creating ? "pointer" : "default", background: newTitle.trim() && !creating ? "#2563eb" : "#cbd5e1", color: "#fff" }}
+              >
+                {creating ? "Adding..." : "Add"}
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>
