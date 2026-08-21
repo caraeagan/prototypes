@@ -8079,9 +8079,16 @@ function weekLabels(eng: EngMetrics): string[] {
 function AudioEngDependencies() {
   const [issues, setIssues] = useState<PrenormProjectIssue[] | null>(null);
   const [error, setError] = useState(false);
+  // Content Updates project + team ids, needed to create new tickets into it.
+  const [ids, setIds] = useState<{ projectId: string; teamId: string } | null>(null);
+  const [newTitle, setNewTitle] = useState("");
+  const [creating, setCreating] = useState(false);
 
-  useEffect(() => {
-    linearQuery<{ issues: { nodes: PrenormProjectIssue[] } }>(
+  const load = useCallback(() => {
+    linearQuery<{
+      issues: { nodes: PrenormProjectIssue[] };
+      projects: { nodes: { id: string; teams: { nodes: { id: string }[] } }[] };
+    }>(
       `query AudioEngDeps {
         issues(first: 50, filter: { project: { name: { eq: "Content Updates" } } }) {
           nodes {
@@ -8091,11 +8098,40 @@ function AudioEngDependencies() {
             project { name }
           }
         }
+        projects(filter: { name: { eq: "Content Updates" } }, first: 1) {
+          nodes { id teams(first: 1) { nodes { id } } }
+        }
       }`,
     )
-      .then((d) => setIssues(d.issues.nodes.filter((i) => i.state.type !== "canceled" && i.state.type !== "duplicate")))
+      .then((d) => {
+        setIssues(d.issues.nodes.filter((i) => i.state.type !== "canceled" && i.state.type !== "duplicate"));
+        const p = d.projects.nodes[0];
+        if (p?.teams.nodes[0]) setIds({ projectId: p.id, teamId: p.teams.nodes[0].id });
+      })
       .catch(() => setError(true));
   }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const createTicket = async () => {
+    const title = newTitle.trim();
+    if (!title || !ids || creating) return;
+    setCreating(true);
+    try {
+      const res = await fetch("/api/linear/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title, teamId: ids.teamId, projectId: ids.projectId }),
+      });
+      const json = await res.json();
+      // Refetch instead of appending: the create response's state has no
+      // `type`, which the sort and status pill need.
+      if (json.success) { setNewTitle(""); load(); }
+    } catch (err) { console.error("Create ticket failed:", err); }
+    finally { setCreating(false); }
+  };
 
   const stateOrder: Record<string, number> = { started: 0, unstarted: 1, backlog: 2, completed: 3 };
   const rows = issues ? [...issues].sort((a, b) => (stateOrder[a.state.type] ?? 9) - (stateOrder[b.state.type] ?? 9)) : null;
@@ -8143,6 +8179,25 @@ function AudioEngDependencies() {
               </a>
             );
           })}
+        </div>
+      )}
+      {ids && (
+        <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 8 }}>
+          <input
+            type="text"
+            placeholder="Add a ticket to Content Updates..."
+            value={newTitle}
+            onChange={(e) => setNewTitle(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") createTicket(); }}
+            style={{ flex: 1, fontFamily: "var(--font-sans)", fontSize: 13, padding: "7px 10px", border: "1px solid #e2e8f0", borderRadius: 8, outline: "none", background: "#fff" }}
+          />
+          <button
+            onClick={createTicket}
+            disabled={!newTitle.trim() || creating}
+            style={{ fontFamily: "var(--font-sans)", fontSize: 12, fontWeight: 700, padding: "7px 14px", border: "none", borderRadius: 8, cursor: newTitle.trim() && !creating ? "pointer" : "default", background: newTitle.trim() && !creating ? "#2563eb" : "#cbd5e1", color: "#fff" }}
+          >
+            {creating ? "Adding..." : "Add"}
+          </button>
         </div>
       )}
     </div>
